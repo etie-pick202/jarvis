@@ -45,6 +45,8 @@ export type CashEntry = z.infer<typeof cashEntry>;
 
 export const createExpenseInput = z.object({
   registerId: cashRegisterId,
+  /** Absent : espèces, ou le mode propre à la caisse (Orange Money, MoMo). */
+  paymentMethod: paymentMethod.optional(),
   amount: fcfa.positive(),
   label: z.string().trim().min(1).max(200),
 });
@@ -69,3 +71,9 @@ export const closeRegisterInput = z.object({
   justification: justification.optional(),
 });
 export type CloseRegisterInput = z.infer<typeof closeRegisterInput>;
+
+export const setRegisterActiveInput = z.object({ active: z.boolean() });
+export type SetRegisterActiveInput = z.infer<typeof setRegisterActiveInput>;
+
+export const setClosureThresholdInput = z.object({ threshold: fcfa });
+export type SetClosureThresholdInput = z.infer<typeof setClosureThresholdInput>;
