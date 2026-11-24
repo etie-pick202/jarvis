@@ -17,3 +17,6 @@ coverage/
 playwright-report/
 test-results/
 .lighthouseci/
+
+# Les migrations versionnées SQL sont du code, elles se versionnent
+!packages/db/migrations/*.sql
