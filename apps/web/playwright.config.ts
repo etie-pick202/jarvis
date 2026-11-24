@@ -19,7 +19,10 @@ export default defineConfig({
     { name: "android", use: { ...devices["Pixel 7"] } },
   ],
   webServer: {
-    command: `pnpm exec vite preview --port ${PORT} --strictPort`,
+    // Construit une version avec le faux serveur (données fictives) : aucun backend nécessaire.
+    command: `pnpm exec vite build --outDir dist-e2e && pnpm exec vite preview --outDir dist-e2e --port ${PORT} --strictPort`,
+    env: { VITE_API_MOCK: "1" },
+    timeout: 120_000,
     port: PORT,
     reuseExistingServer: !process.env.CI,
   },

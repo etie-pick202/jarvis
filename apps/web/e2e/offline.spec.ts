@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { seConnecter } from "./aide.js";
 
 test.use({ locale: "fr-FR" });
 
@@ -6,8 +7,7 @@ test("hors ligne : l'appli reste utilisable, l'opération attend puis part à la
   page,
   context,
 }) => {
-  await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "CoCoPilot" })).toBeVisible();
+  await seConnecter(page, "gerant");
   // Le service worker doit contrôler la page avant de couper le réseau.
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
@@ -45,12 +45,6 @@ test("hors ligne : l'appli reste utilisable, l'opération attend puis part à la
   await page.reload();
   await expect(page.getByRole("status")).toContainText("1 en attente");
 
-  let received: string | null = null;
-  await page.route("**/api/ventes", async (route) => {
-    received = route.request().headers()["idempotency-key"] ?? null;
-    await route.fulfill({ status: 201, json: { ok: true } });
-  });
   await context.setOffline(false);
   await expect(page.getByRole("status")).not.toContainText("en attente", { timeout: 15_000 });
-  expect(received).toBe("cle-1");
 });

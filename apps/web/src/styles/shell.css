@@ -1,0 +1,220 @@
+/* Coque de gestion : barre de volets à gauche et rubriques en haut (ordinateur) ; barre du bas (téléphone). */
+.coque {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto 1fr auto;
+}
+.coque__haut {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--espace-3);
+  padding: var(--espace-2) var(--espace-4);
+  background: var(--noir);
+}
+.coque__marque {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+  color: var(--jaune);
+  font-family: var(--police-titre);
+  letter-spacing: 0.14em;
+}
+.coque__espace {
+  flex: 1;
+}
+.coque__haut .btn {
+  min-height: var(--cible-min);
+  font-size: 13px;
+}
+.coque__zone {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.coque__contenu {
+  padding: var(--espace-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-4);
+}
+.coque__titre {
+  display: none;
+  font-size: 20px;
+  margin-right: var(--espace-4);
+}
+.coque__rubriques {
+  display: flex;
+  gap: var(--espace-5);
+  padding: 0 var(--espace-4);
+  background: var(--blanc);
+  border-bottom: 1px solid var(--ligne);
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+.rubrique {
+  display: flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: 0 2px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--texte-doux);
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+}
+.rubrique.active {
+  font-weight: 700;
+  color: var(--texte);
+  border-bottom-color: var(--jaune);
+}
+
+.nav__lien {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+  min-height: var(--cible-min);
+  padding: 10px var(--espace-3);
+  border-radius: var(--rayon-s);
+  color: var(--nav-texte);
+  text-decoration: none;
+}
+.nav__lien.active {
+  background: var(--jaune);
+  color: var(--noir);
+}
+.nav__texte {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 14px;
+}
+.nav__texte small {
+  font-size: 11px;
+  opacity: 0.85;
+}
+.nav__pastille {
+  margin-left: auto;
+}
+
+.coque__volets {
+  display: none;
+}
+.coque__bas {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  background: var(--noir);
+}
+.coque__bas .nav__lien {
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 0;
+}
+.coque__bas .nav__pastille {
+  position: absolute;
+  top: 2px;
+  right: 18%;
+  margin: 0;
+}
+
+.plus__liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--espace-2);
+}
+.plus__lien {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+  min-height: var(--cible-min);
+  text-decoration: none;
+}
+.livreur {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+}
+.livreur__ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-2);
+}
+.livreur__actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--espace-2);
+}
+
+.connexion {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--espace-4);
+}
+.connexion__carte {
+  width: min(100%, 400px);
+  gap: var(--espace-4);
+}
+.connexion__marque {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espace-2);
+  text-align: center;
+  background: var(--noir);
+  color: var(--jaune);
+  border-radius: var(--rayon-m);
+  padding: var(--espace-5);
+}
+.connexion__marque p {
+  margin: 0;
+  color: var(--nav-texte);
+}
+.connexion__erreur {
+  margin: 0;
+  color: var(--danger-texte);
+  font-weight: 600;
+}
+
+@media (min-width: 900px) {
+  .coque {
+    grid-template-columns: 248px 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .coque__volets {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espace-1);
+    padding: var(--espace-4) var(--espace-3);
+    background: var(--noir);
+    grid-row: 2;
+  }
+  .coque__zone {
+    grid-row: 2;
+  }
+  .coque__bas {
+    display: none;
+  }
+  .coque__titre {
+    display: block;
+  }
+  .coque__rubriques {
+    align-items: center;
+    padding: 0 28px;
+  }
+  .coque__contenu {
+    padding: var(--espace-5) 28px;
+  }
+}
