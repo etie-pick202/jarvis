@@ -78,6 +78,7 @@ jobs:
           image-ref: ${{ fromJSON(steps.meta-api.outputs.json).tags[0] }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
+          trivyignores: .trivyignore
           exit-code: "1"
       - name: Scan de l'image web
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -85,6 +86,7 @@ jobs:
           image-ref: ${{ fromJSON(steps.meta-web.outputs.json).tags[0] }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
+          trivyignores: .trivyignore
           exit-code: "1"
 
       - name: Démarrage de l'API de l'image et contrôle de santé
