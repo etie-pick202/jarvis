@@ -52,8 +52,26 @@ async function loadBrand(tx: Database, brandId: string) {
  * toujours réglé à la remise), vente refusée à stock nul, échange entre marques (un plein remis, un vide rapporté,
  * écart de valeur d'emballage en gain ou perte). Tout est écrit dans une seule transaction.
  */
+export interface SaleOptions {
+  /** Instant réel de la vente (saisie hors ligne) : sert au prix en vigueur. */
+  occurredAt?: Date;
+  /** Rejeu hors ligne : la bouteille est déjà partie, on enregistre la vente et on signale l'écart de stock. */
+  allowOutOfStock?: boolean;
+}
+
 export async function createSale(deps: Deps, authorId: string, input: CreateSaleInput): Promise<Sale> {
+  return (await createSaleDetailed(deps, authorId, input)).sale;
+}
+
+export async function createSaleDetailed(
+  deps: Deps,
+  authorId: string,
+  input: CreateSaleInput,
+  options: SaleOptions = {},
+): Promise<{ sale: Sale; shortages: string[] }> {
   const now = deps.now();
+  const priceAt = options.occurredAt && options.occurredAt < now ? options.occurredAt : now;
+  const shortages: string[] = [];
   const deliveryFee = input.deliveryFeePerBottle ?? 0;
   const gasLines = input.lines.flatMap((l) => (l.kind === "gas" ? [l] : []));
   const articleLinesIn = input.lines.flatMap((l) => (l.kind === "article" ? [l] : []));
@@ -80,11 +98,9 @@ export async function createSale(deps: Deps, authorId: string, input: CreateSale
       const brand = await loadBrand(tx, d.brandId);
       const available = await stockOf(tx, d.brandId, d.formatId, "full");
       if (available < d.quantity) {
-        throw new AppError(
-          409,
-          "out_of_stock",
-          `Rupture : ${brand.name} (${available} plein(s) en stock, ${d.quantity} demandé(s))`,
-        );
+        const message = `Rupture : ${brand.name} (${available} plein(s) en stock, ${d.quantity} demandé(s))`;
+        if (!options.allowOutOfStock) throw new AppError(409, "out_of_stock", message);
+        shortages.push(message);
       }
     }
 
@@ -102,7 +118,7 @@ export async function createSale(deps: Deps, authorId: string, input: CreateSale
       const returned = line.returnedBrandId ? await loadBrand(tx, line.returnedBrandId) : given;
       const [format] = await tx.select().from(formats).where(eq(formats.id, line.formatId)).limit(1);
       if (!format?.active) throw new AppError(422, "invalid_request", "Format inconnu ou désactivé");
-      const price = await currentGasPrice(tx, line.formatId, line.brandId, now);
+      const price = await currentGasPrice(tx, line.formatId, line.brandId, priceAt);
       if (!price) throw new AppError(422, "invalid_request", "Aucun prix défini pour ce format");
       const r = computeGasLine(
         price,
@@ -185,6 +201,7 @@ export async function createSale(deps: Deps, authorId: string, input: CreateSale
         paymentMethod: input.paymentMethod,
         total,
         authorId,
+        occurredAt: options.occurredAt ?? null,
         createdAt: now,
       })
       .returning();
@@ -225,7 +242,7 @@ export async function createSale(deps: Deps, authorId: string, input: CreateSale
       saleId: saleRow.id,
       createdAt: now,
     });
-    return toSale(saleRow, lineRows);
+    return { sale: toSale(saleRow, lineRows), shortages };
   });
 }
 

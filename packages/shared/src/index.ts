@@ -8,3 +8,4 @@ export * from "./roles.js";
 export * from "./sales.js";
 export * from "./stock.js";
 export * from "./stock-ops.js";
+export * from "./sync.js";
