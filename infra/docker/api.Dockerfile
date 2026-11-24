@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 # Image de l'API : un bundle unique (dist/server.js) sur Node 22 allégé, utilisateur non root.
 FROM node:26-alpine AS build
-RUN corepack enable
+# Node 25 et suivants ne livrent plus corepack : on l'installe avant de l'activer.
+RUN npm install --global corepack@latest && corepack enable
 WORKDIR /repo
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml turbo.json tsconfig.base.json ./
 COPY apps/api/package.json apps/api/
