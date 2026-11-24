@@ -6,6 +6,7 @@ export function LanguageSwitch() {
   const { lang, setLang, t } = useI18n();
   return (
     <Segmented<Lang>
+      compact
       legend={t("lang.label")}
       value={lang}
       onChange={setLang}
