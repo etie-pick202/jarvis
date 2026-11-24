@@ -19,6 +19,7 @@ export const PERMISSIONS = {
   "cash.read": ["pdg", "gerant", "caissier"],
   "cash.write": ["pdg", "gerant", "caissier"],
   "cash.close": ["pdg", "gerant"],
+  "cash.manage": ["pdg"],
   "audit.read": ["pdg", "gerant"],
   "report.read": ["pdg", "gerant"],
   "sync.replay": ["pdg", "gerant", "caissier"],

@@ -1,4 +1,5 @@
 export * from "./cash.js";
+export * from "./catalogue.js";
 export * from "./common.js";
 export * from "./errors.js";
 export * from "./money.js";
@@ -6,3 +7,5 @@ export * from "./pricing.js";
 export * from "./roles.js";
 export * from "./sales.js";
 export * from "./stock.js";
+export * from "./stock-ops.js";
+export * from "./sync.js";
