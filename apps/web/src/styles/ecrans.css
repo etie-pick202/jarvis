@@ -107,3 +107,49 @@
   font-size: 13px;
   color: var(--texte-doux);
 }
+.chiffres {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--espace-3);
+}
+.chiffres__carte {
+  background: var(--blanc);
+  border: 1px solid var(--ligne);
+  border-radius: var(--rayon-l);
+  padding: var(--espace-4);
+}
+.chiffres__carte dt {
+  font-size: 13px;
+  color: var(--texte-doux);
+}
+.chiffres__carte dd {
+  margin: 4px 0 0;
+  font-family: var(--police-titre);
+  font-size: 22px;
+  font-weight: 700;
+}
+.liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--espace-3);
+}
+.validation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-3);
+}
+.validation__refus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--espace-2);
+}
+.tableau td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

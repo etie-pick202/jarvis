@@ -8,7 +8,7 @@ test("connexion, navigation par volets et changement de langue", async ({ page, 
   await expect(page).toHaveURL(/connexion/u);
   await expect(page).toHaveTitle(/JARVIS/u);
   await seConnecter(page, "gerant");
-  await expect(page.getByRole("heading", { level: 1, name: "CoCoPilot" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Tableau de bord" })).toBeVisible();
 
   if (isMobile) {
     // Téléphone : barre du bas à quatre volets, les autres sous « Plus ».

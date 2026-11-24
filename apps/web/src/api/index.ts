@@ -1,5 +1,6 @@
 import { request } from "./client.js";
 import {
+  type Alerte,
   type Article,
   type Badges,
   type Caisses,
@@ -8,8 +9,11 @@ import {
   type Fournisseur,
   type GazStock,
   type Health,
+  type LigneAudit,
   type Livraison,
   type LoginInput,
+  parseAlertes,
+  parseAudit,
   parseBadges,
   parseCaisses,
   parseCatalogue,
@@ -19,10 +23,16 @@ import {
   parseGazStock,
   parseHealth,
   parseLivraisons,
+  parseRapport,
   parseReceptions,
   parseSession,
+  parseTableau,
+  parseValidations,
+  type Rapport,
   type ReceptionResume,
   type Session,
+  type Tableau,
+  type Validation,
 } from "./contracts.js";
 
 export * from "./client.js";
@@ -46,6 +56,16 @@ export const api = {
   receptions: (signal?: AbortSignal): Promise<ReceptionResume[]> =>
     request("/gaz/receptions", { signal, parse: parseReceptions }),
   caisses: (signal?: AbortSignal): Promise<Caisses> => request("/caisses", { signal, parse: parseCaisses }),
+  tableau: (signal?: AbortSignal): Promise<Tableau> =>
+    request("/pilotage/tableau", { signal, parse: parseTableau }),
+  alertes: (signal?: AbortSignal): Promise<Alerte[]> =>
+    request("/pilotage/alertes", { signal, parse: parseAlertes }),
+  validations: (signal?: AbortSignal): Promise<Validation[]> =>
+    request("/pilotage/validations", { signal, parse: parseValidations }),
+  audit: (signal?: AbortSignal): Promise<LigneAudit[]> =>
+    request("/pilotage/audit", { signal, parse: parseAudit }),
+  rapport: (id: string, signal?: AbortSignal): Promise<Rapport> =>
+    request(`/rapports/${id}`, { signal, parse: parseRapport }),
   fournisseurs: (signal?: AbortSignal): Promise<Fournisseur[]> =>
     request("/fournisseurs", { signal, parse: parseFournisseurs }),
   livraisons: (signal?: AbortSignal): Promise<Livraison[]> =>

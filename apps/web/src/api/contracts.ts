@@ -104,6 +104,42 @@ export interface Caisses {
   seuilJustification: number;
 }
 
+export interface Tableau {
+  caJour: number;
+  nbVentes: number;
+  livraisonsEnCours: number;
+  echeances: number;
+}
+
+export interface Alerte {
+  id: string;
+  texte: string;
+  niveau: "alerte" | "danger";
+}
+
+export interface Validation {
+  id: string;
+  genre: "inventaire" | "ecart" | "annulation";
+  resume: string;
+  auteur: string;
+  date: string;
+}
+
+export interface LigneAudit {
+  id: string;
+  date: string;
+  auteur: string;
+  action: string;
+  detail: string;
+}
+
+/** Rapport tabulaire (statistiques clients, journal de caisse, X de caisse). */
+export interface Rapport {
+  colonnes: string[];
+  lignes: (string | number)[][];
+  pied?: (string | number)[];
+}
+
 export interface LoginInput {
   identifiant: string;
   motDePasse: string;
@@ -294,4 +330,72 @@ export function parseCaisses(data: unknown): Caisses {
     };
   }
   throw new TypeError("Caisses invalides");
+}
+
+export function parseTableau(data: unknown): Tableau {
+  if (
+    isRecord(data) &&
+    typeof data.caJour === "number" &&
+    typeof data.nbVentes === "number" &&
+    typeof data.livraisonsEnCours === "number" &&
+    typeof data.echeances === "number"
+  ) {
+    return {
+      caJour: data.caJour,
+      nbVentes: data.nbVentes,
+      livraisonsEnCours: data.livraisonsEnCours,
+      echeances: data.echeances,
+    };
+  }
+  throw new TypeError("Tableau de bord invalide");
+}
+
+export const parseAlertes = (data: unknown): Alerte[] =>
+  liste(data, "Alertes", (d) =>
+    typeof d.id === "string" &&
+    typeof d.texte === "string" &&
+    (d.niveau === "alerte" || d.niveau === "danger")
+      ? { id: d.id, texte: d.texte, niveau: d.niveau }
+      : null,
+  );
+
+export const parseValidations = (data: unknown): Validation[] =>
+  liste(data, "Validations", (d) =>
+    typeof d.id === "string" &&
+    (d.genre === "inventaire" || d.genre === "ecart" || d.genre === "annulation") &&
+    typeof d.resume === "string" &&
+    typeof d.auteur === "string" &&
+    typeof d.date === "string"
+      ? { id: d.id, genre: d.genre, resume: d.resume, auteur: d.auteur, date: d.date }
+      : null,
+  );
+
+export const parseAudit = (data: unknown): LigneAudit[] =>
+  liste(data, "Journal d'audit", (d) =>
+    typeof d.id === "string" &&
+    typeof d.date === "string" &&
+    typeof d.auteur === "string" &&
+    typeof d.action === "string" &&
+    typeof d.detail === "string"
+      ? { id: d.id, date: d.date, auteur: d.auteur, action: d.action, detail: d.detail }
+      : null,
+  );
+
+export function parseRapport(data: unknown): Rapport {
+  const cellule = (x: unknown): x is string | number => typeof x === "string" || typeof x === "number";
+  if (
+    isRecord(data) &&
+    Array.isArray(data.colonnes) &&
+    data.colonnes.every((x) => typeof x === "string") &&
+    Array.isArray(data.lignes) &&
+    data.lignes.every((l) => Array.isArray(l) && l.every(cellule)) &&
+    (data.pied === undefined || (Array.isArray(data.pied) && data.pied.every(cellule)))
+  ) {
+    return {
+      colonnes: data.colonnes as string[],
+      lignes: data.lignes as (string | number)[][],
+      pied: data.pied as (string | number)[] | undefined,
+    };
+  }
+  throw new TypeError("Rapport invalide");
 }

@@ -130,6 +130,126 @@ const CAISSES = {
   ],
 };
 
+const TABLEAU = { caJour: 108800, nbVentes: 16, livraisonsEnCours: 2, echeances: 4 };
+
+const ALERTES = [
+  { id: "a1", texte: "Gaz TRADEX en rupture : vente bloquée", niveau: "danger" },
+  { id: "a2", texte: "4 échéances Canal+ cette semaine", niveau: "alerte" },
+  { id: "a3", texte: "Écart de clôture hier : Canal+ en espèces, -1 000 FCFA (justifié)", niveau: "alerte" },
+];
+
+const VALIDATIONS = [
+  {
+    id: "v1",
+    genre: "inventaire",
+    resume: "Inventaire hebdomadaire : BOCOM pleines -1",
+    auteur: "Gérant",
+    date: "2026-11-23T18:10:00Z",
+  },
+  {
+    id: "v2",
+    genre: "annulation",
+    resume: "Vente 1991 annulée : erreur de moyen de paiement",
+    auteur: "Gérant",
+    date: "2026-11-24T11:25:00Z",
+  },
+];
+
+const AUDIT = [
+  {
+    id: "l1",
+    date: "2026-11-24T11:25:00Z",
+    auteur: "Gérant",
+    action: "Annulation de vente",
+    detail: "Vente 1991, erreur de moyen de paiement",
+  },
+  {
+    id: "l2",
+    date: "2026-11-23T18:12:00Z",
+    auteur: "Gérant",
+    action: "Écart d'inventaire",
+    detail: "BOCOM pleines -1",
+  },
+  {
+    id: "l3",
+    date: "2026-11-20T09:00:00Z",
+    auteur: "Direction",
+    action: "Changement de prix",
+    detail: "Recharge 12,5 kg : transport 300 FCFA",
+  },
+];
+
+const RAPPORTS = {
+  clients: {
+    colonnes: ["Heure", "Client", "Article", "Qté", "Prix unitaire", "Paiement", "Total", "Marge", "Marge %"],
+    lignes: [
+      ["08:52", "Ndongo Berthe", "Gaz OLA 12,5 kg", 1, 6800, "Espèces", 6800, 730, "10,74"],
+      [
+        "09:12",
+        "Fotso Marc",
+        "Gaz STARGAS 12,5 kg (échange TOTAL)",
+        1,
+        6800,
+        "Espèces",
+        6800,
+        -1770,
+        "-26,03",
+      ],
+      ["10:40", "Kamga Paul", "Gaz TOTAL 12,5 kg", 1, 6800, "Espèces", 6800, 730, "10,74"],
+    ],
+    pied: ["Total", "", "", 3, "", "", 20400, -310, ""],
+  },
+  journal: {
+    colonnes: [
+      "Date",
+      "Caisse",
+      "N° pièce",
+      "Sens",
+      "Mode",
+      "Client",
+      "Libellé",
+      "Montant",
+      "Solde après",
+      "Opérateur",
+    ],
+    lignes: [
+      [
+        "2026-11-24 08:52",
+        "Ventes en espèces",
+        "RGTVT2449",
+        "Entrée",
+        "Espèces",
+        "Ndongo Berthe",
+        "Vente gaz OLA",
+        6800,
+        215300,
+        "Gérant",
+      ],
+      [
+        "2026-11-24 09:30",
+        "Ventes en espèces",
+        "SORT0112",
+        "Sortie",
+        "Espèces",
+        "Client comptoir",
+        "Transport",
+        5000,
+        210300,
+        "Gérant",
+      ],
+    ],
+  },
+  x: {
+    colonnes: ["Caisse", "Type", "N° pièce", "Libellé", "Montant"],
+    lignes: [
+      ["Ventes en espèces", "FDC", "FDC0001", "Fond de caisse", 180000],
+      ["Ventes en espèces", "REG", "RGTVT2449", "Règlement vente 1993", 6800],
+      ["Ventes en espèces", "MSC", "SORT0112", "Sortie de caisse : transport", -5000],
+    ],
+    pied: ["Total général", "", "", "", 181800],
+  },
+};
+
 const CLIENTS = [
   { id: "c1", nom: "Ndongo Berthe", telephone: "237600000001" },
   { id: "c2", nom: "Ndongo Jean" },
@@ -173,6 +293,14 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   if (path === "/auth/me") return json(current);
   if (init?.method && init.method !== "GET") return json({ ok: true }, 201);
   if (path === "/catalogue") return json(CATALOGUE);
+  if (path === "/pilotage/tableau") return json(TABLEAU);
+  if (path === "/pilotage/alertes") return json(ALERTES);
+  if (path === "/pilotage/validations") return json(VALIDATIONS);
+  if (path === "/pilotage/audit") return json(AUDIT);
+  if (path.startsWith("/rapports/")) {
+    const rapport = (RAPPORTS as Record<string, unknown>)[path.slice(10)];
+    return rapport ? json(rapport) : json({ erreur: "introuvable" }, 404);
+  }
   if (path === "/caisses") return json(CAISSES);
   if (path === "/gaz/receptions") return json(RECEPTIONS);
   if (path === "/gaz/stock") return json(GAZ_STOCK);

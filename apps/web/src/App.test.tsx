@@ -43,7 +43,7 @@ describe("App", () => {
     await userEvent.type(await screen.findByLabelText("Identifiant"), "pdg");
     await userEvent.type(screen.getByLabelText("Mot de passe"), "demo");
     await userEvent.click(screen.getByRole("button", { name: "Se connecter" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "CoCoPilot" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Tableau de bord" })).toBeTruthy();
   });
 
   it("refuse un mauvais mot de passe", async () => {
