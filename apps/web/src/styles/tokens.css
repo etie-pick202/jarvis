@@ -1,0 +1,46 @@
+/* Jetons de design extraits de la maquette (Identité, Bureau-Vente). */
+:root {
+  --noir: #111111;
+  --jaune: #ffc20e;
+  --or-clair: #fff1a8;
+  --braise: #f07f00;
+  --creme: #f6f4ec;
+  --blanc: #ffffff;
+  --ligne: #e3e0d5;
+  --ligne-champ: #b9b5a4;
+  --texte: #111111;
+  --texte-2: #3a3a36;
+  --texte-doux: #5f5e57;
+  --nav-texte: #e7e4d8;
+  --segment-fond: #ece9dc;
+  --puce-fond: #edebe1;
+  --tableau-entete: #faf9f3;
+
+  --alerte-fond: #fff1bf;
+  --alerte-texte: #7a5800;
+  --ok-fond: #ddf3e6;
+  --ok-texte: #17703f;
+  --info-fond: #e1ecf9;
+  --info-texte: #1d4e89;
+  --attention-fond: #ffe9d2;
+  --attention-texte: #9a4a00;
+  --danger-fond: #fbe0de;
+  --danger-texte: #a8201a;
+  --en-ligne: #4ade80;
+
+  --police: "Inter Variable", system-ui, sans-serif;
+  --police-titre: "Space Grotesk Variable", "Inter Variable", system-ui, sans-serif;
+
+  --rayon-s: 10px;
+  --rayon-m: 12px;
+  --rayon-l: 14px;
+  --rayon-pastille: 999px;
+  --cible-min: 44px;
+  --hauteur-champ: 46px;
+  --hauteur-bouton: 52px;
+  --espace-1: 4px;
+  --espace-2: 8px;
+  --espace-3: 12px;
+  --espace-4: 16px;
+  --espace-5: 24px;
+}

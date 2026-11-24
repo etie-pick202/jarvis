@@ -24,3 +24,10 @@ export async function recordAudit(exec: Database, entry: AuditEntry): Promise<st
   if (!row) throw new Error("Écriture d'audit impossible");
   return row.id;
 }
+
+/** Audit + notification au PDG avec l'action et l'heure (annulation, correction, écart, changement de prix). */
+export async function auditAndNotifyPdg(exec: Database, entry: AuditEntry, message: string): Promise<string> {
+  const auditId = await recordAudit(exec, entry);
+  await exec.insert(schema.notifications).values({ recipientRole: "pdg", message, auditId });
+  return auditId;
+}

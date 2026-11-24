@@ -1,0 +1,98 @@
+import { type FormEvent, useState } from "react";
+import { useI18n } from "../i18n/index.js";
+import { ecrire } from "../offline/ecrire.js";
+import { Button } from "../ui/Button.js";
+import { Chip } from "../ui/Chip.js";
+import { Field } from "../ui/Field.js";
+import { Table } from "../ui/Table.js";
+import { formatFcfa } from "../vente/regles.js";
+import { useCaisses } from "./donnees.js";
+
+const lire = (v: string): number | null => (/^\d+$/u.test(v.trim()) ? Number(v) : null);
+
+/** Clôture du jour : comptage physique par caisse, écart affiché, justification au-delà du seuil. */
+export function Cloture() {
+  const { t } = useI18n();
+  const { actives, seuilJustification, pret } = useCaisses();
+  const [comptes, setComptes] = useState<Record<string, string>>({});
+  const [justifs, setJustifs] = useState<Record<string, string>>({});
+  const [ok, setOk] = useState(false);
+
+  const lignes = actives.map((c) => {
+    const compte = lire(comptes[c.id] ?? "");
+    return { caisse: c, compte, ecart: compte === null ? null : compte - c.solde };
+  });
+  const exige = (j: (typeof lignes)[number]) => j.ecart !== null && Math.abs(j.ecart) > seuilJustification;
+  const manque = (j: (typeof lignes)[number]) => exige(j) && (justifs[j.caisse.id] ?? "").trim() === "";
+  const complet = lignes.length > 0 && lignes.every((j) => j.compte !== null && !manque(j));
+
+  async function cloturer(event: FormEvent) {
+    event.preventDefault();
+    await ecrire({
+      method: "POST",
+      path: "/caisses/cloture",
+      label: t("caisse.cloture.titre"),
+      body: {
+        comptes: lignes.map((j) => ({
+          caisseId: j.caisse.id,
+          compte: j.compte,
+          theorique: j.caisse.solde,
+          justification: j.ecart !== 0 ? (justifs[j.caisse.id]?.trim() ?? null) : null,
+        })),
+      },
+    });
+    setComptes({});
+    setJustifs({});
+    setOk(true);
+  }
+
+  if (!pret && actives.length === 0) return <p role="status">{t("page.chargement")}</p>;
+  return (
+    <form className="carte page" onSubmit={cloturer}>
+      <h1>{t("caisse.cloture.titre")}</h1>
+      <p>{`${t("caisse.cloture.aide")} ${formatFcfa(seuilJustification)}.`}</p>
+      <Table
+        caption={t("caisse.cloture.titre")}
+        colonnes={[t("caisse.caisse"), t("caisse.theorique"), t("caisse.compte"), t("caisse.ecart")]}
+      >
+        {lignes.map((j) => (
+          <tr key={j.caisse.id}>
+            <th scope="row">{j.caisse.nom}</th>
+            <td>{formatFcfa(j.caisse.solde)}</td>
+            <td>
+              <Field
+                label={`${j.caisse.nom} : ${t("caisse.compte")}`}
+                inputMode="numeric"
+                value={comptes[j.caisse.id] ?? ""}
+                onChange={(e) => {
+                  setComptes((c) => ({ ...c, [j.caisse.id]: e.target.value }));
+                  setOk(false);
+                }}
+              />
+              {exige(j) && (
+                <Field
+                  label={`${j.caisse.nom} : ${t("caisse.justification")}`}
+                  value={justifs[j.caisse.id] ?? ""}
+                  onChange={(e) => setJustifs((x) => ({ ...x, [j.caisse.id]: e.target.value }))}
+                />
+              )}
+            </td>
+            <td>
+              {j.ecart === null ? null : (
+                <Chip tone={j.ecart === 0 ? "ok" : "danger"}>
+                  {j.ecart === 0
+                    ? t("gaz.conforme")
+                    : `${j.ecart > 0 ? "+" : "−"}${formatFcfa(Math.abs(j.ecart))}`}
+                </Chip>
+              )}
+            </td>
+          </tr>
+        ))}
+      </Table>
+      <Button type="submit" disabled={!complet}>
+        {t("caisse.cloture.valider")}
+      </Button>
+      {ok && <p role="status">{t("caisse.cloture.ok")}</p>}
+    </form>
+  );
+}

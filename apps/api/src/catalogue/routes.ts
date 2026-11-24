@@ -11,12 +11,13 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { requireAuth, requirePermission } from "../auth/middleware.js";
 import { type AppEnv, parse, parseJson } from "../http.js";
+import { idempotency } from "../idempotency.js";
 import * as svc from "./service.js";
 
 const uuid = z.uuid();
 
 export const catalogueRoutes = new Hono<AppEnv>()
-  .use("*", requireAuth)
+  .use("*", requireAuth, idempotency)
   // Lecture : marques, formats, prix en vigueur
   .get("/brands", requirePermission("catalog.gas.read"), async (c) =>
     c.json(await svc.listBrands(c.get("deps"))),

@@ -45,10 +45,14 @@ export type CreateSaleInput = z.infer<typeof createSaleInput>;
 
 export const saleLine = z.object({
   kind: z.enum(["gas", "article"]),
-  itemId: id,
+  brandId: id.nullable(),
+  formatId: id.nullable(),
+  articleId: id.nullable(),
   quantity: z.number().int().min(1),
+  /** Prix unitaire de l'article ou du gaz seul (hors contribution transport et livraison). */
   unitPrice: fcfa,
   transportContribution: fcfa,
+  deliveryFee: fcfa,
   returnedBrandId: id.nullable(),
   /** Écart de valeur d'emballage : positif = gain, négatif = perte, nul hors échange. */
   packagingGap: signedInt,
