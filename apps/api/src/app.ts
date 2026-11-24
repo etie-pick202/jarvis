@@ -2,6 +2,7 @@ import { deliveryTotal, errorBody, pickupTotal } from "@jarvis/shared";
 import { Hono } from "hono";
 import { z } from "zod";
 import { authRoutes } from "./auth/routes.js";
+import { catalogueRoutes } from "./catalogue/routes.js";
 import { type AppEnv, type Deps, errorResponse, withDeps } from "./http.js";
 
 const quoteQuery = z.object({
@@ -27,6 +28,7 @@ export function createApp(deps: Deps) {
   const api = new Hono<AppEnv>();
   api.use("*", withDeps(deps));
   api.route("/auth", authRoutes);
+  api.route("/catalogue", catalogueRoutes);
 
   const root = new Hono<AppEnv>();
   root.route("/", app);
