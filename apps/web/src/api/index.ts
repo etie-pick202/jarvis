@@ -2,6 +2,7 @@ import { request } from "./client.js";
 import {
   type Article,
   type Badges,
+  type Caisses,
   type Client,
   type Echange,
   type Fournisseur,
@@ -10,6 +11,7 @@ import {
   type Livraison,
   type LoginInput,
   parseBadges,
+  parseCaisses,
   parseCatalogue,
   parseClients,
   parseEchanges,
@@ -43,6 +45,7 @@ export const api = {
     request("/gaz/echanges", { signal, parse: parseEchanges }),
   receptions: (signal?: AbortSignal): Promise<ReceptionResume[]> =>
     request("/gaz/receptions", { signal, parse: parseReceptions }),
+  caisses: (signal?: AbortSignal): Promise<Caisses> => request("/caisses", { signal, parse: parseCaisses }),
   fournisseurs: (signal?: AbortSignal): Promise<Fournisseur[]> =>
     request("/fournisseurs", { signal, parse: parseFournisseurs }),
   livraisons: (signal?: AbortSignal): Promise<Livraison[]> =>
