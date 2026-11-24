@@ -102,9 +102,9 @@ export async function createExpense(deps: Deps, operatorId: string, input: Creat
   });
 }
 
-type Tx = Parameters<Parameters<Deps["db"]["transaction"]>[0]>[0];
+export type Tx = Parameters<Parameters<Deps["db"]["transaction"]>[0]>[0];
 
-async function appendCheckedEntry(
+export async function appendCheckedEntry(
   tx: Tx,
   deps: Deps,
   e: Omit<Parameters<typeof appendCashEntry>[1], "createdAt" | "customerName"> & {
