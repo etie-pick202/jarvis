@@ -11,15 +11,17 @@ export function Segmented<V extends string>({
   options,
   value,
   onChange,
+  compact = false,
 }: {
   legend: string;
   options: readonly SegmentOption<V>[];
   value: V;
   onChange: (value: V) => void;
+  compact?: boolean;
 }) {
   const name = useId();
   return (
-    <fieldset className="segments">
+    <fieldset className={compact ? "segments segments--compact" : "segments"}>
       <legend className="sr-only">{legend}</legend>
       {options.map((option) => (
         <label key={option.value} className="segments__option">

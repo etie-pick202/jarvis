@@ -187,3 +187,19 @@ a {
   opacity: 0;
   pointer-events: none;
 }
+
+.segments--compact .segments__option {
+  flex: none;
+  min-width: var(--cible-min);
+  padding: 0 var(--espace-3);
+}
+.segments--compact:has(.segments__option) {
+  background: #2a2a28;
+}
+.segments--compact .segments__option {
+  color: var(--nav-texte);
+}
+.segments--compact .segments__option:has(input:checked) {
+  background: var(--jaune);
+  color: var(--noir);
+}
