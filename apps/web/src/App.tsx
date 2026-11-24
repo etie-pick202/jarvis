@@ -16,6 +16,8 @@ import { SyncPage } from "./offline/SyncPage.js";
 import { ErrorBoundary, NotFound } from "./pages/Errors.js";
 import { Garde } from "./pages/Garde.js";
 import { Placeholder } from "./pages/Placeholder.js";
+import { Alertes, Audit, TableauDeBord, Validations } from "./pilot/Pilot.js";
+import { Exports, RapportTable, SituationGaz } from "./rapport/Rapports.js";
 import { Plus } from "./shell/Plus.js";
 import { Shell } from "./shell/Shell.js";
 
@@ -130,6 +132,78 @@ export function App() {
               element={
                 <Garde volet="caisse" rubrique="cloture">
                   <Cloture />
+                </Garde>
+              }
+            />
+            <Route
+              path="pilot/tableau"
+              element={
+                <Garde volet="pilot">
+                  <TableauDeBord />
+                </Garde>
+              }
+            />
+            <Route
+              path="pilot/alertes"
+              element={
+                <Garde volet="pilot">
+                  <Alertes page />
+                </Garde>
+              }
+            />
+            <Route
+              path="pilot/validations"
+              element={
+                <Garde volet="pilot">
+                  <Validations />
+                </Garde>
+              }
+            />
+            <Route
+              path="pilot/audit"
+              element={
+                <Garde volet="pilot">
+                  <Audit />
+                </Garde>
+              }
+            />
+            <Route
+              path="rapport/clients"
+              element={
+                <Garde volet="rapport">
+                  <RapportTable id="clients" titre="rub.rapport.clients" />
+                </Garde>
+              }
+            />
+            <Route
+              path="rapport/journal"
+              element={
+                <Garde volet="rapport">
+                  <RapportTable id="journal" titre="rub.rapport.journal" />
+                </Garde>
+              }
+            />
+            <Route
+              path="rapport/x"
+              element={
+                <Garde volet="rapport">
+                  <RapportTable id="x" titre="rub.rapport.x" />
+                </Garde>
+              }
+            />
+            <Route
+              path="rapport/gaz"
+              element={
+                <Garde volet="rapport">
+                  <SituationGaz />
+                </Garde>
+              }
+            />
+            <Route
+              path="rapport/exports"
+              element={
+                <Garde volet="rapport">
+                  <Exports />
                 </Garde>
               }
             />
