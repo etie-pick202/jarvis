@@ -52,6 +52,31 @@ export interface Client {
   telephone?: string;
 }
 
+export interface GazStock {
+  marque: string;
+  pleines: number;
+  vides: number;
+  /** Seuil d'alerte de stock bas, paramétrable. */
+  seuil: number;
+}
+
+export interface Echange {
+  id: string;
+  date: string;
+  client: string;
+  remise: string;
+  rapportee: string;
+  /** Écart de valeur d'emballage : positif = gain, négatif = perte. */
+  ecart: number | null;
+}
+
+export interface Fournisseur {
+  id: string;
+  nom: string;
+  telephone: string;
+  marques: string[];
+}
+
 export interface LoginInput {
   identifiant: string;
   motDePasse: string;
@@ -158,3 +183,51 @@ export function parseClients(data: unknown): Client[] {
     throw new TypeError("Client invalide");
   });
 }
+
+function liste<T>(data: unknown, nom: string, lire: (d: Record<string, unknown>) => T | null): T[] {
+  if (!Array.isArray(data)) throw new TypeError(`${nom} invalides`);
+  return data.map((d) => {
+    const v = isRecord(d) ? lire(d) : null;
+    if (v === null) throw new TypeError(`${nom} : élément invalide`);
+    return v;
+  });
+}
+
+export const parseGazStock = (data: unknown): GazStock[] =>
+  liste(data, "Stock gaz", (d) =>
+    typeof d.marque === "string" &&
+    typeof d.pleines === "number" &&
+    typeof d.vides === "number" &&
+    typeof d.seuil === "number"
+      ? { marque: d.marque, pleines: d.pleines, vides: d.vides, seuil: d.seuil }
+      : null,
+  );
+
+export const parseEchanges = (data: unknown): Echange[] =>
+  liste(data, "Échanges", (d) =>
+    typeof d.id === "string" &&
+    typeof d.date === "string" &&
+    typeof d.client === "string" &&
+    typeof d.remise === "string" &&
+    typeof d.rapportee === "string"
+      ? {
+          id: d.id,
+          date: d.date,
+          client: d.client,
+          remise: d.remise,
+          rapportee: d.rapportee,
+          ecart: typeof d.ecart === "number" ? d.ecart : null,
+        }
+      : null,
+  );
+
+export const parseFournisseurs = (data: unknown): Fournisseur[] =>
+  liste(data, "Fournisseurs", (d) =>
+    typeof d.id === "string" &&
+    typeof d.nom === "string" &&
+    typeof d.telephone === "string" &&
+    Array.isArray(d.marques) &&
+    d.marques.every((m) => typeof m === "string")
+      ? { id: d.id, nom: d.nom, telephone: d.telephone, marques: d.marques as string[] }
+      : null,
+  );
