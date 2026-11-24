@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: staging
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Attendre la fin de la CI sur ce commit
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -35,6 +35,7 @@ jobs:
             case "$state" in
               *failure*|*cancelled*) echo "::error::CI en échec, déploiement annulé."; exit 1 ;;
               success,success) exit 0 ;;
+              *) ;;
             esac
             sleep 20
           done
@@ -55,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production # approbation obligatoire (required reviewers)
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/deploy
         with:
           tag: ${{ github.ref_name }}

@@ -17,7 +17,7 @@ healthy() {
   return 1
 }
 
-if [ -f .current-tag ]; then cp .current-tag "$PREVIOUS_FILE"; fi
+if [[ -f .current-tag ]]; then cp .current-tag "$PREVIOUS_FILE"; fi
 
 echo "→ Récupération des images ($TAG)"
 $COMPOSE pull api web
@@ -44,7 +44,7 @@ if healthy; then
 fi
 
 echo "✘ Contrôle de santé en échec" >&2
-if [ -f "$PREVIOUS_FILE" ]; then
+if [[ -f "$PREVIOUS_FILE" ]]; then
   PREV="$(cat "$PREVIOUS_FILE")"
   echo "→ Retour arrière vers $PREV" >&2
   TAG="$PREV" $COMPOSE up -d api web

@@ -16,6 +16,8 @@ RUN pnpm --filter @jarvis/api build
 FROM node:22-alpine
 ENV NODE_ENV=production PORT=3000
 WORKDIR /app
+# L'API est un bundle autonome : npm, npx et corepack ne servent à rien à l'exécution (et portent des failles).
+RUN rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /opt/yarn*
 COPY --from=build /repo/apps/api/dist ./dist
 USER node
 EXPOSE 3000
