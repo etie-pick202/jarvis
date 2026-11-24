@@ -92,7 +92,10 @@ jobs:
       - name: Démarrage de l'API de l'image et contrôle de santé
         run: |
           docker run -d --name api-smoke -p 3000:3000 "${{ fromJSON(steps.meta-api.outputs.json).tags[0] }}"
-          curl --fail --retry 15 --retry-delay 2 --retry-connrefused http://127.0.0.1:3000/health
+          if ! curl --fail --retry 20 --retry-delay 2 --retry-all-errors http://127.0.0.1:3000/health; then
+            docker logs api-smoke
+            exit 1
+          fi
           docker rm -f api-smoke
 
       - name: Publier l'image API (main et tags de version)
