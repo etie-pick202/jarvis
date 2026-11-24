@@ -48,7 +48,9 @@ export async function cancelSale(
       .select()
       .from(stockMoves)
       .where(and(eq(stockMoves.saleId, saleId), isNull(stockMoves.reversalOf)));
-    const pairs = [...new Set(moves.map((m) => `${m.brandId}:${m.formatId}`))].sort();
+    const pairs = [...new Set(moves.map((m) => `${m.brandId}:${m.formatId}`))].sort((a, b) =>
+      a.localeCompare(b),
+    );
     for (const pair of pairs) {
       const [brandId, formatId] = pair.split(":") as [string, string];
       await lockStock(tx, brandId, formatId);
