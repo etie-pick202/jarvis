@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: staging
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: 'echo "TODO DevOps : construire les images, les pousser sur GHCR, se connecter en SSH, migrer, redémarrer, contrôler /health"'
 
   production:
@@ -28,5 +28,5 @@ jobs:
     runs-on: ubuntu-latest
     environment: production # approbation obligatoire (required reviewers)
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: 'echo "TODO DevOps : sauvegarde avant migration, migration, bascule, contrôle de santé, retour arrière automatique en cas d''échec"'
