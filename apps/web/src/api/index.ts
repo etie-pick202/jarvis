@@ -17,7 +17,9 @@ import {
   parseGazStock,
   parseHealth,
   parseLivraisons,
+  parseReceptions,
   parseSession,
+  type ReceptionResume,
   type Session,
 } from "./contracts.js";
 
@@ -39,6 +41,8 @@ export const api = {
     request("/gaz/stock", { signal, parse: parseGazStock }),
   echanges: (signal?: AbortSignal): Promise<Echange[]> =>
     request("/gaz/echanges", { signal, parse: parseEchanges }),
+  receptions: (signal?: AbortSignal): Promise<ReceptionResume[]> =>
+    request("/gaz/receptions", { signal, parse: parseReceptions }),
   fournisseurs: (signal?: AbortSignal): Promise<Fournisseur[]> =>
     request("/fournisseurs", { signal, parse: parseFournisseurs }),
   livraisons: (signal?: AbortSignal): Promise<Livraison[]> =>

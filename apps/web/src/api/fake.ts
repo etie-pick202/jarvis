@@ -106,6 +106,11 @@ const FOURNISSEURS = [
   { id: "f2", nom: "Gaz du Mfoundi", telephone: "237600000011", marques: ["TRADEX", "BOCOM", "STARGAS"] },
 ];
 
+const RECEPTIONS = [
+  { id: "r1", date: "2026-11-20T08:30:00Z", fournisseur: "Dépôt Central", pleines: 24, vides: 24 },
+  { id: "r2", date: "2026-11-12T14:05:00Z", fournisseur: "Gaz du Mfoundi", pleines: 18, vides: 16 },
+];
+
 const CLIENTS = [
   { id: "c1", nom: "Ndongo Berthe", telephone: "237600000001" },
   { id: "c2", nom: "Ndongo Jean" },
@@ -149,6 +154,7 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   if (path === "/auth/me") return json(current);
   if (init?.method && init.method !== "GET") return json({ ok: true }, 201);
   if (path === "/catalogue") return json(CATALOGUE);
+  if (path === "/gaz/receptions") return json(RECEPTIONS);
   if (path === "/gaz/stock") return json(GAZ_STOCK);
   if (path === "/gaz/echanges") return json(ECHANGES);
   if (path === "/fournisseurs") return json(FOURNISSEURS);

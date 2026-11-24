@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { seConnecter } from "./aide.js";
+import { attendreServiceWorker, seConnecter } from "./aide.js";
 
 test.use({ locale: "fr-FR" });
 
@@ -9,11 +9,7 @@ test("hors ligne : l'appli reste utilisable, l'opération attend puis part à la
 }) => {
   await seConnecter(page, "gerant");
   // Le service worker doit contrôler la page avant de couper le réseau.
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.ready;
-  });
-  await page.reload();
-  await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+  await attendreServiceWorker(page);
 
   await context.setOffline(true);
   await page.reload();

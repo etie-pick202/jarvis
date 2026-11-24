@@ -4,6 +4,8 @@ import { LoginPage } from "./auth/LoginPage.js";
 import { useSession } from "./auth/SessionProvider.js";
 import { Echanges } from "./gaz/Echanges.js";
 import { Fournisseurs } from "./gaz/Fournisseurs.js";
+import { Inventaire } from "./gaz/Inventaire.js";
+import { Receptions } from "./gaz/Receptions.js";
 import { StockGaz } from "./gaz/StockGaz.js";
 import { useI18n } from "./i18n/index.js";
 import { cheminVolet, voletsPour } from "./nav/volets.js";
@@ -77,6 +79,22 @@ export function App() {
               element={
                 <Garde volet="gaz">
                   <Fournisseurs />
+                </Garde>
+              }
+            />
+            <Route
+              path="gaz/receptions"
+              element={
+                <Garde volet="gaz">
+                  <Receptions />
+                </Garde>
+              }
+            />
+            <Route
+              path="gaz/inventaire"
+              element={
+                <Garde volet="gaz">
+                  <Inventaire />
                 </Garde>
               }
             />
