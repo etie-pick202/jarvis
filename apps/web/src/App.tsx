@@ -2,6 +2,9 @@ import { lazy, Suspense } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router";
 import { LoginPage } from "./auth/LoginPage.js";
 import { useSession } from "./auth/SessionProvider.js";
+import { Echanges } from "./gaz/Echanges.js";
+import { Fournisseurs } from "./gaz/Fournisseurs.js";
+import { StockGaz } from "./gaz/StockGaz.js";
 import { useI18n } from "./i18n/index.js";
 import { cheminVolet, voletsPour } from "./nav/volets.js";
 import { SyncPage } from "./offline/SyncPage.js";
@@ -50,6 +53,30 @@ export function App() {
                   <Suspense fallback={<Chargement />}>
                     <NouvelleVente />
                   </Suspense>
+                </Garde>
+              }
+            />
+            <Route
+              path="gaz/stock"
+              element={
+                <Garde volet="gaz">
+                  <StockGaz />
+                </Garde>
+              }
+            />
+            <Route
+              path="gaz/echanges"
+              element={
+                <Garde volet="gaz">
+                  <Echanges />
+                </Garde>
+              }
+            />
+            <Route
+              path="gaz/fournisseurs"
+              element={
+                <Garde volet="gaz">
+                  <Fournisseurs />
                 </Garde>
               }
             />

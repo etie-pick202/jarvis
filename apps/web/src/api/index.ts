@@ -3,12 +3,18 @@ import {
   type Article,
   type Badges,
   type Client,
+  type Echange,
+  type Fournisseur,
+  type GazStock,
   type Health,
   type Livraison,
   type LoginInput,
   parseBadges,
   parseCatalogue,
   parseClients,
+  parseEchanges,
+  parseFournisseurs,
+  parseGazStock,
   parseHealth,
   parseLivraisons,
   parseSession,
@@ -29,6 +35,12 @@ export const api = {
   catalogue: (signal?: AbortSignal): Promise<Article[]> =>
     request("/catalogue", { signal, parse: parseCatalogue }),
   clients: (signal?: AbortSignal): Promise<Client[]> => request("/clients", { signal, parse: parseClients }),
+  gazStock: (signal?: AbortSignal): Promise<GazStock[]> =>
+    request("/gaz/stock", { signal, parse: parseGazStock }),
+  echanges: (signal?: AbortSignal): Promise<Echange[]> =>
+    request("/gaz/echanges", { signal, parse: parseEchanges }),
+  fournisseurs: (signal?: AbortSignal): Promise<Fournisseur[]> =>
+    request("/fournisseurs", { signal, parse: parseFournisseurs }),
   livraisons: (signal?: AbortSignal): Promise<Livraison[]> =>
     request("/livraisons/jour", { signal, parse: parseLivraisons }),
 };
