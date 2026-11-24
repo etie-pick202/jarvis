@@ -1,0 +1,10 @@
+# Remplacer chaque @... par le vrai identifiant GitHub (ou @organisation/equipe).
+# Chaque personne doit avoir au moins le droit d'écriture sur le dépôt.
+*                          @CHEF-DE-PROJET
+/apps/                     @CHEF-DE-PROJET
+/packages/shared/          @CHEF-DE-PROJET
+/packages/db/              @DATA
+/infra/                    @DEVOPS
+/.github/                  @DEVOPS
+/apps/api/src/modules/documents/      @AUTOMATISATION
+/apps/api/src/modules/notifications/  @AUTOMATISATION

@@ -1,0 +1,46 @@
+[
+  {
+    "name": "type: feature",
+    "color": "0E8A16"
+  },
+  {
+    "name": "type: bug",
+    "color": "D73A4A"
+  },
+  {
+    "name": "type: chore",
+    "color": "C5DEF5"
+  },
+  {
+    "name": "phase: 0-socle",
+    "color": "FBCA04"
+  },
+  {
+    "name": "phase: 1-quotidien",
+    "color": "FBCA04"
+  },
+  {
+    "name": "phase: 2-extension",
+    "color": "FBCA04"
+  },
+  {
+    "name": "côté: écran",
+    "color": "1D76DB"
+  },
+  {
+    "name": "côté: serveur",
+    "color": "5319E7"
+  },
+  {
+    "name": "côté: infra",
+    "color": "006B75"
+  },
+  {
+    "name": "bloqué",
+    "color": "B60205"
+  },
+  {
+    "name": "good first review",
+    "color": "7057FF"
+  }
+]

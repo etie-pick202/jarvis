@@ -1,0 +1,32 @@
+# Squelette de déploiement (tâches G1-2 à G1-4, DevOps).
+# Désactivé tant que la variable de dépôt DEPLOY_ENABLED n'est pas égale à "true".
+# Ne tourne JAMAIS sur une pull request : seulement sur main (test) et sur un tag vX.Y.Z (production).
+name: Déploiement
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  staging:
+    name: deploy-test
+    if: vars.DEPLOY_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - run: 'echo "TODO DevOps : construire les images, les pousser sur GHCR, se connecter en SSH, migrer, redémarrer, contrôler /health"'
+
+  production:
+    name: deploy-production
+    if: vars.DEPLOY_ENABLED == 'true' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: production # approbation obligatoire (required reviewers)
+    steps:
+      - uses: actions/checkout@v4
+      - run: 'echo "TODO DevOps : sauvegarde avant migration, migration, bascule, contrôle de santé, retour arrière automatique en cas d''échec"'

@@ -1,0 +1,8 @@
+name: Tâche technique
+description: Infrastructure, dette technique, documentation
+labels: ["type: chore"]
+body:
+  - type: textarea
+    id: what
+    attributes: { label: "Quoi et pourquoi" }
+    validations: { required: true }

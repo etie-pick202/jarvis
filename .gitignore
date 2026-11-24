@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.turbo/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+# Jamais de données réelles dans le dépôt (public)
+*.sql
+*.dump
+*.bak
+uploads/
+backups/
