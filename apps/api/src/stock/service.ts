@@ -201,7 +201,9 @@ export async function createReception(deps: Deps, authorId: string, input: Creat
   if (!supplier?.active) throw new AppError(404, "not_found", "Fournisseur introuvable ou désactivé");
 
   return deps.db.transaction(async (tx) => {
-    const keys = [...new Set(input.lines.map((l) => `${l.brandId}:${l.formatId}`))].sort();
+    const keys = [...new Set(input.lines.map((l) => `${l.brandId}:${l.formatId}`))].sort((a, b) =>
+      a.localeCompare(b),
+    );
     for (const k of keys) {
       const [brandId, formatId] = k.split(":") as [string, string];
       await lockStock(tx, brandId, formatId);
