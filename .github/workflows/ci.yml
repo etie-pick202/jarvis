@@ -30,6 +30,33 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
+  no-ai-mentions:
+    name: no-ai-mentions
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Règle n°1 (aucune mention d'IA)
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          PATTERN='claude|anthropic|chatgpt|openai|copilot|gemini|codex|\bgpt\b|\bllm\b|\bIA\b|generated with|co-authored-by:.*\b(ai|llm|gpt)\b'
+          status=0
+          if printf '%s\n%s\n' "$PR_TITLE" "$PR_BODY" | grep -iEq "$PATTERN"; then
+            echo "::error::Mention d'IA dans le titre ou la description de la PR (règle n°1)."
+            status=1
+          fi
+          if git log "$BASE_SHA..$HEAD_SHA" --format='%B' | grep -iEq "$PATTERN"; then
+            echo "::error::Mention d'IA dans un message de commit (règle n°1)."
+            status=1
+          fi
+          exit $status
+
   pr-title:
     name: pr-title
     if: github.event_name == 'pull_request'

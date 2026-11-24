@@ -1,5 +1,11 @@
 # Contribuer à JARVIS
 
+## Règle n°1 : aucune mention d'IA
+
+Dans les commits et les pull requests, il ne doit **jamais** y avoir de mention d'un outil ou d'un modèle d'intelligence artificielle : ni dans le titre, ni dans la description, ni dans les messages de commit, ni dans les signatures ou les lignes `Co-Authored-By`, ni parmi les contributeurs. Les lignes ajoutées automatiquement par un outil (« Generated with… », « Co-Authored-By… ») sont à supprimer avant d'envoyer.
+
+Cette règle est vérifiée par commitlint (au commit) et par la CI (`no-ai-mentions`, sur les pull requests).
+
 ## Branches
 
 - `main` est toujours déployable. Pas de commit direct, pas de force push.

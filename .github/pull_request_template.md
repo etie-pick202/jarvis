@@ -22,4 +22,5 @@ Rôle à utiliser : PDG / gérant / caissier(ère) / livreur
 - [ ] Fonctionne hors ligne (vente, caisse, stock)
 - [ ] Textes en français et en anglais
 - [ ] Aucun secret ni donnée réelle
+- [ ] Aucune mention d'IA (titre, description, commits, Co-Authored-By)
 - [ ] Documentation à jour
