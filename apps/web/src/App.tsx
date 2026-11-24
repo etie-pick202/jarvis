@@ -2,6 +2,8 @@ import { Navigate, Outlet, Route, Routes } from "react-router";
 import { useI18n } from "./i18n/index.js";
 import { LanguageSwitch } from "./i18n/LanguageSwitch.js";
 import { cheminVolet, VOLETS } from "./nav/volets.js";
+import { StatusLight } from "./offline/StatusLight.js";
+import { SyncPage } from "./offline/SyncPage.js";
 import { NotFound, Placeholder } from "./pages/Placeholder.js";
 import { Logo } from "./ui/Logo.js";
 
@@ -21,6 +23,7 @@ function Layout() {
           {t("app.nom")}
         </strong>
         <span style={{ flex: 1 }} />
+        <StatusLight />
         <LanguageSwitch />
       </header>
       <main id="contenu" style={{ padding: 16 }}>
@@ -36,6 +39,7 @@ export function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={premier ? <Navigate to={cheminVolet(premier)} replace /> : <NotFound />} />
+        <Route path="sync" element={<SyncPage />} />
         <Route path=":volet/:rubrique" element={<Placeholder />} />
         <Route path="*" element={<NotFound />} />
       </Route>

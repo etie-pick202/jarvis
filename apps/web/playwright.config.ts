@@ -8,7 +8,12 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
-  use: { baseURL: `http://localhost:${PORT}`, trace: "on-first-retry" },
+  use: {
+    baseURL: `http://localhost:${PORT}`,
+    trace: "on-first-retry",
+    // Local seulement : PW_CHANNEL=msedge utilise le navigateur installé (la CI utilise Chromium).
+    channel: process.env.PW_CHANNEL,
+  },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "android", use: { ...devices["Pixel 7"] } },

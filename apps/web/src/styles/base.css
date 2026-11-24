@@ -187,3 +187,21 @@ a {
   opacity: 0;
   pointer-events: none;
 }
+
+.voyant {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-2);
+  color: var(--nav-texte);
+  font-size: 12px;
+  font-weight: 600;
+}
+.voyant__point {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--en-ligne);
+}
+.voyant__point--hors {
+  background: var(--braise);
+}
