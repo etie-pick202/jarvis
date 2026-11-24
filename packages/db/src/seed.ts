@@ -46,7 +46,7 @@ export async function seed(databaseUrl: string, password: string) {
         brandId: null,
         amount: 6500,
         transportContribution: 300,
-        purchaseCost: 6070,
+        purchaseCost: 6170,
       });
     }
   } finally {

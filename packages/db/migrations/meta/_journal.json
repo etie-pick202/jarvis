@@ -15,6 +15,13 @@
       "when": 1795528653324,
       "tag": "0001_journal_ajout_seul",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795530879264,
+      "tag": "0002_numerotation",
+      "breakpoints": true
     }
   ]
 }
