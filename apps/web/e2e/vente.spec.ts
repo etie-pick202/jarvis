@@ -1,17 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { seConnecter } from "./aide.js";
+import { attendreServiceWorker, seConnecter } from "./aide.js";
 
 test.use({ locale: "fr-FR" });
 
 test("vente de gaz hors ligne : reçu immédiat, envoi à la reconnexion", async ({ page, context }) => {
   await seConnecter(page, "gerant");
   await page.goto("/vente/nouvelle");
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.ready;
-  });
-  await page.reload();
+  await attendreServiceWorker(page);
   await expect(page.getByRole("radio", { name: /OLA/u })).toBeVisible();
-  await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
 
   await context.setOffline(true);
   await expect(page.getByRole("status").first()).toContainText("Hors ligne");

@@ -18,6 +18,7 @@ export function SyncPage() {
           <li key={op.id} className="carte">
             <strong>{op.label}</strong>
             <Chip tone={op.status === "pending" ? "alerte" : "danger"}>{t(`sync.statut.${op.status}`)}</Chip>
+            {op.pieceId && op.status === "pending" && <Chip tone="info">{t("sync.piece")}</Chip>}
             {op.detail && <p>{op.detail}</p>}
             {op.status !== "pending" && (
               <div style={{ display: "flex", gap: 8 }}>

@@ -53,6 +53,33 @@ describe("file d'envoi", () => {
   });
 });
 
+describe("envois simultanés", () => {
+  it("rejoue une passe si le réseau revient pendant un envoi en cours", async () => {
+    await db.outbox.clear();
+    await enqueue(vente);
+    let appels = 0;
+    let liberer: () => void = () => undefined;
+    const bloque = new Promise<void>((ok) => {
+      liberer = ok;
+    });
+    const send: Sender = async () => {
+      appels += 1;
+      if (appels === 1) {
+        await bloque;
+        return { kind: "retry" };
+      }
+      return { kind: "ok" };
+    };
+    const premiere = flush(send);
+    await vi.waitFor(() => expect(appels).toBe(1));
+    await flush(send); // « online » pendant le premier envoi : mémorisé, pas perdu
+    liberer();
+    await premiere;
+    expect(appels).toBe(2);
+    expect(await db.outbox.count()).toBe(0);
+  });
+});
+
 describe("envoi réseau", () => {
   const op = {
     ...vente,

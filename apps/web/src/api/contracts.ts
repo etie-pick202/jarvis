@@ -77,6 +77,14 @@ export interface Fournisseur {
   marques: string[];
 }
 
+export interface ReceptionResume {
+  id: string;
+  date: string;
+  fournisseur: string;
+  pleines: number;
+  vides: number;
+}
+
 export interface LoginInput {
   identifiant: string;
   motDePasse: string;
@@ -229,5 +237,16 @@ export const parseFournisseurs = (data: unknown): Fournisseur[] =>
     Array.isArray(d.marques) &&
     d.marques.every((m) => typeof m === "string")
       ? { id: d.id, nom: d.nom, telephone: d.telephone, marques: d.marques as string[] }
+      : null,
+  );
+
+export const parseReceptions = (data: unknown): ReceptionResume[] =>
+  liste(data, "Réceptions", (d) =>
+    typeof d.id === "string" &&
+    typeof d.date === "string" &&
+    typeof d.fournisseur === "string" &&
+    typeof d.pleines === "number" &&
+    typeof d.vides === "number"
+      ? { id: d.id, date: d.date, fournisseur: d.fournisseur, pleines: d.pleines, vides: d.vides }
       : null,
   );

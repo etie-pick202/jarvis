@@ -16,14 +16,24 @@ export interface Operation {
   attempts: number;
   /** Réponse du serveur en cas de conflit de stock ou de refus. */
   detail?: string;
+  /** Pièce jointe (photo ou PDF) gardée sur l'appareil, envoyée avec l'opération. */
+  pieceId?: string;
+}
+
+export interface Piece {
+  id: string;
+  nom: string;
+  blob: Blob;
 }
 
 export class JarvisDB extends Dexie {
   outbox!: EntityTable<Operation, "id">;
+  pieces!: EntityTable<Piece, "id">;
 
   constructor(name = "jarvis") {
     super(name);
     this.version(1).stores({ outbox: "id, status, createdAt" });
+    this.version(2).stores({ outbox: "id, status, createdAt", pieces: "id" });
   }
 }
 
