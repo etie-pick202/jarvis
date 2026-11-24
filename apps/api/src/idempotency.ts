@@ -7,8 +7,12 @@ import { type AppEnv, AppError } from "./http.js";
 
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-export function requestHash(method: string, path: string, body: string): string {
-  return createHash("sha256").update(`${method} ${path}\n${body}`).digest("hex");
+export function requestHash(method: string, path: string, body: Uint8Array | string): string {
+  return createHash("sha256")
+    .update(`${method} ${path}
+`)
+    .update(body)
+    .digest("hex");
 }
 
 /**
@@ -26,7 +30,7 @@ export const idempotency: MiddlewareHandler<AppEnv> = async (c, next) => {
   const key = parsed.data;
   const { db } = c.get("deps");
   const userId = c.get("user").id;
-  const hash = requestHash(c.req.method, c.req.path, await c.req.raw.clone().text());
+  const hash = requestHash(c.req.method, c.req.path, new Uint8Array(await c.req.raw.clone().arrayBuffer()));
   const { idempotencyKeys: table } = schema;
 
   // Réservation atomique de la clé : un seul exemplaire de la requête s'exécute.
