@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Image du web : fichiers statiques de la PWA servis par Caddy, qui relaie /api et /health vers l'API.
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 RUN corepack enable
 WORKDIR /repo
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml turbo.json tsconfig.base.json ./

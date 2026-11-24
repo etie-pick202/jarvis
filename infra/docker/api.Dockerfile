@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Image de l'API : un bundle unique (dist/server.js) sur Node 22 allégé, utilisateur non root.
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 RUN corepack enable
 WORKDIR /repo
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml turbo.json tsconfig.base.json ./
@@ -15,7 +15,7 @@ COPY packages/shared packages/shared
 COPY packages/db packages/db
 RUN pnpm --filter @jarvis/api build
 
-FROM node:22-alpine
+FROM node:26-alpine
 ENV NODE_ENV=production PORT=3000
 WORKDIR /app
 # L'API est un bundle autonome : npm, npx et corepack ne servent à rien à l'exécution (et portent des failles).
