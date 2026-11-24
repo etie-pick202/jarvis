@@ -7,9 +7,15 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],
-      exclude: ["src/**/*.test.ts", "src/**/*.int.test.ts", "src/server.ts", "src/migrate.ts"],
+      exclude: [
+        "src/**/*.test.ts",
+        "src/**/*.int.test.ts",
+        "src/server.ts",
+        "src/migrate.ts",
+        "src/testing/**",
+      ],
       reporter: ["text-summary", "lcov"],
-      thresholds: { lines: 80, statements: 80, functions: 80, branches: 70 },
+      thresholds: { lines: 90, statements: 90, functions: 90, branches: 75 },
     },
   },
 });

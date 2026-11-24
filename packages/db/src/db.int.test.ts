@@ -1,28 +1,24 @@
 import { eq } from "drizzle-orm";
-import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDb } from "./client.js";
+import { createFreshDatabase } from "./fresh.js";
 import { runMigrations } from "./migrate.js";
 import { brands, cashEntries, sales, stockMoves, users } from "./schema.js";
 import { seed } from "./seed.js";
 
-const url = process.env.DATABASE_URL;
-if (!url) throw new Error("DATABASE_URL est obligatoire pour les tests d'intégration");
-const { db, close } = createDb(url);
-
-async function reset() {
-  const pool = new pg.Pool({ connectionString: url });
-  await pool.query(
-    "DROP SCHEMA public CASCADE; CREATE SCHEMA public; DROP SCHEMA IF EXISTS drizzle CASCADE;",
-  );
-  await pool.end();
-}
+const adminUrl = process.env.DATABASE_URL;
+if (!adminUrl) throw new Error("DATABASE_URL est obligatoire pour les tests d'intégration");
+let url = "";
+let db: ReturnType<typeof createDb>["db"];
+let close: () => Promise<void>;
 
 beforeAll(async () => {
-  await reset();
+  url = await createFreshDatabase(adminUrl, "jarvis_test_db");
+  ({ db, close } = createDb(url));
   await runMigrations(url);
   await seed(url, "mot-de-passe-d-essai");
 });
+
 afterAll(() => close());
 
 describe("migrations et données de départ", () => {

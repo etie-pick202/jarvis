@@ -1,19 +1,12 @@
 import { createDb } from "./client.js";
 import { hashPassword } from "./password.js";
+import { REGISTERS } from "./registers.js";
 import { brands, cashRegisters, formats, gasPrices, userRoles, users } from "./schema.js";
 
 /**
  * Données de départ FICTIVES, pour le développement et les tests uniquement.
  * Aucune donnée réelle COCOSAB. Mot de passe des comptes d'essai : variable SEED_PASSWORD (obligatoire).
  */
-export const REGISTERS = [
-  { id: "sales_cash", label: "Ventes en espèces", active: true },
-  { id: "canal_om", label: "Canal+ OM", active: true },
-  { id: "canal_cash", label: "Canal+ espèces", active: true },
-  { id: "settlement_om_momo", label: "Règlement OM et MoMo", active: true },
-  { id: "transaction_om", label: "Transaction OM", active: false },
-  { id: "transaction_momo", label: "Transaction MoMo", active: false },
-];
 
 export async function seed(databaseUrl: string, password: string) {
   const { db, close } = createDb(databaseUrl);
