@@ -15,6 +15,7 @@ export default defineConfig({
         "src/schema.ts",
         "src/client.ts",
         "src/migrate.ts",
+        "src/fresh.ts",
       ],
       reporter: ["text-summary", "lcov"],
       thresholds: { lines: 80, statements: 80, functions: 80, branches: 70 },

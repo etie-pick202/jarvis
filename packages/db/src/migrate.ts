@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { createDb } from "./client.js";
 
@@ -7,7 +8,8 @@ export const MIGRATIONS_DIR = fileURLToPath(new URL("../migrations", import.meta
 
 /** Applique les migrations en attente. Idempotent : rejouable sans effet. */
 export async function runMigrations(databaseUrl: string, migrationsFolder: string = MIGRATIONS_DIR) {
-  const { db, close } = createDb(databaseUrl);
+  const { pool, close } = createDb(databaseUrl);
+  const db = drizzle(pool);
   try {
     await migrate(db, { migrationsFolder });
   } finally {
