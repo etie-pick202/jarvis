@@ -32,6 +32,57 @@ const LIVRAISONS: Livraison[] = [
   },
 ];
 
+const CATALOGUE = [
+  {
+    id: "ola",
+    nom: "Gaz 12,5 kg OLA",
+    genre: "gaz",
+    marque: "OLA",
+    prix: 6800,
+    stock: 12,
+    valeurEmballage: 15900,
+  },
+  {
+    id: "tradex",
+    nom: "Gaz 12,5 kg TRADEX",
+    genre: "gaz",
+    marque: "TRADEX",
+    prix: 6800,
+    stock: 0,
+    valeurEmballage: 17500,
+  },
+  { id: "bocom", nom: "Gaz 12,5 kg BOCOM", genre: "gaz", marque: "BOCOM", prix: 6800, stock: 5 },
+  {
+    id: "total",
+    nom: "Gaz 12,5 kg TOTAL",
+    genre: "gaz",
+    marque: "TOTAL",
+    prix: 6800,
+    stock: 8,
+    valeurEmballage: 17500,
+  },
+  {
+    id: "stargas",
+    nom: "Gaz 12,5 kg STARGAS",
+    genre: "gaz",
+    marque: "STARGAS",
+    prix: 6800,
+    stock: 3,
+    valeurEmballage: 20000,
+  },
+  { id: "detendeur", nom: "Détendeur", genre: "autre", prix: 4500, stock: 6 },
+  { id: "tuyau", nom: "Tuyau gaz 1,5 m", genre: "autre", prix: 2500, stock: 10 },
+];
+
+const CLIENTS = [
+  { id: "c1", nom: "Ndongo Berthe", telephone: "237600000001" },
+  { id: "c2", nom: "Ndongo Jean" },
+  { id: "c3", nom: "Mbarga Alice" },
+  { id: "c4", nom: "Kamga Paul" },
+  { id: "c5", nom: "Fotso Marc" },
+  { id: "c6", nom: "Biyik Claire" },
+];
+
 const CLE_FAUX = "jarvis.fake-user";
 
 /** L'utilisateur « connecté » survit au rechargement, comme le ferait un cookie de session. */
@@ -65,6 +116,8 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   if (!current) return json({ erreur: "non connecté" }, 401);
   if (path === "/auth/me") return json(current);
   if (path === "/ventes" && init?.method === "POST") return json({ ok: true }, 201);
+  if (path === "/catalogue") return json(CATALOGUE);
+  if (path === "/clients") return json(CLIENTS);
   if (path === "/badges") return json(BADGES);
   if (path === "/livraisons/jour") return json(LIVRAISONS);
   return json({ erreur: "introuvable" }, 404);
@@ -74,6 +127,8 @@ export function installFakeApi(): void {
   const real = window.fetch.bind(window);
   window.fetch = (input, init) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-    return url.startsWith("/api/") ? fakeApi(url.slice(4), init) : real(input, init);
+    if (!url.startsWith("/api/")) return real(input, init);
+    // Comme un vrai réseau : sans connexion, l'appel échoue.
+    return navigator.onLine ? fakeApi(url.slice(4), init) : Promise.reject(new TypeError("hors ligne"));
   };
 }

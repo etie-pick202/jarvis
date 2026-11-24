@@ -1,10 +1,14 @@
 import { request } from "./client.js";
 import {
+  type Article,
   type Badges,
+  type Client,
   type Health,
   type Livraison,
   type LoginInput,
   parseBadges,
+  parseCatalogue,
+  parseClients,
   parseHealth,
   parseLivraisons,
   parseSession,
@@ -22,6 +26,9 @@ export const api = {
   logout: (idempotencyKey: string): Promise<null> =>
     request("/auth/logout", { method: "POST", idempotencyKey, parse: () => null }),
   badges: (signal?: AbortSignal): Promise<Badges> => request("/badges", { signal, parse: parseBadges }),
+  catalogue: (signal?: AbortSignal): Promise<Article[]> =>
+    request("/catalogue", { signal, parse: parseCatalogue }),
+  clients: (signal?: AbortSignal): Promise<Client[]> => request("/clients", { signal, parse: parseClients }),
   livraisons: (signal?: AbortSignal): Promise<Livraison[]> =>
     request("/livraisons/jour", { signal, parse: parseLivraisons }),
 };

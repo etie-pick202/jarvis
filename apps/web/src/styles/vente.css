@@ -1,0 +1,148 @@
+.vente {
+  max-width: 560px;
+}
+.vente__etape {
+  margin: 0;
+  color: var(--texte-doux);
+  font-size: 13px;
+  font-weight: 600;
+}
+.vente__groupe {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.vente__articles {
+  display: grid;
+  gap: var(--espace-2);
+}
+.vente__article {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+  min-height: var(--cible-min);
+  padding: var(--espace-2) var(--espace-3);
+  border: 1.5px solid var(--ligne-champ);
+  border-radius: var(--rayon-m);
+  background: var(--blanc);
+  cursor: pointer;
+}
+.vente__article {
+  flex-wrap: wrap;
+}
+.vente__article span {
+  flex: 1;
+  min-width: 14ch;
+}
+.vente__article:has(input:checked) {
+  background: var(--noir);
+  color: var(--jaune);
+  border-color: var(--noir);
+}
+.vente__article:has(input:focus-visible) {
+  outline: 3px solid var(--noir);
+  box-shadow: 0 0 0 5px var(--jaune);
+}
+.vente__article--rupture {
+  background: var(--puce-fond);
+  color: var(--texte-doux);
+  cursor: not-allowed;
+}
+.vente__article input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--jaune);
+}
+.vente__suggestions {
+  list-style: none;
+  margin: var(--espace-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-2);
+}
+.vente__suggestions .btn {
+  min-height: var(--cible-min);
+  font-size: 13px;
+}
+.vente__echange {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+  background: var(--alerte-fond);
+  border: 1px solid var(--jaune);
+  border-radius: var(--rayon-m);
+  padding: var(--espace-3);
+}
+.vente__bascule {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+  min-height: var(--cible-min);
+  font-weight: 700;
+}
+.vente__bascule input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--noir);
+}
+.vente__quantite {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-4);
+}
+.vente__quantite .btn {
+  min-width: var(--cible-min);
+}
+.vente__quantite output {
+  min-width: 32px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+}
+.vente__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-2);
+}
+.vente__actions .btn {
+  flex: 1;
+}
+.vente__recap {
+  margin: 0;
+  background: var(--creme);
+  border: 1px solid var(--ligne);
+  border-radius: var(--rayon-l);
+  padding: var(--espace-3);
+  display: grid;
+  gap: var(--espace-2);
+}
+.vente__recap div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espace-3);
+}
+.vente__recap dt {
+  color: var(--texte-doux);
+}
+.vente__recap dd {
+  margin: 0;
+  font-weight: 500;
+}
+.vente__total dt,
+.vente__total dd {
+  color: var(--texte);
+  font-weight: 700;
+}
+.recu__lignes {
+  margin: 0;
+  padding-left: var(--espace-5);
+  display: grid;
+  gap: 4px;
+}
+a.btn {
+  text-decoration: none;
+}

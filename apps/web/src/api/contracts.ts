@@ -32,6 +32,26 @@ export interface Livraison {
   etat: "a_livrer" | "parti" | "livre" | "probleme";
 }
 
+export interface Article {
+  id: string;
+  nom: string;
+  genre: "gaz" | "autre";
+  /** Marque, pour le gaz. */
+  marque?: string;
+  /** Prix de retrait au comptoir, en FCFA entiers. */
+  prix: number;
+  /** Bouteilles pleines (gaz) ou unités en stock. */
+  stock: number;
+  /** Valeur d'emballage de la bouteille, si connue (échanges entre marques). */
+  valeurEmballage?: number;
+}
+
+export interface Client {
+  id: string;
+  nom: string;
+  telephone?: string;
+}
+
 export interface LoginInput {
   identifiant: string;
   motDePasse: string;
@@ -101,5 +121,40 @@ export function parseLivraisons(data: unknown): Livraison[] {
       };
     }
     throw new TypeError("Livraison invalide");
+  });
+}
+
+export function parseCatalogue(data: unknown): Article[] {
+  if (!Array.isArray(data)) throw new TypeError("Catalogue invalide");
+  return data.map((d): Article => {
+    if (
+      isRecord(d) &&
+      typeof d.id === "string" &&
+      typeof d.nom === "string" &&
+      (d.genre === "gaz" || d.genre === "autre") &&
+      Number.isInteger(d.prix) &&
+      typeof d.stock === "number"
+    ) {
+      return {
+        id: d.id,
+        nom: d.nom,
+        genre: d.genre,
+        marque: typeof d.marque === "string" ? d.marque : undefined,
+        prix: d.prix as number,
+        stock: d.stock,
+        valeurEmballage: typeof d.valeurEmballage === "number" ? d.valeurEmballage : undefined,
+      };
+    }
+    throw new TypeError("Article invalide");
+  });
+}
+
+export function parseClients(data: unknown): Client[] {
+  if (!Array.isArray(data)) throw new TypeError("Clients invalides");
+  return data.map((d): Client => {
+    if (isRecord(d) && typeof d.id === "string" && typeof d.nom === "string") {
+      return { id: d.id, nom: d.nom, telephone: typeof d.telephone === "string" ? d.telephone : undefined };
+    }
+    throw new TypeError("Client invalide");
   });
 }
