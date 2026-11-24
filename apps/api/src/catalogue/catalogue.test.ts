@@ -138,6 +138,26 @@ describe("catalogue (API)", () => {
     );
   });
 
+  it("liste et modifie les formats (plafond et activation), PDG seul", async () => {
+    const list = await t.app.request("/api/v1/catalogue/formats", authGet(gerant));
+    expect(((await list.json()) as unknown[]).length).toBe(1);
+    const patch = (body: unknown, token: string) =>
+      t.app.request(`/api/v1/catalogue/formats/${formatId}`, { ...jsonPost(body, token), method: "PATCH" });
+    expect((await patch({ priceCeiling: 6800 }, gerant)).status).toBe(403);
+    const ok = await patch({ priceCeiling: 6800, label: "12,5 kg (bouteille)" }, pdg);
+    expect(((await ok.json()) as { priceCeiling: number }).priceCeiling).toBe(6800);
+    const dup = await t.app.request(
+      "/api/v1/catalogue/formats",
+      jsonPost({ label: "12,5 kg (bouteille)", weightGrams: 12500 }, pdg),
+    );
+    expect(dup.status).toBe(409);
+    const unknown = await t.app.request("/api/v1/catalogue/formats/3f1b1c1e-8a53-4c1e-9b0e-5d1a2b3c4d5e", {
+      ...jsonPost({ active: false }, pdg),
+      method: "PATCH",
+    });
+    expect(unknown.status).toBe(404);
+  });
+
   it("refuse un montant décimal et un article inconnu", async () => {
     const bad = await t.app.request(
       "/api/v1/catalogue/articles",
