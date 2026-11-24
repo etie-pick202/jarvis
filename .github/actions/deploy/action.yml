@@ -1,0 +1,60 @@
+name: Déployer sur le serveur
+description: Copie les fichiers de déploiement, lance deploy.sh en SSH puis contrôle /health depuis l'extérieur.
+
+inputs:
+  tag:
+    description: Tag des images à déployer (sha-<commit> ou X.Y.Z)
+    required: true
+  ssh-host:
+    required: true
+  ssh-user:
+    required: true
+  ssh-key:
+    required: true
+  ssh-known-hosts:
+    description: Sortie de ssh-keyscan du serveur (évite de faire confiance au premier contact)
+    required: true
+  deploy-path:
+    description: Dossier du serveur contenant docker-compose.prod.yml et .env
+    required: true
+  base-url:
+    description: URL publique de l'environnement (ex. https://jarvis.exemple.com)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Préparer SSH
+      shell: bash
+      env:
+        SSH_KEY: ${{ inputs.ssh-key }}
+        SSH_KNOWN_HOSTS: ${{ inputs.ssh-known-hosts }}
+      run: |
+        install -d -m 700 ~/.ssh
+        printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+    - name: Copier les fichiers de déploiement
+      shell: bash
+      env:
+        TARGET: ${{ inputs.ssh-user }}@${{ inputs.ssh-host }}
+        DEPLOY_PATH: ${{ inputs.deploy-path }}
+      run: |
+        scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+          docker-compose.prod.yml infra/scripts/deploy.sh infra/scripts/backup.sh \
+          "$TARGET:$DEPLOY_PATH/"
+    - name: Déployer
+      shell: bash
+      env:
+        TARGET: ${{ inputs.ssh-user }}@${{ inputs.ssh-host }}
+        DEPLOY_PATH: ${{ inputs.deploy-path }}
+        TAG: ${{ inputs.tag }}
+        OWNER: ${{ github.repository_owner }}
+      run: |
+        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "$TARGET" \
+          "cd '$DEPLOY_PATH' && chmod +x deploy.sh backup.sh && TAG='$TAG' REGISTRY_OWNER='$OWNER' ./deploy.sh"
+    - name: Contrôle de santé depuis l'extérieur
+      shell: bash
+      env:
+        BASE_URL: ${{ inputs.base-url }}
+      run: curl --fail --retry 12 --retry-delay 5 --retry-connrefused "$BASE_URL/health"

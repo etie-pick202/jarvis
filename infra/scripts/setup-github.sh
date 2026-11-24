@@ -47,10 +47,10 @@ echo "   Settings > Environments > production (ou voir docs/GITHUB-SETUP.md)."
 gh api -X PUT "repos/$REPO/environments/production" >/dev/null
 
 echo "→ Étiquettes"
-python3 - "$REPO" <<'PY'
+PYTHONUTF8=1 python3 - "$REPO" <<'PY'
 import json, subprocess, sys
 repo = sys.argv[1]
-for l in json.load(open(".github/labels.json")):
+for l in json.load(open(".github/labels.json", encoding="utf-8")):
     subprocess.run(["gh","label","create",l["name"],"--color",l["color"],"--repo",repo,"--force"],check=False)
 PY
 

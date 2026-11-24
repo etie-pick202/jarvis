@@ -39,7 +39,7 @@ Settings > Environments > production : **Required reviewers** = chef de projet +
 ## 4. Variables et secrets
 
 Variable de dépôt `DEPLOY_ENABLED=false` (passer à `true` quand le DevOps a fini G1-4).
-Secrets (par environnement) : `SSH_HOST`, `SSH_USER`, `SSH_KEY`, `DATABASE_URL`, `SESSION_SECRET`. Jamais dans le code.
+Secrets et variables par environnement, SonarCloud et déploiement : voir [docs/CI-CD.md](CI-CD.md). Jamais de secret dans le code.
 
 ## 5. Vérifier que tout est bien actif
 

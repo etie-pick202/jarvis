@@ -1,6 +1,7 @@
-# Squelette de déploiement (tâches G1-2 à G1-4, DevOps).
-# Désactivé tant que la variable de dépôt DEPLOY_ENABLED n'est pas égale à "true".
-# Ne tourne JAMAIS sur une pull request : seulement sur main (test) et sur un tag vX.Y.Z (production).
+# Déploiement par SSH sur le serveur (Docker Compose + Caddy). Désactivé tant que la variable de dépôt
+# DEPLOY_ENABLED n'est pas égale à "true". Ne tourne JAMAIS sur une pull request : seulement sur main
+# (test) et sur un tag vX.Y.Z (production, approbation obligatoire par l'environnement).
+# Prérequis serveur et secrets : voir docs/CI-CD.md.
 name: Déploiement
 
 on:
@@ -10,7 +11,10 @@ on:
 
 permissions:
   contents: read
-  packages: write
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   staging:
@@ -19,8 +23,31 @@ jobs:
     runs-on: ubuntu-latest
     environment: staging
     steps:
-      - uses: actions/checkout@v4
-      - run: 'echo "TODO DevOps : construire les images, les pousser sur GHCR, se connecter en SSH, migrer, redémarrer, contrôler /health"'
+      - uses: actions/checkout@v7
+      - name: Attendre la fin de la CI sur ce commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for _ in $(seq 1 60); do
+            state=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs" \
+              --jq '[.check_runs[] | select(.name=="verify" or .name=="docker-build")] | map(.conclusion) | join(",")')
+            echo "verify,docker-build : $state"
+            case "$state" in
+              *failure*|*cancelled*) echo "::error::CI en échec, déploiement annulé."; exit 1 ;;
+              success,success) exit 0 ;;
+            esac
+            sleep 20
+          done
+          echo "::error::CI non terminée à temps."; exit 1
+      - uses: ./.github/actions/deploy
+        with:
+          tag: sha-${{ github.sha }}
+          ssh-host: ${{ secrets.SSH_HOST }}
+          ssh-user: ${{ secrets.SSH_USER }}
+          ssh-key: ${{ secrets.SSH_KEY }}
+          ssh-known-hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          deploy-path: ${{ vars.DEPLOY_PATH }}
+          base-url: ${{ vars.BASE_URL }}
 
   production:
     name: deploy-production
@@ -28,5 +55,13 @@ jobs:
     runs-on: ubuntu-latest
     environment: production # approbation obligatoire (required reviewers)
     steps:
-      - uses: actions/checkout@v4
-      - run: 'echo "TODO DevOps : sauvegarde avant migration, migration, bascule, contrôle de santé, retour arrière automatique en cas d''échec"'
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/deploy
+        with:
+          tag: ${{ github.ref_name }}
+          ssh-host: ${{ secrets.SSH_HOST }}
+          ssh-user: ${{ secrets.SSH_USER }}
+          ssh-key: ${{ secrets.SSH_KEY }}
+          ssh-known-hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          deploy-path: ${{ vars.DEPLOY_PATH }}
+          base-url: ${{ vars.BASE_URL }}

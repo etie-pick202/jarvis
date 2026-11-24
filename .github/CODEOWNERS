@@ -1,10 +1,8 @@
-# Remplacer chaque @... par le vrai identifiant GitHub (ou @organisation/equipe).
-# Chaque personne doit avoir au moins le droit d'écriture sur le dépôt.
-*                          @CHEF-DE-PROJET
-/apps/                     @CHEF-DE-PROJET
-/packages/shared/          @CHEF-DE-PROJET
-/packages/db/              @DATA
-/infra/                    @DEVOPS
-/.github/                  @DEVOPS
-/apps/api/src/modules/documents/      @AUTOMATISATION
-/apps/api/src/modules/notifications/  @AUTOMATISATION
+# Tant que le propriétaire est seul, il relit tout. Remplacer par les équipes (@organisation/equipe)
+# quand le dépôt passera dans une organisation (voir docs/GITHUB-SETUP.md).
+*                          @etie-pick202
+/apps/                     @etie-pick202
+/packages/shared/          @etie-pick202
+/packages/db/              @etie-pick202
+/infra/                    @etie-pick202
+/.github/                  @etie-pick202
