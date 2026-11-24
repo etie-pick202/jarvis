@@ -91,7 +91,7 @@ describe("App", () => {
   it("change de langue depuis l'écran et garde le choix", async () => {
     renderAt("/vente/nouvelle", "gerant");
     await userEvent.click(await screen.findByRole("radio", { name: "EN" }));
-    expect(await screen.findByRole("heading", { level: 2, name: "New sale" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "New sale" })).toBeTruthy();
     expect(localStorage.getItem("jarvis.lang")).toBe("en");
   });
 

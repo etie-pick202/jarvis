@@ -3,6 +3,7 @@ import "@fontsource-variable/space-grotesk";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/shell.css";
+import "./styles/vente.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
