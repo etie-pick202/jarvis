@@ -15,12 +15,20 @@ export interface NewOperation {
   label: string;
 }
 
+let dernierHorodatage = 0;
+
+/** Horodatage strictement croissant : deux opérations saisies dans la même milliseconde gardent leur ordre. */
+function horodatage(): number {
+  dernierHorodatage = Math.max(Date.now(), dernierHorodatage + 1);
+  return dernierHorodatage;
+}
+
 export async function enqueue(input: NewOperation): Promise<Operation> {
   const op: Operation = {
     ...input,
     id: crypto.randomUUID(),
     idempotencyKey: newIdempotencyKey(),
-    createdAt: Date.now(),
+    createdAt: horodatage(),
     status: "pending",
     attempts: 0,
   };
