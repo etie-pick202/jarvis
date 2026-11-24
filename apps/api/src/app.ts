@@ -3,7 +3,9 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { authRoutes } from "./auth/routes.js";
 import { catalogueRoutes } from "./catalogue/routes.js";
+import { customerRoutes } from "./customers/routes.js";
 import { type AppEnv, type Deps, errorResponse, withDeps } from "./http.js";
+import { salesRoutes } from "./sales/routes.js";
 
 const quoteQuery = z.object({
   bottles: z.coerce.number().int().min(1),
@@ -29,6 +31,8 @@ export function createApp(deps: Deps) {
   api.use("*", withDeps(deps));
   api.route("/auth", authRoutes);
   api.route("/catalogue", catalogueRoutes);
+  api.route("/customers", customerRoutes);
+  api.route("/sales", salesRoutes);
 
   const root = new Hono<AppEnv>();
   root.route("/", app);
