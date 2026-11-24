@@ -1,0 +1,14 @@
+# Base de développement uniquement. Lancer : docker compose -f docker-compose.dev.yml up -d
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: jarvis
+      POSTGRES_PASSWORD: jarvis
+      POSTGRES_DB: jarvis
+    ports:
+      - "5432:5432"
+    volumes:
+      - dev-db:/var/lib/postgresql/data
+volumes:
+  dev-db:
