@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   boolean,
+  customType,
   index,
   integer,
   jsonb,
@@ -17,6 +18,12 @@ import {
 // (sales, sale_lines, cash_entries, stock_moves, audit_log) sont en AJOUT SEUL : des
 // déclencheurs SQL (migration 0001) interdisent UPDATE et DELETE. Une correction ajoute
 // une écriture inverse (colonne reversal_of) avec justificatif.
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() {
+    return "bytea";
+  },
+});
 
 const id = () => uuid("id").primaryKey().defaultRandom();
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
@@ -366,3 +373,15 @@ export const idempotencyKeys = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.key] })],
 );
+
+/** Pièces justificatives (photo ou PDF compressés) : stockées en base pour être sauvegardées avec elle. */
+export const receiptFiles = pgTable("receipt_files", {
+  id: id(),
+  contentType: text("content_type").notNull(),
+  size: integer("size").notNull(),
+  data: bytea("data").notNull(),
+  uploadedBy: uuid("uploaded_by")
+    .notNull()
+    .references(() => users.id),
+  createdAt: createdAt(),
+});
