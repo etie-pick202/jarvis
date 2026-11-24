@@ -12,16 +12,21 @@
     "test:integration": "vitest run --config vitest.integration.config.ts --passWithNoTests"
   },
   "dependencies": {
-    "hono": "^4.6.0",
     "@hono/node-server": "^1.13.0",
-    "zod": "^4.6.6",
-    "@jarvis/shared": "workspace:*"
+    "@jarvis/db": "workspace:*",
+    "@jarvis/shared": "workspace:*",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.6.0",
+    "zod": "^4.6.6"
   },
   "devDependencies": {
-    "tsx": "^4.19.0",
-    "tsup": "^8.3.0",
-    "vitest": "^4.1.0",
+    "@electric-sql/pglite": "^0.6.0",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0",
+    "pg": "^8.13.0",
     "@vitest/coverage-v8": "^4.1.0",
-    "@types/node": "^22.0.0"
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.0",
+    "vitest": "^4.1.0"
   }
 }
