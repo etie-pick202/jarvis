@@ -5,20 +5,23 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsup src/server.ts --format esm --target node22 --clean",
+    "build": "tsup",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.ts --passWithNoTests"
   },
   "dependencies": {
     "hono": "^4.6.0",
     "@hono/node-server": "^1.13.0",
-    "zod": "^3.23.0",
+    "zod": "^4.6.6",
     "@jarvis/shared": "workspace:*"
   },
   "devDependencies": {
     "tsx": "^4.19.0",
     "tsup": "^8.3.0",
-    "vitest": "^2.0.0",
+    "vitest": "^4.1.0",
+    "@vitest/coverage-v8": "^4.1.0",
     "@types/node": "^22.0.0"
   }
 }

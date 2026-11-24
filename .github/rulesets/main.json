@@ -45,13 +45,34 @@
             "context": "verify"
           },
           {
+            "context": "integration"
+          },
+          {
+            "context": "e2e"
+          },
+          {
             "context": "pr-title"
+          },
+          {
+            "context": "no-ai-mentions"
+          },
+          {
+            "context": "audit-dependances"
+          },
+          {
+            "context": "dependency-review"
+          },
+          {
+            "context": "trivy-fichiers"
           },
           {
             "context": "gitleaks"
           },
           {
             "context": "codeql"
+          },
+          {
+            "context": "docker-build"
           }
         ]
       }

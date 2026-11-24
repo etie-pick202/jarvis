@@ -1,0 +1,41 @@
+# Production et test : lancé sur le serveur par infra/scripts/deploy.sh (variables TAG, REGISTRY_OWNER, DOMAIN).
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-jarvis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?mot de passe de la base requis}
+      POSTGRES_DB: ${POSTGRES_DB:-jarvis}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jarvis}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: ghcr.io/${REGISTRY_OWNER:?}/jarvis-api:${TAG:?}
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: ghcr.io/${REGISTRY_OWNER:?}/jarvis-web:${TAG:?}
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:-:80}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+    depends_on:
+      - api
+
+volumes:
+  db-data:
+  caddy-data:

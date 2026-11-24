@@ -1,0 +1,5 @@
+# Exceptions Trivy, à relire à chaque mise à jour de l'image caddy (Dependabot, chaque lundi).
+# CVE-2026-78661 : golang.org/x/net/html (déni de service à l'analyse de HTML) dans le binaire caddy officiel.
+# Caddy ne sert ici que des fichiers statiques et relaie vers l'API : il n'analyse pas de HTML reçu.
+# Retirer cette ligne dès que l'image caddy:2-alpine est corrigée.
+CVE-2026-78661

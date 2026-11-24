@@ -13,3 +13,7 @@ coverage/
 *.bak
 uploads/
 backups/
+coverage/
+playwright-report/
+test-results/
+.lighthouseci/
