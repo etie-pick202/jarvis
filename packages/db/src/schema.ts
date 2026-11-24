@@ -152,6 +152,8 @@ export const sales = pgTable(
       .references(() => users.id),
     reversalOf: uuid("reversal_of").references((): AnyPgColumn => sales.id),
     justification: text("justification"),
+    /** Instant réel de la vente quand elle a été saisie hors ligne puis synchronisée. */
+    occurredAt: timestamp("occurred_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [
