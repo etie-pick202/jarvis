@@ -111,6 +111,25 @@ const RECEPTIONS = [
   { id: "r2", date: "2026-11-12T14:05:00Z", fournisseur: "Gaz du Mfoundi", pleines: 18, vides: 16 },
 ];
 
+const CAISSES = {
+  seuilJustification: 500,
+  caisses: [
+    { id: "ventes", nom: "Ventes en espèces", solde: 215300, fond: 180000, actif: true, especes: true },
+    { id: "canal-om", nom: "Canal+ Orange Money", solde: 96500, fond: 80000, actif: true, especes: false },
+    { id: "canal-esp", nom: "Canal+ en espèces", solde: 42000, fond: 30000, actif: true, especes: true },
+    {
+      id: "reglement",
+      nom: "Règlement OM et MoMo",
+      solde: 115712,
+      fond: 100000,
+      actif: true,
+      especes: false,
+    },
+    { id: "trans-om", nom: "Transaction Orange Money", solde: 0, fond: 0, actif: false, especes: false },
+    { id: "trans-momo", nom: "Transaction MoMo", solde: 0, fond: 0, actif: false, especes: false },
+  ],
+};
+
 const CLIENTS = [
   { id: "c1", nom: "Ndongo Berthe", telephone: "237600000001" },
   { id: "c2", nom: "Ndongo Jean" },
@@ -154,6 +173,7 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   if (path === "/auth/me") return json(current);
   if (init?.method && init.method !== "GET") return json({ ok: true }, 201);
   if (path === "/catalogue") return json(CATALOGUE);
+  if (path === "/caisses") return json(CAISSES);
   if (path === "/gaz/receptions") return json(RECEPTIONS);
   if (path === "/gaz/stock") return json(GAZ_STOCK);
   if (path === "/gaz/echanges") return json(ECHANGES);

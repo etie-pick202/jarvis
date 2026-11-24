@@ -2,6 +2,9 @@ import { lazy, Suspense } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router";
 import { LoginPage } from "./auth/LoginPage.js";
 import { useSession } from "./auth/SessionProvider.js";
+import { Cloture } from "./caisse/Cloture.js";
+import { Depenses, Transferts } from "./caisse/Mouvements.js";
+import { Soldes } from "./caisse/Soldes.js";
 import { Echanges } from "./gaz/Echanges.js";
 import { Fournisseurs } from "./gaz/Fournisseurs.js";
 import { Inventaire } from "./gaz/Inventaire.js";
@@ -95,6 +98,38 @@ export function App() {
               element={
                 <Garde volet="gaz">
                   <Inventaire />
+                </Garde>
+              }
+            />
+            <Route
+              path="caisse/soldes"
+              element={
+                <Garde volet="caisse">
+                  <Soldes />
+                </Garde>
+              }
+            />
+            <Route
+              path="caisse/depenses"
+              element={
+                <Garde volet="caisse">
+                  <Depenses />
+                </Garde>
+              }
+            />
+            <Route
+              path="caisse/transferts"
+              element={
+                <Garde volet="caisse">
+                  <Transferts />
+                </Garde>
+              }
+            />
+            <Route
+              path="caisse/cloture"
+              element={
+                <Garde volet="caisse" rubrique="cloture">
+                  <Cloture />
                 </Garde>
               }
             />

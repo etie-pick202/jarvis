@@ -5,6 +5,8 @@ export type Profil = "pdg" | "gerant" | "caissier" | "livreur";
 export interface Rubrique {
   id: string;
   label: MessageKey;
+  /** Profils autorisés ; absent = tous les profils du volet (ex. le caissier ne clôture pas la caisse). */
+  pour?: readonly Profil[];
 }
 
 export interface Volet {
@@ -17,7 +19,8 @@ export interface Volet {
   profils: readonly Profil[];
 }
 
-const r = (id: string, label: MessageKey): Rubrique => ({ id, label });
+const GESTION: readonly Profil[] = ["pdg", "gerant"];
+const r = (id: string, label: MessageKey, pour?: readonly Profil[]): Rubrique => ({ id, label, pour });
 
 export const VOLETS: readonly Volet[] = [
   {
@@ -51,10 +54,10 @@ export const VOLETS: readonly Volet[] = [
     profils: ["pdg", "gerant", "caissier"],
     rubriques: [
       r("stock", "rub.gaz.stock"),
-      r("echanges", "rub.gaz.echanges"),
-      r("receptions", "rub.gaz.receptions"),
-      r("fournisseurs", "rub.gaz.fournisseurs"),
-      r("inventaire", "rub.gaz.inventaire"),
+      r("echanges", "rub.gaz.echanges", GESTION),
+      r("receptions", "rub.gaz.receptions", GESTION),
+      r("fournisseurs", "rub.gaz.fournisseurs", GESTION),
+      r("inventaire", "rub.gaz.inventaire", GESTION),
     ],
   },
   {
@@ -77,7 +80,7 @@ export const VOLETS: readonly Volet[] = [
       r("soldes", "rub.caisse.soldes"),
       r("depenses", "rub.caisse.depenses"),
       r("transferts", "rub.caisse.transferts"),
-      r("cloture", "rub.caisse.cloture"),
+      r("cloture", "rub.caisse.cloture", GESTION),
     ],
   },
   {
@@ -150,4 +153,9 @@ export function voletsPour(profils: readonly Profil[]): Volet[] {
 
 export function cheminVolet(volet: Volet, rubrique?: Rubrique): string {
   return `/${volet.id}/${(rubrique ?? volet.rubriques[0])?.id ?? ""}`;
+}
+
+/** Le caissier lit le stock de gaz mais ne clôture pas la caisse : les rubriques se filtrent par profil. */
+export function rubriquesPour(volet: Volet, profils: readonly Profil[]): Rubrique[] {
+  return volet.rubriques.filter((x) => !x.pour || x.pour.some((p) => profils.includes(p)));
 }

@@ -2,7 +2,15 @@ import { NavLink, Outlet, useLocation } from "react-router";
 import { useSession } from "../auth/SessionProvider.js";
 import { useI18n } from "../i18n/index.js";
 import { LanguageSwitch } from "../i18n/LanguageSwitch.js";
-import { cheminVolet, type Rubrique, VOLETS, type Volet, voletsPour } from "../nav/volets.js";
+import {
+  cheminVolet,
+  type Profil,
+  type Rubrique,
+  rubriquesPour,
+  VOLETS,
+  type Volet,
+  voletsPour,
+} from "../nav/volets.js";
 import { StatusLight } from "../offline/StatusLight.js";
 import { Button } from "../ui/Button.js";
 import { Logo } from "../ui/Logo.js";
@@ -79,7 +87,7 @@ export function Shell() {
             ))}
           </nav>
           <div className="coque__zone">
-            {courant && <Rubriques volet={courant} />}
+            {courant && <Rubriques volet={courant} profils={profilsActifs} />}
             <main id="contenu" className="coque__contenu">
               <Outlet />
             </main>
@@ -103,12 +111,12 @@ export function Shell() {
   );
 }
 
-function Rubriques({ volet }: { volet: Volet }) {
+function Rubriques({ volet, profils }: { volet: Volet; profils: readonly Profil[] }) {
   const { t } = useI18n();
   return (
     <nav className="coque__rubriques" aria-label={`${volet.nom} : ${t("nav.rubriques")}`}>
       <h2 className="coque__titre">{volet.nom}</h2>
-      {volet.rubriques.map((r: Rubrique) => (
+      {rubriquesPour(volet, profils).map((r: Rubrique) => (
         <NavLink key={r.id} to={cheminVolet(volet, r)} className="rubrique">
           {t(r.label)}
         </NavLink>

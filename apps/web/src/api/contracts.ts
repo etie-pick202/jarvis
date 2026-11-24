@@ -85,6 +85,25 @@ export interface ReceptionResume {
   vides: number;
 }
 
+export interface Caisse {
+  id: string;
+  nom: string;
+  /** Solde théorique : calculé après chaque mouvement, jamais saisi à la main. */
+  solde: number;
+  /** Fond de caisse du matin = comptage de clôture de la veille. */
+  fond: number;
+  /** Les caisses en veille (transactions OM et MoMo) s'activent par un réglage. */
+  actif: boolean;
+  /** Part comptée en espèces (mention « dont … en espèces »). */
+  especes: boolean;
+}
+
+export interface Caisses {
+  caisses: Caisse[];
+  /** Écart de clôture au-delà duquel une justification est demandée. */
+  seuilJustification: number;
+}
+
 export interface LoginInput {
   identifiant: string;
   motDePasse: string;
@@ -250,3 +269,29 @@ export const parseReceptions = (data: unknown): ReceptionResume[] =>
       ? { id: d.id, date: d.date, fournisseur: d.fournisseur, pleines: d.pleines, vides: d.vides }
       : null,
   );
+
+export function parseCaisses(data: unknown): Caisses {
+  if (isRecord(data) && typeof data.seuilJustification === "number") {
+    return {
+      seuilJustification: data.seuilJustification,
+      caisses: liste(data.caisses, "Caisses", (d) =>
+        typeof d.id === "string" &&
+        typeof d.nom === "string" &&
+        Number.isInteger(d.solde) &&
+        Number.isInteger(d.fond) &&
+        typeof d.actif === "boolean" &&
+        typeof d.especes === "boolean"
+          ? {
+              id: d.id,
+              nom: d.nom,
+              solde: d.solde as number,
+              fond: d.fond as number,
+              actif: d.actif,
+              especes: d.especes,
+            }
+          : null,
+      ),
+    };
+  }
+  throw new TypeError("Caisses invalides");
+}
