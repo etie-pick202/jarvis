@@ -28,6 +28,8 @@ git push -u origin main
 | Automatisation | Write               | Documents, notifications             |
 | Gérant / PDG   | aucun accès au code | Ils utilisent l'application          |
 
+Tant que le propriétaire est seul sur le dépôt, le ruleset `protection-main` laisse le rôle **Admin** contourner les règles, uniquement au moment de fusionner une pull request (`bypass_mode: pull_request`, pas de push direct sur `main`). Sur un dépôt personnel, seul le propriétaire a ce rôle. À retirer de `.github/rulesets/main.json` dès que l'équipe peut relire.
+
 Créer une équipe par métier (`@cocosab/chefs`, `@cocosab/devops`, `@cocosab/data`, `@cocosab/auto`) puis remplacer les `@...` du fichier `.github/CODEOWNERS`.
 
 ## 3. Environnement `production` (manuel)
