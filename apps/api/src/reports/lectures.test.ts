@@ -14,21 +14,13 @@ describe("lectures complémentaires (API)", () => {
   const post = (path: string, body: unknown, token = gerant) =>
     t.app.request(`/api/v1${path}`, jsonPost(body, token, { "Idempotency-Key": `cle-lecture-${++n}` }));
   const get = (path: string, token = gerant) => t.app.request(`/api/v1${path}`, authGet(token));
-  const sell = (brandId: string, returned?: string) =>
+  const sell = (brandId: string, returnedBrandId?: string) =>
     post(
       "/sales",
       {
         customerName: "Awa",
         paymentMethod: "cash",
-        lines: [
-          {
-            kind: "gas",
-            brandId,
-            formatId: g.format.id,
-            quantity: 1,
-            ...(returned ? { returnedBrandId: returned } : {}),
-          },
-        ],
+        lines: [{ kind: "gas", brandId, formatId: g.format.id, quantity: 1, returnedBrandId }],
       },
       caissier,
     );
@@ -96,14 +88,14 @@ describe("lectures complémentaires (API)", () => {
     const exchanges = (await (await get("/sales?type=exchange")).json()) as {
       lines: { returnedBrandId: string | null }[];
     }[];
-    expect(all.length).toBe(3);
+    expect(all).toHaveLength(3);
     expect(exchanges).toHaveLength(1);
     expect(exchanges[0]?.lines[0]?.returnedBrandId).toBe(g.boreal.id);
     const today = (await (await get("/sales?date=2026-11-25")).json()) as unknown[];
     const yesterday = (await (await get("/sales?date=2026-11-24")).json()) as unknown[];
     expect(today).toHaveLength(2);
     expect(yesterday).toHaveLength(1);
-    expect(((await (await get("/sales?limit=1")).json()) as unknown[]).length).toBe(1);
+    expect((await (await get("/sales?limit=1")).json()) as unknown[]).toHaveLength(1);
     expect((await get("/sales?type=autre")).status).toBe(422);
   });
 
