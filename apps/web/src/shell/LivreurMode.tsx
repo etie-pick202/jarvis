@@ -3,6 +3,7 @@ import { api, type Livraison } from "../api/index.js";
 import { useI18n } from "../i18n/index.js";
 import { Button } from "../ui/Button.js";
 import { Chip, type Tone } from "../ui/Chip.js";
+import { EtatVide } from "../visuels/Illustration.js";
 
 const TONES: Record<Livraison["etat"], Tone> = {
   a_livrer: "alerte",
@@ -30,7 +31,7 @@ export function LivreurMode({ source = api.livraisons }: { source?: () => Promis
   return (
     <section aria-labelledby="titre-livreur" className="livreur">
       <h1 id="titre-livreur">{t("mode.titre")}</h1>
-      {liste.length === 0 && <p>{t("mode.vide")}</p>}
+      {liste.length === 0 && <EtatVide genre="vide" titre={t("mode.vide")} />}
       {liste.map((l) => (
         <article key={l.id} className="carte">
           <div className="livreur__ligne">

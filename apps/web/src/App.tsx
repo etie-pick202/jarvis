@@ -2,24 +2,32 @@ import { lazy, Suspense } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router";
 import { LoginPage } from "./auth/LoginPage.js";
 import { useSession } from "./auth/SessionProvider.js";
-import { Cloture } from "./caisse/Cloture.js";
-import { Depenses, Transferts } from "./caisse/Mouvements.js";
-import { Soldes } from "./caisse/Soldes.js";
-import { Echanges } from "./gaz/Echanges.js";
-import { Fournisseurs } from "./gaz/Fournisseurs.js";
-import { Inventaire } from "./gaz/Inventaire.js";
-import { Receptions } from "./gaz/Receptions.js";
-import { StockGaz } from "./gaz/StockGaz.js";
 import { useI18n } from "./i18n/index.js";
 import { cheminVolet, voletsPour } from "./nav/volets.js";
 import { SyncPage } from "./offline/SyncPage.js";
 import { ErrorBoundary, NotFound } from "./pages/Errors.js";
 import { Garde } from "./pages/Garde.js";
 import { Placeholder } from "./pages/Placeholder.js";
-import { Alertes, Audit, TableauDeBord, Validations } from "./pilot/Pilot.js";
-import { Exports, RapportTable, SituationGaz } from "./rapport/Rapports.js";
 import { Plus } from "./shell/Plus.js";
 import { Shell } from "./shell/Shell.js";
+
+// Écrans chargés à la demande : le premier affichage ne télécharge que la coque et la connexion.
+const Cloture = lazy(() => import("./caisse/Cloture.js").then((m) => ({ default: m.Cloture })));
+const Depenses = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Depenses })));
+const Transferts = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Transferts })));
+const Soldes = lazy(() => import("./caisse/Soldes.js").then((m) => ({ default: m.Soldes })));
+const Echanges = lazy(() => import("./gaz/Echanges.js").then((m) => ({ default: m.Echanges })));
+const Fournisseurs = lazy(() => import("./gaz/Fournisseurs.js").then((m) => ({ default: m.Fournisseurs })));
+const Inventaire = lazy(() => import("./gaz/Inventaire.js").then((m) => ({ default: m.Inventaire })));
+const Receptions = lazy(() => import("./gaz/Receptions.js").then((m) => ({ default: m.Receptions })));
+const StockGaz = lazy(() => import("./gaz/StockGaz.js").then((m) => ({ default: m.StockGaz })));
+const Alertes = lazy(() => import("./pilot/Pilot.js").then((m) => ({ default: m.Alertes })));
+const Audit = lazy(() => import("./pilot/Pilot.js").then((m) => ({ default: m.Audit })));
+const TableauDeBord = lazy(() => import("./pilot/Pilot.js").then((m) => ({ default: m.TableauDeBord })));
+const Validations = lazy(() => import("./pilot/Pilot.js").then((m) => ({ default: m.Validations })));
+const Exports = lazy(() => import("./rapport/Rapports.js").then((m) => ({ default: m.Exports })));
+const RapportTable = lazy(() => import("./rapport/Rapports.js").then((m) => ({ default: m.RapportTable })));
+const SituationGaz = lazy(() => import("./rapport/Rapports.js").then((m) => ({ default: m.SituationGaz })));
 
 // Chargé à la demande : la bibliothèque de validation de @jarvis/shared n'alourdit pas le premier affichage.
 const NouvelleVente = lazy(() =>

@@ -1,5 +1,6 @@
 import { useI18n } from "../i18n/index.js";
 import { Button } from "../ui/Button.js";
+import { LogoCocosab } from "../visuels/LogoCocosab.js";
 import { recuPdf } from "./pdf.js";
 import { formatFcfa, type Paiement, type Panier, total } from "./regles.js";
 
@@ -55,6 +56,7 @@ export function Recu({ recu, onNouvelle }: { recu: RecuVente; onNouvelle: () => 
 
   return (
     <section className="carte" aria-labelledby="titre-recu">
+      <LogoCocosab />
       <h1 id="titre-recu">{t("vente.recu")}</h1>
       <p role="status">{t("vente.enregistree")}</p>
       <ul className="recu__lignes">

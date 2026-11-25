@@ -1,0 +1,149 @@
+/* Identité : logo JARVIS (gestion) et COCOSAB (client). */
+.marque-jarvis {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.marque-jarvis__nom {
+  font-family: var(--police-titre);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  background: linear-gradient(180deg, #fff6c2 0%, var(--jaune) 55%, var(--braise) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.marque-jarvis--noir .marque-jarvis__nom {
+  background: linear-gradient(180deg, #2b2b2b, #000);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.logo-cocosab {
+  display: inline-block;
+  font-family: var(--police-titre);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1;
+  padding: 8px 14px;
+  border-radius: var(--rayon-s);
+}
+.logo-cocosab--sm {
+  font-size: 15px;
+  padding: 6px 10px;
+}
+.logo-cocosab--lg {
+  font-size: 28px;
+  padding: 10px 18px;
+}
+.logo-cocosab--clair {
+  background: var(--noir);
+  color: var(--jaune);
+}
+.logo-cocosab--sombre {
+  background: var(--jaune);
+  color: var(--noir);
+}
+.logo-cocosab-img {
+  display: block;
+  height: 40px;
+  width: auto;
+}
+.logo-cocosab-img--sm {
+  height: 28px;
+}
+.logo-cocosab-img--lg {
+  height: 56px;
+}
+.connexion__marque {
+  background: radial-gradient(ellipse at 50% 35%, #2c2410, #0b0b0b 70%);
+  gap: var(--espace-3);
+  padding: var(--espace-5) var(--espace-4);
+}
+.connexion__nom {
+  font-size: 40px;
+  margin: 0;
+}
+.connexion__marque p {
+  color: #cfc9a8;
+  font-weight: 500;
+}
+.connexion__carte .segments {
+  align-self: center;
+}
+
+/* Pastilles de marques et formats de bouteille. */
+.marque-gaz {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: var(--rayon-pastille);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.marque-gaz--compacte {
+  min-height: 24px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+.marque-gaz--officiel {
+  background: var(--blanc);
+  color: var(--texte);
+  border: 1px solid var(--ligne);
+}
+.marque-gaz--officiel img {
+  object-fit: contain;
+}
+.format-bouteille {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--texte-doux);
+}
+.marques-liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.vente__nom {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.vente__article:has(input:checked) .format-bouteille {
+  color: var(--jaune);
+}
+
+/* États vides et erreurs. */
+.etat-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espace-3);
+  padding: var(--espace-5) var(--espace-4);
+  text-align: center;
+}
+.etat-vide__titre {
+  font-size: 20px;
+}
+.etat-vide__texte {
+  margin: 0;
+  max-width: 44ch;
+  color: var(--texte-doux);
+}
+.illustration {
+  max-width: 100%;
+  height: auto;
+}
+.rubrique svg {
+  margin-right: 6px;
+  flex: none;
+}
