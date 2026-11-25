@@ -228,6 +228,8 @@ export const fr = {
   "rapport.mail": "Envoyer par e-mail",
   "rapport.sage":
     "Fichiers CSV pour Excel. L'export vers Sage 100 i7 sera proposé quand le format sera confirmé.",
+  "visuel.jarvis": "JARVIS, l'assistant de gestion de COCOSAB",
+  "visuel.cocosab": "COCOSAB",
   "page.bientot": "Cet écran arrive bientôt.",
   "page.introuvable": "Page introuvable",
   "page.retour": "Retour à l'accueil",
