@@ -22,6 +22,16 @@ describe("calcul d'une ligne de gaz", () => {
   });
 });
 
+describe("valeur d'emballage inconnue", () => {
+  it("échange avec une marque non relevée : même prix, écart non calculé (0) et signalé", () => {
+    const r = computeGasLine(price, 1, 0, 0, 17500, true);
+    expect(r.total).toBe(6800);
+    expect(r.packagingGap).toBe(0);
+    expect(r.packagingGapPending).toBe(true);
+    expect(computeGasLine(price, 1, 0, 20000, 17500).packagingGapPending).toBe(false);
+  });
+});
+
 describe("marge", () => {
   it("marge de 630 par recharge : 430 sur le gaz + 200 sur la contribution transport", () => {
     expect(lineMargin(computeGasLine(price, 1, 0, 1, 1), 1)).toBe(630);

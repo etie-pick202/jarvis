@@ -16,6 +16,15 @@ describe("catalogue", () => {
     expect(createBrandInput.safeParse({ name: " ", packagingValue: 100 }).success).toBe(false);
     expect(createBrandInput.safeParse({ name: "A", packagingValue: 10.5 }).success).toBe(false);
     expect(createBrandInput.safeParse({ name: "A", packagingValue: 15900 }).success).toBe(true);
+    // Valeur inconnue : il faut la déclarer ; sinon la valeur est obligatoire.
+    expect(createBrandInput.safeParse({ name: "A", packagingValueKnown: false }).success).toBe(true);
+    expect(createBrandInput.safeParse({ name: "A" }).success).toBe(false);
+    expect(createBrandInput.safeParse({ name: "A", packagingValueKnown: true }).success).toBe(false);
+    expect(updateBrandInput.safeParse({ packagingValueKnown: false }).success).toBe(true);
+    expect(updateBrandInput.safeParse({ packagingValueKnown: true }).success).toBe(false);
+    expect(updateBrandInput.safeParse({ packagingValueKnown: true, packagingValue: 1000 }).success).toBe(
+      true,
+    );
   });
   it("exige au moins un champ pour modifier", () => {
     expect(updateBrandInput.safeParse({}).success).toBe(false);

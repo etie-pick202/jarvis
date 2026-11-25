@@ -1,7 +1,7 @@
 import { schema } from "@jarvis/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { registerBalance } from "../cash/ledger.js";
-import { stockOf } from "../stock/ledger.js";
+import { appendStockMove, stockOf } from "../stock/ledger.js";
 import { addUser, authGet, createTestApp, jsonPost } from "../testing/db.js";
 import { seedGas } from "../testing/fixtures.js";
 
@@ -216,5 +216,39 @@ describe("ventes au comptoir (API)", () => {
   it("le journal ne peut être modifié, même par accès direct à la base", async () => {
     await expect(t.deps.db.update(schema.sales).set({ total: 1 })).rejects.toThrow();
     await expect(t.deps.db.delete(schema.stockMoves)).rejects.toThrow();
+  });
+
+  it("échange avec une valeur d'emballage inconnue : vente acceptée, écart non calculé, PDG notifié", async () => {
+    const author = (await t.deps.db.query.users.findFirst())?.id ?? "";
+    const [delta] = await t.deps.db
+      .insert(schema.brands)
+      .values({ name: "Delta", packagingValue: 0, packagingValueKnown: false })
+      .returning();
+    if (!delta) throw new Error("marque");
+    await appendStockMove(t.deps.db, {
+      brandId: delta.id,
+      formatId: g.format.id,
+      state: "full",
+      delta: 3,
+      reason: "reception",
+      authorId: author,
+    });
+    const body = { customerName: "Awa", paymentMethod: "cash" };
+    const same = await sale({ ...body, lines: [gas(delta.id, 1, delta.id)] });
+    const sameLine = ((await same.json()) as { lines: Record<string, unknown>[] }).lines[0];
+    expect(sameLine).toMatchObject({ packagingGap: 0, packagingGapPending: false });
+    const res = await sale({ ...body, lines: [gas(delta.id, 1, g.boreal.id)] });
+    expect(res.status).toBe(201);
+    const made = (await res.json()) as { total: number; number: string; lines: Record<string, unknown>[] };
+    expect(made.total).toBe(6800);
+    expect(made.lines[0]).toMatchObject({ packagingGap: 0, packagingGapPending: true });
+    const notes = await t.deps.db.query.notifications.findMany();
+    expect(
+      notes.some((n) => n.message.includes("valeur d'emballage inconnue") && n.message.includes(made.number)),
+    ).toBe(true);
+    const audit = await t.deps.db.query.auditLog.findMany({
+      where: (a, { eq }) => eq(a.action, "sale.packaging_unknown"),
+    });
+    expect(audit).toHaveLength(1);
   });
 });

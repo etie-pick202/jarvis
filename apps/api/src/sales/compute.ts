@@ -11,6 +11,8 @@ export interface GasLineResult {
   purchaseCost: number;
   /** Écart de valeur d'emballage : positif = gain, négatif = perte. */
   packagingGap: number;
+  /** Écart non calculable (valeur d'emballage inconnue dans un échange entre marques) : compté 0, à régulariser. */
+  packagingGapPending: boolean;
   total: number;
 }
 
@@ -25,13 +27,15 @@ export function computeGasLine(
   deliveryFeePerBottle: number,
   givenPackagingValue: number,
   returnedPackagingValue: number,
+  packagingUnknown = false,
 ): GasLineResult {
   return {
     unitPrice: pricing.amount,
     transportContribution: pricing.transportContribution,
     deliveryFee: deliveryFeePerBottle,
     purchaseCost: pricing.purchaseCost,
-    packagingGap: quantity * (returnedPackagingValue - givenPackagingValue),
+    packagingGap: packagingUnknown ? 0 : quantity * (returnedPackagingValue - givenPackagingValue),
+    packagingGapPending: packagingUnknown,
     total: quantity * (pricing.amount + pricing.transportContribution + deliveryFeePerBottle),
   };
 }

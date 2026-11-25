@@ -170,4 +170,22 @@ describe("catalogue (API)", () => {
     });
     expect(unknown.status).toBe(404);
   });
+
+  it("valeur d'emballage inconnue : déclarée, puis relevée", async () => {
+    const send = (path: string, method: string, body: unknown) =>
+      t.app.request(`/api/v1/catalogue/brands${path}`, { ...jsonPost(body, pdg), method });
+    const created = await send("", "POST", { name: "Marque non relevée", packagingValueKnown: false });
+    expect(created.status).toBe(201);
+    const row = (await created.json()) as {
+      id: string;
+      packagingValue: number;
+      packagingValueKnown: boolean;
+    };
+    expect(row).toMatchObject({ packagingValue: 0, packagingValueKnown: false });
+    expect((await send("", "POST", { name: "Sans valeur" })).status).toBe(422);
+    const known = await send(`/${row.id}`, "PATCH", { packagingValue: 15900 });
+    expect(await known.json()).toMatchObject({ packagingValue: 15900, packagingValueKnown: true });
+    const unknownAgain = await send(`/${row.id}`, "PATCH", { packagingValueKnown: false });
+    expect(await unknownAgain.json()).toMatchObject({ packagingValue: 0, packagingValueKnown: false });
+  });
 });
