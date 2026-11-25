@@ -236,6 +236,40 @@ describe("stock gaz (API)", () => {
     expect(notes.some((x) => x.recipientRole === "pdg")).toBe(true);
   });
 
+  it("inventaire : le PDG refuse avec un motif, le stock reste intact et les noms d'auteur sont lus", async () => {
+    const counted = { brandId: g.cobalt.id, formatId: g.format.id, countedFull: 0, countedEmpty: 0 };
+    const created = await post("/inventory/weekly", { lines: [counted], justification: "Recompter" });
+    const [row] = (await created.json()) as { id: string }[];
+    const before = await stockOf(t.deps.db, g.cobalt.id, g.format.id, "full");
+    const reject = (id: string | undefined, body: unknown, token = pdg) =>
+      t.app.request(`/api/v1/inventory/${id}/reject`, jsonPost(body, token));
+    expect((await reject(row?.id, { reason: "Pas conforme" }, gerant)).status).toBe(403);
+    expect((await reject(row?.id, {})).status).toBe(422);
+    expect((await reject(UNKNOWN, { reason: "Pas conforme" })).status).toBe(404);
+    const done = await reject(row?.id, { reason: "Comptage à refaire" });
+    expect(done.status).toBe(200);
+    expect(await stockOf(t.deps.db, g.cobalt.id, g.format.id, "full")).toBe(before);
+    expect((await reject(row?.id, { reason: "Encore refusé" })).status).toBe(409);
+    expect((await t.app.request(`/api/v1/inventory/${row?.id}/validate`, jsonPost({}, pdg))).status).toBe(
+      409,
+    );
+    const list = await t.app.request("/api/v1/inventory", authGet(gerant));
+    const found = ((await list.json()) as Record<string, unknown>[]).find((r) => r.id === row?.id);
+    expect(found).toMatchObject({
+      status: "rejected",
+      rejectionReason: "Comptage à refaire",
+      authorName: expect.any(String),
+      rejectedByName: expect.any(String),
+      validatedByName: null,
+    });
+    const pending = await t.app.request("/api/v1/inventory?pending=1", authGet(gerant));
+    expect(((await pending.json()) as { id: string }[]).some((r) => r.id === row?.id)).toBe(false);
+    const audit = await t.deps.db.query.auditLog.findMany({
+      where: (a, { eq }) => eq(a.action, "inventory.reject"),
+    });
+    expect(audit).toHaveLength(1);
+  });
+
   it("confirmation du soir : sans écart rien à valider, avec écart justification et notification", async () => {
     const exact = {
       brandId: g.cobalt.id,

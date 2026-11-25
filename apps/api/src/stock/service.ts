@@ -7,9 +7,11 @@ import type {
   UpdateSupplierInput,
 } from "@jarvis/shared";
 import { RECEIPT_CONTENT_TYPES, RECEIPT_MAX_BYTES } from "@jarvis/shared";
-import { desc, eq, inArray, isNull, like } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, like } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { auditAndNotifyPdg, recordAudit } from "../audit/service.js";
 import { AppError, type Deps } from "../http.js";
+import { requireJustification } from "../sales/cancel.js";
 import { appendStockMove, lockStock, stockOf } from "./ledger.js";
 import {
   countGap,
@@ -30,6 +32,7 @@ const {
   inventoryCounts,
   receiptFiles,
   settings,
+  users,
 } = schema;
 
 // ---------- Niveaux et alertes ----------
@@ -332,8 +335,65 @@ export async function recordCount(
 }
 
 export async function listCounts(deps: Deps, pendingOnly: boolean) {
-  const where = pendingOnly ? isNull(inventoryCounts.validatedAt) : undefined;
-  return deps.db.select().from(inventoryCounts).where(where).orderBy(desc(inventoryCounts.createdAt));
+  const author = alias(users, "author");
+  const validator = alias(users, "validator");
+  const rejecter = alias(users, "rejecter");
+  const rows = await deps.db
+    .select({
+      count: inventoryCounts,
+      authorName: author.displayName,
+      validatedByName: validator.displayName,
+      rejectedByName: rejecter.displayName,
+    })
+    .from(inventoryCounts)
+    .innerJoin(author, eq(author.id, inventoryCounts.authorId))
+    .leftJoin(validator, eq(validator.id, inventoryCounts.validatedBy))
+    .leftJoin(rejecter, eq(rejecter.id, inventoryCounts.rejectedBy))
+    .where(
+      pendingOnly ? and(isNull(inventoryCounts.validatedAt), isNull(inventoryCounts.rejectedAt)) : undefined,
+    )
+    .orderBy(desc(inventoryCounts.createdAt));
+  return rows.map((r) => ({
+    ...r.count,
+    status: countStatus(r.count),
+    authorName: r.authorName,
+    validatedByName: r.validatedByName,
+    rejectedByName: r.rejectedByName,
+  }));
+}
+
+function countStatus(c: { validatedAt: Date | null; rejectedAt: Date | null }) {
+  if (c.rejectedAt) return "rejected" as const;
+  return c.validatedAt ? ("validated" as const) : ("pending" as const);
+}
+
+/** Le PDG refuse un comptage avec un motif : il est conservé, le stock n'est pas ajusté. */
+export async function rejectCount(
+  deps: Deps,
+  rejecterId: string,
+  countId: string,
+  reason: string | undefined,
+) {
+  const why = requireJustification(reason);
+  const now = deps.now();
+  return deps.db.transaction(async (tx) => {
+    const [count] = await tx.select().from(inventoryCounts).where(eq(inventoryCounts.id, countId));
+    if (!count) throw new AppError(404, "not_found", "Comptage introuvable");
+    if (count.validatedAt) throw new AppError(409, "conflict", "Comptage déjà validé");
+    if (count.rejectedAt) throw new AppError(409, "conflict", "Comptage déjà refusé");
+    await tx
+      .update(inventoryCounts)
+      .set({ rejectedBy: rejecterId, rejectedAt: now, rejectionReason: why })
+      .where(eq(inventoryCounts.id, countId));
+    await recordAudit(tx, {
+      action: "inventory.reject",
+      entity: "inventory",
+      entityId: countId,
+      actorId: rejecterId,
+      details: { reason: why },
+    });
+    return { id: countId, rejectedAt: now.toISOString(), reason: why };
+  });
 }
 
 /** Le PDG valide un comptage : le stock est ajusté à la quantité comptée par des mouvements justifiés. */
@@ -343,6 +403,7 @@ export async function validateCount(deps: Deps, validatorId: string, countId: st
     const [count] = await tx.select().from(inventoryCounts).where(eq(inventoryCounts.id, countId));
     if (!count) throw new AppError(404, "not_found", "Comptage introuvable");
     if (count.validatedAt) throw new AppError(409, "conflict", "Comptage déjà validé");
+    if (count.rejectedAt) throw new AppError(409, "conflict", "Comptage déjà refusé");
     await lockStock(tx, count.brandId, count.formatId);
     const reason = count.kind === "weekly" ? "inventory_adjustment" : "evening_adjustment";
     for (const state of ["full", "empty"] as const) {
