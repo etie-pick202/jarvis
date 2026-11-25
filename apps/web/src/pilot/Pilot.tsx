@@ -8,6 +8,7 @@ import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Table } from "../ui/Table.js";
 import { formatFcfa } from "../vente/regles.js";
+import { EtatVide } from "../visuels/Illustration.js";
 
 const TABLEAU_VIDE = { caJour: 0, nbVentes: 0, livraisonsEnCours: 0, echeances: 0 };
 
@@ -51,7 +52,7 @@ export function Alertes({ page = false }: { page?: boolean }) {
     <section className="carte">
       {page ? <h1>{t("rub.pilot.alertes")}</h1> : <h2>{t("rub.pilot.alertes")}</h2>}
       {data.length === 0 ? (
-        <p>{t("pilot.aucune.alerte")}</p>
+        <EtatVide genre="vide" titre={t("pilot.aucune.alerte")} />
       ) : (
         <ul className="liste">
           {data.map((a) => (
@@ -94,7 +95,7 @@ export function Validations() {
     <section className="carte">
       <h1>{t("rub.pilot.validations")}</h1>
       {!peutDecider && <p>{t("pilot.lecture")}</p>}
-      {data.length === 0 && <p>{t("pilot.aucune.validation")}</p>}
+      {data.length === 0 && <EtatVide genre="vide" titre={t("pilot.aucune.validation")} />}
       <ul className="liste">
         {data.map((v) => (
           <li key={v.id} className="validation">

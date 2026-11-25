@@ -19,13 +19,15 @@ interface SessionState {
   /** Profils effectifs : en mode livreur, seul le profil livreur compte. */
   profilsActifs: Profil[];
   login: (input: LoginInput) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: (expiree?: boolean) => Promise<void>;
   setMode: (mode: Mode) => void;
 }
 
 const SessionContext = createContext<SessionState | null>(null);
 const INACTIVITE_MS = 30 * 60 * 1000;
 const CLE = "jarvis.session";
+/** Posé quand la session se ferme toute seule (inactivité, jeton refusé) : la connexion l'explique. */
+export const CLE_EXPIREE = "jarvis.expiree";
 
 function lire(): Session | null {
   try {
@@ -51,6 +53,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
       })
       .catch((e: unknown) => {
         if (e instanceof ApiError && e.status === 401) {
+          sessionStorage.setItem(CLE_EXPIREE, "1");
           setSession(null);
           oublierJeton();
           localStorage.removeItem(CLE);
@@ -59,7 +62,8 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
       .finally(() => setLoading(false));
   }, [initial]);
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(async (expiree = false) => {
+    if (expiree) sessionStorage.setItem(CLE_EXPIREE, "1");
     setSession(null);
     setModeState("gestion");
     localStorage.removeItem(CLE);
@@ -70,10 +74,10 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
   // Déconnexion automatique après 30 minutes sans action.
   useEffect(() => {
     if (!session) return;
-    let timer = window.setTimeout(() => void logout(), INACTIVITE_MS);
+    let timer = window.setTimeout(() => void logout(true), INACTIVITE_MS);
     const reset = () => {
       window.clearTimeout(timer);
-      timer = window.setTimeout(() => void logout(), INACTIVITE_MS);
+      timer = window.setTimeout(() => void logout(true), INACTIVITE_MS);
     };
     const events = ["pointerdown", "keydown"] as const;
     for (const e of events) window.addEventListener(e, reset);

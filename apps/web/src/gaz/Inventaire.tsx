@@ -8,6 +8,7 @@ import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Field } from "../ui/Field.js";
 import { Table } from "../ui/Table.js";
+import { MarqueGaz } from "../visuels/MarqueGaz.js";
 
 interface Saisie {
   pleines: string;
@@ -88,7 +89,9 @@ export function Comptage({ kind }: { kind: "weekly" | "evening" }) {
       >
         {lignes.map((l) => (
           <tr key={l.cle}>
-            <th scope="row">{l.marque}</th>
+            <th scope="row">
+              <MarqueGaz nom={l.marque} />
+            </th>
             <td>
               <Field
                 label={`${l.marque} : ${t("gaz.pleines")} (${l.pleines})`}
