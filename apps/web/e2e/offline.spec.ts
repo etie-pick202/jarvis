@@ -13,7 +13,7 @@ test("hors ligne : l'appli reste utilisable, l'opération attend puis part à la
 
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole("status")).toContainText("Hors ligne");
+  await expect(page.locator(".voyant")).toContainText("Hors ligne");
 
   // Une vente saisie hors ligne est rangée dans la file locale (écriture directe, l'écran de vente arrive à l'étape 4).
   await page.evaluate(
@@ -39,8 +39,8 @@ test("hors ligne : l'appli reste utilisable, l'opération attend puis part à la
       }),
   );
   await page.reload();
-  await expect(page.getByRole("status")).toContainText("1 en attente");
+  await expect(page.locator(".voyant")).toContainText("1 en attente");
 
   await context.setOffline(false);
-  await expect(page.getByRole("status")).not.toContainText("en attente", { timeout: 15_000 });
+  await expect(page.locator(".voyant")).not.toContainText("en attente", { timeout: 15_000 });
 });

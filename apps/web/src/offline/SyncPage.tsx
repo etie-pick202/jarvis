@@ -1,6 +1,7 @@
 import { useI18n } from "../i18n/index.js";
 import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
+import { EtatVide } from "../visuels/Illustration.js";
 import { discard, flush, retry } from "./outbox.js";
 import { sendOperation } from "./sync.js";
 import { useOutbox } from "./useConnection.js";
@@ -12,7 +13,10 @@ export function SyncPage() {
   return (
     <section className="carte">
       <h1>{t("sync.titre")}</h1>
-      {ops.length === 0 && <p>{t("sync.vide")}</p>}
+      {ops.some((o) => o.status === "conflict") && (
+        <EtatVide genre="conflit" titre={t("sync.conflit.titre")} texte={t("sync.conflit.texte")} />
+      )}
+      {ops.length === 0 && <EtatVide genre="vide" titre={t("sync.vide")} />}
       <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 12 }}>
         {ops.map((op) => (
           <li key={op.id} className="carte">

@@ -6,6 +6,7 @@ import { ecrire } from "../offline/ecrire.js";
 import { Button } from "../ui/Button.js";
 import { Field } from "../ui/Field.js";
 import { Table } from "../ui/Table.js";
+import { MarqueGaz } from "../visuels/MarqueGaz.js";
 
 /** Fiches fournisseurs : nom, téléphone, marques fournies. Une réception est toujours liée à un fournisseur. */
 export function Fournisseurs() {
@@ -54,7 +55,11 @@ export function Fournisseurs() {
             <tr key={f.id}>
               <th scope="row">{f.nom}</th>
               <td>{f.telephone}</td>
-              <td>{f.marques.join(", ")}</td>
+              <td className="marques-liste">
+                {f.marques.map((m) => (
+                  <MarqueGaz key={m} nom={m} compacte />
+                ))}
+              </td>
             </tr>
           ))}
         </Table>
@@ -80,7 +85,7 @@ export function Fournisseurs() {
                     setChoisies((l) => (e.target.checked ? [...l, m.id] : l.filter((x) => x !== m.id)))
                   }
                 />
-                {m.nom}
+                <MarqueGaz nom={m.nom} compacte />
               </label>
             ))}
           </div>

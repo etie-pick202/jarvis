@@ -5,8 +5,9 @@ import { useI18n } from "../i18n/index.js";
 import { LanguageSwitch } from "../i18n/LanguageSwitch.js";
 import { Button } from "../ui/Button.js";
 import { Field } from "../ui/Field.js";
-import { Logo } from "../ui/Logo.js";
-import { useSession } from "./SessionProvider.js";
+import { EtatVide } from "../visuels/Illustration.js";
+import { LogoJarvis } from "../visuels/LogoJarvis.js";
+import { CLE_EXPIREE, useSession } from "./SessionProvider.js";
 
 export function LoginPage() {
   const { t } = useI18n();
@@ -15,6 +16,7 @@ export function LoginPage() {
   const [motDePasse, setMotDePasse] = useState("");
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  const [expiree] = useState(() => sessionStorage.getItem(CLE_EXPIREE) === "1");
 
   if (session) return <Navigate to="/" replace />;
 
@@ -24,6 +26,7 @@ export function LoginPage() {
     setErreur(null);
     try {
       await login({ identifiant, motDePasse });
+      sessionStorage.removeItem(CLE_EXPIREE);
     } catch (e) {
       setErreur(e instanceof ApiError && e.status === 401 ? t("login.refuse") : t("login.reseau"));
     } finally {
@@ -35,10 +38,18 @@ export function LoginPage() {
     <main className="connexion">
       <form className="carte connexion__carte" onSubmit={submit}>
         <div className="connexion__marque">
-          <Logo size={56} />
-          <h1>{t("app.nom")}</h1>
+          <LogoJarvis size={96} animee titre={t("visuel.jarvis")} />
+          <h1 className="marque-jarvis__nom connexion__nom">{t("app.nom")}</h1>
           <p>{t("app.slogan")}</p>
         </div>
+        {expiree && (
+          <EtatVide
+            genre="session"
+            titre={t("session.expiree.titre")}
+            texte={t("session.expiree.texte")}
+            role="status"
+          />
+        )}
         <Field
           label={t("login.identifiant")}
           autoComplete="username"

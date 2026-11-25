@@ -9,7 +9,7 @@ import {
 import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
 import { auditAndNotifyPdg, recordAudit } from "../audit/service.js";
 import { AppError, type Deps } from "../http.js";
-import { appendCashEntry, registerBalance } from "./ledger.js";
+import { appendCashEntry, balanceBefore, registerBalance } from "./ledger.js";
 import {
   businessDate,
   closureGap,
@@ -49,9 +49,17 @@ async function activeRegister(deps: Deps, registerId: string) {
   return reg;
 }
 
+/** Caisses avec leur solde courant et leur fond du matin (solde à l'ouverture du jour d'activité). */
 export async function listRegisters(deps: Deps) {
   const regs = await deps.db.select().from(cashRegisters);
-  return Promise.all(regs.map(async (r) => ({ ...r, balance: await registerBalance(deps.db, r.id) })));
+  const [from] = dayRange(businessDate(deps.now()));
+  return Promise.all(
+    regs.map(async (r) => ({
+      ...r,
+      balance: await registerBalance(deps.db, r.id),
+      opening: await balanceBefore(deps.db, r.id, from),
+    })),
+  );
 }
 
 export async function setRegisterActive(deps: Deps, actorId: string, registerId: string, active: boolean) {

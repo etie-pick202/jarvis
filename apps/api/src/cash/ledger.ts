@@ -1,7 +1,7 @@
 import type { Database } from "@jarvis/db";
 import { schema } from "@jarvis/db";
 import type { CashEntryType, CashRegisterId, Direction, PaymentMethod } from "@jarvis/shared";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, lt, sql } from "drizzle-orm";
 
 const { cashEntries } = schema;
 
@@ -30,6 +30,17 @@ export async function registerBalance(tx: Database, registerId: string): Promise
     .select({ balance: cashEntries.balanceAfter })
     .from(cashEntries)
     .where(eq(cashEntries.registerId, registerId))
+    .orderBy(desc(cashEntries.createdAt), desc(cashEntries.number))
+    .limit(1);
+  return last?.balance ?? 0;
+}
+
+/** Solde d'une caisse juste avant un instant (fond de caisse d'ouverture d'un jour). */
+export async function balanceBefore(tx: Database, registerId: string, at: Date): Promise<number> {
+  const [last] = await tx
+    .select({ balance: cashEntries.balanceAfter })
+    .from(cashEntries)
+    .where(and(eq(cashEntries.registerId, registerId), lt(cashEntries.createdAt, at)))
     .orderBy(desc(cashEntries.createdAt), desc(cashEntries.number))
     .limit(1);
   return last?.balance ?? 0;
