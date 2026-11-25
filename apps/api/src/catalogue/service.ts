@@ -171,6 +171,15 @@ export async function setGasPrice(deps: Deps, actorId: string, input: SetGasPric
   return row;
 }
 
+/** Prix en vigueur d'un format (pour une marque donnée, sinon le prix commun) ; 404 si aucun n'est défini. */
+export async function currentPrice(deps: Deps, formatId: string, brandId: string | null) {
+  first(await deps.db.select().from(formats).where(eq(formats.id, formatId)), "Format introuvable");
+  const rows = await priceRows(deps.db, formatId);
+  const price = resolveGasPrice(rows, formatId, brandId ?? "", deps.now());
+  if (!price) throw new AppError(404, "not_found", "Aucun prix défini pour ce format");
+  return price;
+}
+
 export const gasPriceHistory = (deps: Deps, formatId: string) =>
   deps.db
     .select()

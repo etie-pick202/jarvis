@@ -25,6 +25,10 @@ function csv(
 
 export const reportRoutes = new Hono<AppEnv>()
   .use("*", requireAuth, requirePermission("report.read"))
+  .get("/dashboard", async (c) => {
+    const deps = c.get("deps");
+    return c.json(await svc.dashboard(deps, dayOf(c.req.query("date"), deps.now())));
+  })
   .get("/customers", async (c) => {
     const deps = c.get("deps");
     return c.json(await svc.customerStats(deps, dayOf(c.req.query("date"), deps.now())));
