@@ -1,6 +1,6 @@
 import { schema } from "@jarvis/db";
 import { type BottleState, bottleState, type CashEntry, type SessionUser } from "@jarvis/shared";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { auditAndNotifyPdg } from "../audit/service.js";
 import { appendCheckedEntry, toCashEntry } from "../cash/service.js";
@@ -8,7 +8,7 @@ import { AppError, type Deps } from "../http.js";
 import { requireJustification } from "../sales/cancel.js";
 import { appendStockMove, lockStock, stockOf } from "../stock/ledger.js";
 
-const { cashEntries, auditLog, notifications } = schema;
+const { cashEntries, auditLog, notifications, users } = schema;
 
 export const stockCorrectionInput = z.object({
   brandId: z.uuid(),
@@ -116,8 +116,9 @@ export async function listAudit(deps: Deps, filter: { action?: string; entity?: 
     ...(filter.entity ? [eq(auditLog.entity, filter.entity)] : []),
   ];
   return deps.db
-    .select()
+    .select({ ...getTableColumns(auditLog), actorName: users.displayName })
     .from(auditLog)
+    .leftJoin(users, eq(users.id, auditLog.actorId))
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(desc(auditLog.createdAt))
     .limit(filter.limit);

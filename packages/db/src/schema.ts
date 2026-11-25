@@ -335,6 +335,10 @@ export const inventoryCounts = pgTable("inventory_counts", {
     .references(() => users.id),
   validatedBy: uuid("validated_by").references(() => users.id),
   validatedAt: timestamp("validated_at", { withTimezone: true }),
+  /** Refus du PDG : le comptage reste consigné, le stock n'est pas ajusté. */
+  rejectedBy: uuid("rejected_by").references(() => users.id),
+  rejectedAt: timestamp("rejected_at", { withTimezone: true }),
+  rejectionReason: text("rejection_reason"),
   createdAt: createdAt(),
 });
 

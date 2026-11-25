@@ -93,4 +93,10 @@ export const stockRoutes = new Hono<AppEnv>()
   )
   .post("/inventory/:id/validate", requirePermission("inventory.validate"), async (c) =>
     c.json(await svc.validateCount(c.get("deps"), c.get("user").id, parse(uuid, c.req.param("id")))),
-  );
+  )
+  .post("/inventory/:id/reject", requirePermission("inventory.validate"), async (c) => {
+    const { reason } = await parseJson(c, z.object({ reason: z.string().optional() }));
+    return c.json(
+      await svc.rejectCount(c.get("deps"), c.get("user").id, parse(uuid, c.req.param("id")), reason),
+    );
+  });
