@@ -13,7 +13,7 @@ import {
 } from "../nav/volets.js";
 import { StatusLight } from "../offline/StatusLight.js";
 import { Button } from "../ui/Button.js";
-import { Logo } from "../ui/Logo.js";
+import { MarqueJarvis } from "../visuels/LogoJarvis.js";
 import { Icone } from "./icones.js";
 import { LivreurMode } from "./LivreurMode.js";
 import { badgeDuVolet, useBadges } from "./useBadges.js";
@@ -52,8 +52,7 @@ export function Shell() {
       </a>
       <header className="coque__haut">
         <div className="coque__marque">
-          <Logo size={30} />
-          <strong>{t("app.nom")}</strong>
+          <MarqueJarvis size={30} />
         </div>
         <StatusLight />
         <span className="coque__espace" />
