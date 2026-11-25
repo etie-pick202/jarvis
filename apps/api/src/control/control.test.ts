@@ -239,6 +239,7 @@ describe("contrôle et traçabilité (API)", () => {
     const audit = async (q: string, token = gerant) =>
       (await (await t.app.request(`/api/v1/control/audit${q}`, authGet(token))).json()) as {
         action: string;
+        actorName: string | null;
       }[];
     expect((await t.app.request("/api/v1/control/audit", authGet(caissier))).status).toBe(403);
     const cancels = await audit("?action=sale.cancel");
@@ -246,6 +247,7 @@ describe("contrôle et traçabilité (API)", () => {
     expect(cancels.every((a) => a.action === "sale.cancel")).toBe(true);
     expect((await audit("?action=price.change&entity=gas_price", pdg)).length).toBe(1);
     expect((await audit("?limit=2", pdg)).length).toBe(2);
+    expect(typeof (await audit("?action=price.change", pdg))[0]?.actorName).toBe("string");
 
     const unread = async () =>
       (await (await t.app.request("/api/v1/control/notifications?unread=1", authGet(pdg))).json()) as {
