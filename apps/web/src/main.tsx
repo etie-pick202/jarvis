@@ -1,10 +1,10 @@
-import "@fontsource-variable/inter";
-import "@fontsource-variable/space-grotesk";
+import "./styles/polices.css";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/shell.css";
 import "./styles/vente.css";
 import "./styles/ecrans.css";
+import "./styles/visuels.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";

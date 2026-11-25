@@ -1,12 +1,15 @@
 import { schema } from "@jarvis/db";
-import { and, asc, desc, eq, gte, lt, sql } from "drizzle-orm";
+import { and, asc, eq, gte, isNull, lt, sql } from "drizzle-orm";
+import { balanceBefore } from "../cash/ledger.js";
 import { dayRange } from "../cash/rules.js";
+import { listRegisters } from "../cash/service.js";
 import type { Deps } from "../http.js";
 import { lineMargin } from "../sales/compute.js";
 import { stockLevels } from "../stock/service.js";
 import { CASH_REGISTERS_IN_CASH, gasLabel, marginPercent, signed, signedEntry, toCsv } from "./compute.js";
 
-const { sales, saleLines, brands, formats, articles, cashEntries, cashRegisters, users } = schema;
+const { sales, saleLines, brands, formats, articles, cashEntries, cashRegisters, users, notifications } =
+  schema;
 
 // ---------- Statistiques clients ----------
 export async function customerStats(deps: Deps, day: string) {
@@ -58,15 +61,6 @@ export async function customerStats(deps: Deps, day: string) {
 }
 
 // ---------- Journal de caisse ----------
-async function balanceBefore(deps: Deps, registerId: string, at: Date): Promise<number> {
-  const [last] = await deps.db
-    .select({ balance: cashEntries.balanceAfter })
-    .from(cashEntries)
-    .where(and(eq(cashEntries.registerId, registerId), lt(cashEntries.createdAt, at)))
-    .orderBy(desc(cashEntries.createdAt), desc(cashEntries.number))
-    .limit(1);
-  return last?.balance ?? 0;
-}
 
 export async function cashJournal(deps: Deps, day: string) {
   const [from, to] = dayRange(day);
@@ -82,7 +76,7 @@ export async function cashJournal(deps: Deps, day: string) {
     registers.map(async (r) => ({
       registerId: r.id,
       label: r.label,
-      balance: await balanceBefore(deps, r.id, to),
+      balance: await balanceBefore(deps.db, r.id, to),
     })),
   );
   const total = closing.reduce((n, c) => n + c.balance, 0);
@@ -128,7 +122,7 @@ export async function xReport(deps: Deps, day: string) {
           label: e.label,
           amount: signedEntry(e.direction as "in" | "out", e.amount),
         }));
-      const opening = await balanceBefore(deps, r.id, from);
+      const opening = await balanceBefore(deps.db, r.id, from);
       const net = movements.reduce((n, m) => n + m.amount, 0);
       return { registerId: r.id, label: r.label, opening, movements, net, closing: opening + net };
     }),
@@ -228,4 +222,42 @@ export async function stockCsv(deps: Deps) {
       ["TOTAL", r.totals.full, r.totals.empty, r.totals.total],
     ],
   );
+}
+
+// ---------- Tableau de bord du PDG ----------
+/** Vue agrégée : ventes et marge du jour, soldes des caisses, stock, alertes et notifications non lues. */
+export async function dashboard(deps: Deps, day: string) {
+  const [stats, levels, registers, unread] = await Promise.all([
+    customerStats(deps, day),
+    stockLevels(deps),
+    listRegisters(deps),
+    deps.db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(notifications)
+      .where(and(eq(notifications.recipientRole, "pdg"), isNull(notifications.readAt))),
+  ]);
+  const alerts = levels.filter((l) => l.low);
+  return {
+    day,
+    sales: {
+      count: new Set(stats.lines.map((l) => l.saleNumber)).size,
+      quantity: stats.totals.quantity,
+      total: stats.totals.total,
+      margin: stats.totals.margin,
+      marginPercent: stats.totals.marginPercent,
+    },
+    registers: registers.map((r) => ({
+      id: r.id,
+      label: r.label,
+      active: r.active,
+      opening: r.opening,
+      balance: r.balance,
+    })),
+    stock: {
+      full: levels.reduce((n, l) => n + l.full, 0),
+      empty: levels.reduce((n, l) => n + l.empty, 0),
+      alerts,
+    },
+    unreadNotifications: unread[0]?.n ?? 0,
+  };
 }

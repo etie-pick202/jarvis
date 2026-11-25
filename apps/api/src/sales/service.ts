@@ -1,8 +1,9 @@
 import type { Database } from "@jarvis/db";
 import { schema } from "@jarvis/db";
 import { type CreateSaleInput, type Sale, WALKIN_CUSTOMER } from "@jarvis/shared";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { appendCashEntry, formatNumber, nextSequence, registerForPayment } from "../cash/ledger.js";
+import { dayRange } from "../cash/rules.js";
 import { currentGasPrice } from "../catalogue/service.js";
 import { findOrCreateCustomer } from "../customers/service.js";
 import { AppError, type Deps } from "../http.js";
@@ -246,12 +247,31 @@ export async function createSaleDetailed(
   });
 }
 
-export async function listSales(deps: Deps, limit = 50): Promise<Sale[]> {
+export interface SaleFilter {
+  limit?: number;
+  /** Jour d'activité (AAAA-MM-JJ). */
+  day?: string;
+  /** Seulement les ventes comportant un échange entre marques différentes. */
+  exchangeOnly?: boolean;
+}
+
+export async function listSales(deps: Deps, filter: SaleFilter = {}): Promise<Sale[]> {
+  const conditions = [];
+  if (filter.day) {
+    const [from, to] = dayRange(filter.day);
+    conditions.push(gte(sales.createdAt, from), lt(sales.createdAt, to));
+  }
+  if (filter.exchangeOnly) {
+    conditions.push(
+      sql`exists (select 1 from ${saleLines} where ${saleLines.saleId} = ${sales.id} and ${saleLines.returnedBrandId} is not null and ${saleLines.returnedBrandId} <> ${saleLines.brandId})`,
+    );
+  }
   const rows = await deps.db
     .select()
     .from(sales)
+    .where(and(...conditions))
     .orderBy(desc(sales.createdAt), desc(sales.number))
-    .limit(limit);
+    .limit(filter.limit ?? 50);
   if (rows.length === 0) return [];
   const lines = await deps.db
     .select()

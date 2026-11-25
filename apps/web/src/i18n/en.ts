@@ -229,6 +229,8 @@ export const en: Record<MessageKey, string> = {
   "rapport.csv": "Export as CSV",
   "rapport.mail": "Send by e-mail",
   "rapport.sage": "CSV files for Excel. Export to Sage 100 i7 will be offered once the format is confirmed.",
+  "visuel.jarvis": "JARVIS, the COCOSAB management assistant",
+  "visuel.cocosab": "COCOSAB",
   "page.bientot": "This screen is coming soon.",
   "page.introuvable": "Page not found",
   "page.retour": "Back to home",
