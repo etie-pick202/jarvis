@@ -1,6 +1,7 @@
 import { useI18n } from "../i18n/index.js";
 import { Chip } from "../ui/Chip.js";
 import { formatFcfa } from "../vente/regles.js";
+import { EtatVide } from "../visuels/Illustration.js";
 import { totalEspeces, totalSoldes, useCaisses } from "./donnees.js";
 
 /** Solde théorique de chaque caisse, mis à jour après chaque mouvement. */
@@ -8,6 +9,11 @@ export function Soldes() {
   const { t } = useI18n();
   const { caisses, pret } = useCaisses();
   if (!pret && caisses.length === 0) return <p role="status">{t("page.chargement")}</p>;
+  if (pret && caisses.length === 0) {
+    return (
+      <EtatVide genre="hors-ligne" titre={t("horsligne.titre")} texte={t("horsligne.texte")} role="status" />
+    );
+  }
   return (
     <div className="page">
       <section className="carte">

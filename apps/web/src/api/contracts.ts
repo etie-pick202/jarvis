@@ -36,6 +36,8 @@ export interface Article {
   nom: string;
   genre: "gaz" | "autre";
   marque?: string;
+  /** Libellé du format de bouteille (gaz), ex. « 12,5 kg ». */
+  formatLibelle?: string;
   /** Prix au comptoir en FCFA entiers (gaz : recharge + contribution transport). */
   prix: number;
   /** Bouteilles pleines, ou unités en stock (9999 si l'article n'est pas suivi en stock). */

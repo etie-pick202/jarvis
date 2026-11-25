@@ -72,3 +72,78 @@
 .connexion__carte .segments {
   align-self: center;
 }
+
+/* Pastilles de marques et formats de bouteille. */
+.marque-gaz {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: var(--rayon-pastille);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.marque-gaz--compacte {
+  min-height: 24px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+.marque-gaz--officiel {
+  background: var(--blanc);
+  color: var(--texte);
+  border: 1px solid var(--ligne);
+}
+.marque-gaz--officiel img {
+  object-fit: contain;
+}
+.format-bouteille {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--texte-doux);
+}
+.marques-liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.vente__nom {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.vente__article:has(input:checked) .format-bouteille {
+  color: var(--jaune);
+}
+
+/* États vides et erreurs. */
+.etat-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espace-3);
+  padding: var(--espace-5) var(--espace-4);
+  text-align: center;
+}
+.etat-vide__titre {
+  font-size: 20px;
+}
+.etat-vide__texte {
+  margin: 0;
+  max-width: 44ch;
+  color: var(--texte-doux);
+}
+.illustration {
+  max-width: 100%;
+  height: auto;
+}
+.rubrique svg {
+  margin-right: 6px;
+  flex: none;
+}
