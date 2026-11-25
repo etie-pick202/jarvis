@@ -17,10 +17,7 @@ export function Soldes() {
             <li key={c.id} className={`caisses__carte${c.actif ? "" : " caisses__carte--veille"}`}>
               <h2>{c.nom}</h2>
               {c.actif ? (
-                <>
-                  <p className="caisses__solde">{formatFcfa(c.solde)}</p>
-                  <p className="caisses__fond">{`${t("caisse.fond")} : ${formatFcfa(c.fond)}`}</p>
-                </>
+                <p className="caisses__solde">{formatFcfa(c.solde)}</p>
               ) : (
                 <Chip>{t("caisse.veille")}</Chip>
               )}

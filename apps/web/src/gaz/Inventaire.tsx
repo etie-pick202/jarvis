@@ -1,3 +1,4 @@
+import type { CountInput } from "@jarvis/shared";
 import { type FormEvent, useState } from "react";
 import { api } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
@@ -8,73 +9,92 @@ import { Chip } from "../ui/Chip.js";
 import { Field } from "../ui/Field.js";
 import { Table } from "../ui/Table.js";
 
-interface Comptage {
+interface Saisie {
   pleines: string;
   vides: string;
 }
 
-const ecart = (compte: string, theorique: number): number | null =>
-  compte.trim() === "" || !Number.isInteger(Number(compte)) ? null : Number(compte) - theorique;
+const VIDE: Saisie = { pleines: "", vides: "" };
+const fmt = (n: number) => `${n > 0 ? "+" : ""}${n}`;
+const lireEntier = (v: string): number | null => (/^\d+$/u.test(v.trim()) ? Number(v) : null);
 
-/** Inventaire physique hebdomadaire : le gérant compte, l'écart se calcule seul, le PDG valide. */
-export function Inventaire() {
+/**
+ * Comptage physique des bouteilles par marque : inventaire hebdomadaire (le PDG valide) ou confirmation du soir.
+ * L'écart avec le stock théorique est calculé ici pour l'affichage et par le serveur pour l'enregistrement ;
+ * une justification est obligatoire dès qu'un écart apparaît.
+ */
+export function Comptage({ kind }: { kind: "weekly" | "evening" }) {
   const { t } = useI18n();
   const { data: stock } = useCached("gaz-stock", api.gazStock, []);
-  const [comptes, setComptes] = useState<Record<string, Comptage>>({});
+  const [saisies, setSaisies] = useState<Record<string, Saisie>>({});
+  const [justification, setJustification] = useState("");
   const [envoye, setEnvoye] = useState(false);
-  const lignes = stock.map((s) => ({
-    ...s,
-    c: comptes[s.marque] ?? { pleines: "", vides: "" },
-    ep: ecart((comptes[s.marque] ?? { pleines: "", vides: "" }).pleines, s.pleines),
-    ev: ecart((comptes[s.marque] ?? { pleines: "", vides: "" }).vides, s.vides),
-  }));
-  const complet = lignes.length > 0 && lignes.every((l) => l.ep !== null && l.ev !== null);
+  const titre = kind === "weekly" ? t("gaz.inventaire.titre") : t("gaz.soir.titre");
 
-  function maj(marque: string, champ: keyof Comptage, valeur: string) {
-    setComptes((c) => ({
-      ...c,
-      [marque]: { ...(c[marque] ?? { pleines: "", vides: "" }), [champ]: valeur },
-    }));
+  const lignes = stock.map((s) => {
+    const cle = `${s.brandId}:${s.formatId}`;
+    const c = saisies[cle] ?? VIDE;
+    const pleines = lireEntier(c.pleines);
+    const vides = lireEntier(c.vides);
+    return {
+      ...s,
+      cle,
+      c,
+      pleines2: pleines,
+      vides2: vides,
+      ep: pleines === null ? null : pleines - s.pleines,
+      ev: vides === null ? null : vides - s.vides,
+    };
+  });
+  const complet = lignes.length > 0 && lignes.every((l) => l.ep !== null && l.ev !== null);
+  const ecart = lignes.some((l) => (l.ep ?? 0) !== 0 || (l.ev ?? 0) !== 0);
+  const valide = complet && (!ecart || justification.trim().length >= 5);
+
+  function maj(cle: string, champ: keyof Saisie, valeur: string) {
+    setSaisies((x) => ({ ...x, [cle]: { ...(x[cle] ?? VIDE), [champ]: valeur } }));
     setEnvoye(false);
   }
 
   async function envoyer(event: FormEvent) {
     event.preventDefault();
+    const corps: CountInput = {
+      lines: lignes.map((l) => ({
+        brandId: l.brandId,
+        formatId: l.formatId,
+        countedFull: l.pleines2 ?? 0,
+        countedEmpty: l.vides2 ?? 0,
+      })),
+      ...(ecart ? { justification: justification.trim() } : {}),
+    };
     await ecrire({
       method: "POST",
-      path: "/gaz/inventaires",
-      label: t("gaz.inventaire.titre"),
-      body: {
-        lignes: lignes.map((l) => ({
-          marque: l.marque,
-          pleines: Number(l.c.pleines),
-          vides: Number(l.c.vides),
-          theoriquePleines: l.pleines,
-          theoriqueVides: l.vides,
-        })),
-      },
+      path: `/inventory/${kind}`,
+      syncType: kind === "weekly" ? "inventory_weekly" : "inventory_evening",
+      label: titre,
+      body: corps,
     });
-    setComptes({});
+    setSaisies({});
+    setJustification("");
     setEnvoye(true);
   }
 
   return (
     <form className="carte" onSubmit={envoyer}>
-      <h1>{t("gaz.inventaire.titre")}</h1>
-      <p>{t("gaz.inventaire.aide")}</p>
+      {kind === "weekly" ? <h1>{titre}</h1> : <h2>{titre}</h2>}
+      <p>{kind === "weekly" ? t("gaz.inventaire.aide") : t("gaz.soir.aide")}</p>
       <Table
-        caption={t("gaz.inventaire.titre")}
+        caption={titre}
         colonnes={[t("gaz.marque"), t("gaz.pleines"), t("gaz.vides"), t("gaz.ecart.stock")]}
       >
         {lignes.map((l) => (
-          <tr key={l.marque}>
+          <tr key={l.cle}>
             <th scope="row">{l.marque}</th>
             <td>
               <Field
                 label={`${l.marque} : ${t("gaz.pleines")} (${l.pleines})`}
                 inputMode="numeric"
                 value={l.c.pleines}
-                onChange={(e) => maj(l.marque, "pleines", e.target.value)}
+                onChange={(e) => maj(l.cle, "pleines", e.target.value)}
               />
             </td>
             <td>
@@ -82,7 +102,7 @@ export function Inventaire() {
                 label={`${l.marque} : ${t("gaz.vides")} (${l.vides})`}
                 inputMode="numeric"
                 value={l.c.vides}
-                onChange={(e) => maj(l.marque, "vides", e.target.value)}
+                onChange={(e) => maj(l.cle, "vides", e.target.value)}
               />
             </td>
             <td>
@@ -95,12 +115,24 @@ export function Inventaire() {
           </tr>
         ))}
       </Table>
-      <Button type="submit" disabled={!complet}>
-        {t("gaz.inventaire.envoyer")}
+      {complet && ecart && (
+        <>
+          <p role="alert" className="connexion__erreur">
+            {t("gaz.soir.ecart")}
+          </p>
+          <Field
+            label={t("gaz.soir.justification")}
+            value={justification}
+            onChange={(e) => setJustification(e.target.value)}
+          />
+        </>
+      )}
+      <Button type="submit" disabled={!valide}>
+        {kind === "weekly" ? t("gaz.inventaire.envoyer") : t("gaz.soir.confirmer")}
       </Button>
-      {envoye && <p role="status">{t("gaz.inventaire.ok")}</p>}
+      {envoye && <p role="status">{kind === "weekly" ? t("gaz.inventaire.ok") : t("gaz.soir.ok")}</p>}
     </form>
   );
 }
 
-const fmt = (n: number) => `${n > 0 ? "+" : ""}${n}`;
+export const Inventaire = () => <Comptage kind="weekly" />;

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { api, type Validation } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import { useSession } from "../auth/SessionProvider.js";
@@ -7,7 +6,6 @@ import { useI18n } from "../i18n/index.js";
 import { ecrire } from "../offline/ecrire.js";
 import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
-import { Field } from "../ui/Field.js";
 import { Table } from "../ui/Table.js";
 import { formatFcfa } from "../vente/regles.js";
 
@@ -68,13 +66,11 @@ export function Alertes({ page = false }: { page?: boolean }) {
   );
 }
 
-/** Validations en attente : le PDG valide ou refuse, le gérant consulte. */
+/** Validations en attente : le PDG valide les comptages d'inventaire, le gérant consulte. */
 export function Validations() {
   const { t, lang } = useI18n();
   const { profilsActifs } = useSession();
   const { data, modifier } = useCached("pilot-validations", api.validations, []);
-  const [refus, setRefus] = useState<string | null>(null);
-  const [motif, setMotif] = useState("");
   const peutDecider = profilsActifs.includes("pdg");
   const date = new Intl.DateTimeFormat(lang, {
     day: "2-digit",
@@ -83,17 +79,15 @@ export function Validations() {
     minute: "2-digit",
   });
 
-  async function decider(v: Validation, decision: "valide" | "refuse") {
+  async function valider(v: Validation) {
+    // La validation ajuste le stock côté serveur ; elle est rangée dans la file d'envoi et la ligne quitte la liste.
     await ecrire({
       method: "POST",
-      path: "/pilotage/decisions",
-      label: `${decision === "valide" ? t("pilot.valider") : t("pilot.refuser")} : ${v.resume}`,
-      body: { id: v.id, decision, motif: decision === "refuse" ? motif.trim() : null },
+      path: `/inventory/${v.id}/validate`,
+      label: `${t("pilot.valider")} : ${v.resume}`,
+      body: undefined,
     });
-    // La décision est rangée dans la file d'envoi : la ligne quitte la liste tout de suite.
     modifier((l) => l.filter((x) => x.id !== v.id));
-    setRefus(null);
-    setMotif("");
   }
 
   return (
@@ -106,25 +100,12 @@ export function Validations() {
           <li key={v.id} className="validation">
             <div>
               <strong>{v.resume}</strong>
-              <p className="champ__aide">{`${v.auteur} · ${date.format(new Date(v.date))}`}</p>
+              <p className="champ__aide">{date.format(new Date(v.date))}</p>
             </div>
-            {peutDecider && refus !== v.id && (
-              <div className="vente__actions">
-                <Button variant="noir" onClick={() => void decider(v, "valide")}>
-                  {t("pilot.valider")}
-                </Button>
-                <Button variant="contour" onClick={() => setRefus(v.id)}>
-                  {t("pilot.refuser")}
-                </Button>
-              </div>
-            )}
-            {peutDecider && refus === v.id && (
-              <div className="validation__refus">
-                <Field label={t("pilot.motif")} value={motif} onChange={(e) => setMotif(e.target.value)} />
-                <Button disabled={motif.trim() === ""} onClick={() => void decider(v, "refuse")}>
-                  {t("pilot.refuser")}
-                </Button>
-              </div>
+            {peutDecider && (
+              <Button variant="noir" onClick={() => void valider(v)}>
+                {t("pilot.valider")}
+              </Button>
             )}
           </li>
         ))}
@@ -147,12 +128,11 @@ export function Audit() {
       <h1>{t("rub.pilot.audit")}</h1>
       <Table
         caption={t("rub.pilot.audit")}
-        colonnes={[t("pilot.quand"), t("pilot.auteur"), t("pilot.action"), t("pilot.detail")]}
+        colonnes={[t("pilot.quand"), t("pilot.action"), t("pilot.detail")]}
       >
         {data.map((l) => (
           <tr key={l.id}>
             <td>{date.format(new Date(l.date))}</td>
-            <td>{l.auteur}</td>
             <td>{l.action}</td>
             <td>{l.detail}</td>
           </tr>

@@ -1,5 +1,10 @@
-import { DEFAULT_DELIVERY_FEE_PER_BOTTLE, DEFAULT_GAS_PRICE, TRANSPORT_CONTRIBUTION } from "@jarvis/shared";
-import type { Article, Client } from "../api/index.js";
+import {
+  type CreateSaleInput,
+  DEFAULT_DELIVERY_FEE_PER_BOTTLE,
+  DEFAULT_GAS_PRICE,
+  TRANSPORT_CONTRIBUTION,
+} from "@jarvis/shared";
+import { type Article, type Client, MODES_PAIEMENT } from "../api/index.js";
 
 export type Paiement = "especes" | "om" | "momo";
 export type Reception = "comptoir" | "livraison";
@@ -69,4 +74,36 @@ const ESPACES = new RegExp(`[${String.fromCharCode(0x202f)}${String.fromCharCode
 
 export function formatFcfa(montant: number): string {
   return `${montant.toLocaleString("fr-FR").replace(ESPACES, " ")} FCFA`;
+}
+
+/**
+ * Corps de la vente au format du contrat (`createSaleInput` de @jarvis/shared). Le serveur recalcule
+ * prix, contribution transport, écart d'emballage et marge : le client n'envoie que ce qui a été choisi.
+ */
+export function corpsVente(
+  panier: Panier,
+  client: string,
+  paiement: Paiement,
+  marques: readonly Article[],
+): CreateSaleInput {
+  const { article, quantite } = panier;
+  const retour = marques.find((m) => m.marque === panier.echange)?.brandId;
+  const ligne: CreateSaleInput["lines"][number] =
+    article.genre === "gaz" && article.brandId && article.formatId
+      ? {
+          kind: "gas",
+          brandId: article.brandId,
+          formatId: article.formatId,
+          quantity: quantite,
+          ...(retour ? { returnedBrandId: retour } : {}),
+        }
+      : { kind: "article", articleId: article.articleId ?? article.id, quantity: quantite };
+  return {
+    customerName: client,
+    paymentMethod: MODES_PAIEMENT[paiement],
+    ...(panier.reception === "livraison" && article.genre === "gaz"
+      ? { deliveryFeePerBottle: DEFAULT_DELIVERY_FEE_PER_BOTTLE }
+      : {}),
+    lines: [ligne],
+  };
 }

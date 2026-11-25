@@ -1,10 +1,10 @@
 import { useMemo } from "react";
-import { api, type Caisse, type Caisses } from "../api/index.js";
+import { api, type Caisse } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import type { Operation } from "../offline/db.js";
 import { useOutbox } from "../offline/useConnection.js";
 
-const VIDE: Caisses = { caisses: [], seuilJustification: 0 };
+const VIDE: Caisse[] = [];
 
 /** Montants en FCFA : des entiers, jamais de décimales. */
 export function lireMontant(saisie: string): number | null {
@@ -20,10 +20,10 @@ export function deltasEnAttente(ops: readonly Operation[]): Record<string, numbe
   for (const op of ops) {
     if (op.status !== "pending") continue;
     const b = op.body as Record<string, unknown>;
-    if (op.path === "/caisses/depenses" && typeof b.montant === "number") ajouter(b.caisseId, -b.montant);
-    if (op.path === "/caisses/transferts" && typeof b.montant === "number") {
-      ajouter(b.de, -b.montant);
-      ajouter(b.vers, b.montant);
+    if (op.path === "/cash/expenses" && typeof b.amount === "number") ajouter(b.registerId, -b.amount);
+    if (op.path === "/cash/transfers" && typeof b.amount === "number") {
+      ajouter(b.fromRegisterId, -b.amount);
+      ajouter(b.toRegisterId, b.amount);
     }
   }
   return deltas;
@@ -38,14 +38,9 @@ export function useCaisses() {
   const ops = useOutbox();
   const caisses = useMemo(() => {
     const deltas = deltasEnAttente(ops);
-    return data.caisses.map((c) => ({ ...c, solde: c.solde + (deltas[c.id] ?? 0) }));
-  }, [data.caisses, ops]);
-  return {
-    caisses,
-    seuilJustification: data.seuilJustification,
-    actives: caisses.filter((c) => c.actif),
-    pret,
-  };
+    return data.map((c) => ({ ...c, solde: c.solde + (deltas[c.id] ?? 0) }));
+  }, [data, ops]);
+  return { caisses, actives: caisses.filter((c) => c.actif), pret };
 }
 
 export const totalSoldes = (caisses: readonly Caisse[]) => caisses.reduce((n, c) => n + c.solde, 0);

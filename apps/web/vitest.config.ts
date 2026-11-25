@@ -10,9 +10,9 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}"],
-      exclude: ["src/**/*.test.{ts,tsx}", "src/main.tsx", "src/test-setup.ts"],
+      exclude: ["src/**/*.test.{ts,tsx}", "src/main.tsx", "src/test-setup.ts", "src/api/fake.ts"],
       reporter: ["text-summary", "lcov"],
-      thresholds: { lines: 95, statements: 94, functions: 92, branches: 88 },
+      thresholds: { lines: 97, statements: 96, functions: 94, branches: 89 },
     },
   },
 });

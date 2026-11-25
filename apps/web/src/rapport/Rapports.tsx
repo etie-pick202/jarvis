@@ -1,4 +1,5 @@
-import { api, type Rapport } from "../api/index.js";
+import { useState } from "react";
+import { api, nombreFr, type Rapport } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import type { MessageKey } from "../i18n/fr.js";
 import { useI18n } from "../i18n/index.js";
@@ -10,9 +11,7 @@ const VIDE: Rapport = { colonnes: [], lignes: [] };
 
 function Cellule({ v }: { v: string | number }) {
   return (
-    <td className={typeof v === "number" ? "num" : undefined}>
-      {typeof v === "number" ? v.toLocaleString("fr-FR") : v}
-    </td>
+    <td className={typeof v === "number" ? "num" : undefined}>{typeof v === "number" ? nombreFr(v) : v}</td>
   );
 }
 
@@ -69,20 +68,13 @@ export function RapportTable({ id, titre }: { id: "clients" | "journal" | "x"; t
 /** Situation gaz : par marque, pleines, vides et total, avec le total général. */
 export function SituationGaz() {
   const { t } = useI18n();
-  const { data } = useCached("gaz-stock", api.gazStock, []);
-  const pleines = data.reduce((n, s) => n + s.pleines, 0);
-  const vides = data.reduce((n, s) => n + s.vides, 0);
-  const rapport: Rapport = {
-    colonnes: [t("gaz.marque"), t("gaz.pleines"), t("gaz.vides"), t("gaz.total")],
-    lignes: data.map((s) => [s.marque, s.pleines, s.vides, s.pleines + s.vides]),
-    pied: [t("gaz.total.general"), pleines, vides, pleines + vides],
-  };
-  const texte = enTexte(t("rub.rapport.gaz"), rapport);
+  const { data } = useCached("rapport-gaz", (s) => api.situationGaz(s), VIDE);
+  const texte = enTexte(t("rub.rapport.gaz"), data);
   return (
     <section className="carte">
       <h1>{t("rub.rapport.gaz")}</h1>
-      <Table caption={t("rub.rapport.gaz")} colonnes={rapport.colonnes}>
-        {rapport.lignes.map((l) => (
+      <Table caption={t("rub.rapport.gaz")} colonnes={data.colonnes}>
+        {data.lignes.map((l) => (
           <tr key={String(l[0])}>
             {l.map((v, j) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: colonnes fixes
@@ -90,17 +82,19 @@ export function SituationGaz() {
             ))}
           </tr>
         ))}
-        <tr className="tableau__total">
-          {(rapport.pied ?? []).map((v, j) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: colonnes fixes
-            <Cellule key={j} v={v} />
-          ))}
-        </tr>
+        {data.pied && (
+          <tr className="tableau__total">
+            {data.pied.map((v, j) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: colonnes fixes
+              <Cellule key={j} v={v} />
+            ))}
+          </tr>
+        )}
       </Table>
       <div className="vente__actions">
         <Button
           variant="noir"
-          onClick={() => telecharger("situation-gaz.csv", enCsv(rapport), "text/csv;charset=utf-8")}
+          onClick={() => telecharger("situation-gaz.csv", enCsv(data), "text/csv;charset=utf-8")}
         >
           {t("rapport.csv")}
         </Button>
@@ -112,29 +106,39 @@ export function SituationGaz() {
   );
 }
 
-/** Exports : un fichier CSV (ouvre dans Excel) par état, en attendant le format Sage 100 i7 à confirmer. */
+/** Exports : les fichiers CSV du serveur (ouvrent dans Excel), en attendant le format Sage 100 i7 à confirmer. */
 export function Exports() {
   const { t } = useI18n();
-  const ventes = useCached("rapport-clients", (s) => api.rapport("clients", s), VIDE).data;
-  const journal = useCached("rapport-journal", (s) => api.rapport("journal", s), VIDE).data;
-  const x = useCached("rapport-x", (s) => api.rapport("x", s), VIDE).data;
-  const fichiers: [string, string, Rapport][] = [
-    [t("rub.rapport.clients"), "statistiques-clients.csv", ventes],
-    [t("rub.rapport.journal"), "journal-de-caisse.csv", journal],
-    [t("rub.rapport.x"), "x-de-caisse.csv", x],
+  const [erreur, setErreur] = useState(false);
+  const fichiers: ["sales" | "cash" | "stock", string, string][] = [
+    ["sales", t("rub.rapport.clients"), "ventes.csv"],
+    ["cash", t("rub.rapport.journal"), "caisse.csv"],
+    ["stock", t("rub.rapport.gaz"), "stock-gaz.csv"],
   ];
+
+  async function exporter(nom: "sales" | "cash" | "stock", fichier: string) {
+    setErreur(false);
+    try {
+      telecharger(fichier, await (await api.exportCsv(nom)).text(), "text/csv;charset=utf-8");
+    } catch {
+      setErreur(true);
+    }
+  }
+
   return (
     <section className="carte">
       <h1>{t("rub.rapport.exports")}</h1>
       <p>{t("rapport.sage")}</p>
+      {erreur && (
+        <p role="alert" className="connexion__erreur">
+          {t("rapport.export.erreur")}
+        </p>
+      )}
       <ul className="liste">
-        {fichiers.map(([libelle, fichier, rapport]) => (
-          <li key={fichier} className="validation">
+        {fichiers.map(([nom, libelle, fichier]) => (
+          <li key={nom} className="validation">
             <strong>{libelle}</strong>
-            <Button
-              variant="noir"
-              onClick={() => telecharger(fichier, enCsv(rapport), "text/csv;charset=utf-8")}
-            >
+            <Button variant="noir" onClick={() => void exporter(nom, fichier)}>
               {`${t("rapport.csv")} (${fichier})`}
             </Button>
           </li>

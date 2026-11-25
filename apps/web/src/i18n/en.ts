@@ -137,6 +137,8 @@ export const en: Record<MessageKey, string> = {
   "gaz.rupture": "Out of stock",
   "gaz.bas": "Low stock",
   "gaz.soir.titre": "Evening confirmation",
+  "gaz.soir.aide":
+    "Count the bottles of each brand: a difference from theoretical stock is flagged and must be explained.",
   "gaz.soir.theorique": "Expected bottles (full and empty)",
   "gaz.soir.compte": "Bottles counted",
   "gaz.soir.ecart": "Difference from theoretical stock",
@@ -195,7 +197,8 @@ export const en: Record<MessageKey, string> = {
   "caisse.enregistrer": "Save",
   "caisse.ok": "Movement saved: the balance is up to date.",
   "caisse.cloture.titre": "Day closing",
-  "caisse.cloture.aide": "Count the money in each cash desk. A reason is required above",
+  "caisse.cloture.aide":
+    "Count the money in each cash desk. A reason is required as soon as there is a difference.",
   "caisse.caisse": "Cash desk",
   "caisse.theorique": "Theoretical balance",
   "caisse.compte": "Count",
@@ -222,6 +225,7 @@ export const en: Record<MessageKey, string> = {
   "pilot.auteur": "Author",
   "pilot.action": "Action",
   "pilot.detail": "Details",
+  "rapport.export.erreur": "Export unavailable right now (offline or insufficient rights).",
   "rapport.csv": "Export as CSV",
   "rapport.mail": "Send by e-mail",
   "rapport.sage": "CSV files for Excel. Export to Sage 100 i7 will be offered once the format is confirmed.",

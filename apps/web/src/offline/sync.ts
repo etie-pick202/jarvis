@@ -1,38 +1,81 @@
+import { API_BASE, enTetes, erreurDe } from "../api/client.js";
+import { receiptSaved, replayResponse } from "../api/dto.js";
 import { db, type Operation } from "./db.js";
 import { flush, type SendResult } from "./outbox.js";
 
-export async function sendOperation(op: Operation): Promise<SendResult> {
+/** Réponse HTTP d'erreur -> décision : réessayer plus tard, conflit à vérifier, ou refus définitif. */
+async function classer(response: Response, repere: string): Promise<SendResult> {
+  const { status, message, code } = await erreurDe(response, repere);
+  // Session expirée ou profil actif sans le droit (mode livreur) : l'opération attend, elle n'est pas perdue.
+  if ([401, 403, 408, 429].includes(status) || status >= 500) return { kind: "retry" };
+  if (status === 409 || code === "stock_conflict") return { kind: "conflict", detail: message };
+  return { kind: "rejected", detail: message };
+}
+
+/** Envoie la pièce jointe d'une réception (corps brut) et renvoie son identifiant. */
+async function envoyerPiece(op: Operation): Promise<SendResult | { receiptId: string }> {
   const piece = op.pieceId ? await db.pieces.get(op.pieceId) : undefined;
-  if (op.pieceId && !piece) return { kind: "rejected", detail: "Pièce jointe introuvable sur l'appareil" };
-  let response: Response;
+  if (!piece) return { kind: "rejected", detail: "Pièce jointe introuvable sur l'appareil" };
+  const response = await fetch(`${API_BASE}/receipts`, {
+    method: "POST",
+    headers: enTetes({ "Content-Type": piece.blob.type }, `${op.idempotencyKey}-piece`),
+    body: piece.blob,
+  });
+  if (!response.ok) return classer(response, "pièce justificative");
+  return { receiptId: receiptSaved.parse(await response.json()).id };
+}
+
+export async function sendOperation(op: Operation): Promise<SendResult> {
   try {
-    // Avec une pièce : un seul envoi (données + fichier), donc jamais d'enregistrement sans justificatif.
-    const formulaire = new FormData();
-    if (piece) {
-      formulaire.append("data", JSON.stringify(op.body));
-      formulaire.append("piece", piece.blob, piece.nom);
+    let body = op.body;
+    // La pièce part d'abord ; son identifiant est gardé dans l'opération : jamais deux envois du fichier.
+    if (op.pieceId && !(op.body as { receiptId?: string }).receiptId) {
+      const piece = await envoyerPiece(op);
+      if (!("receiptId" in piece)) return piece;
+      body = { ...(op.body as object), receiptId: piece.receiptId };
+      await db.outbox.update(op.id, { body });
     }
-    response = await fetch(`/api${op.path}`, {
+
+    // Opérations rejouables : un seul endpoint de synchronisation, un résultat par opération.
+    if (op.syncType) {
+      const response = await fetch(`${API_BASE}/sync/replay`, {
+        method: "POST",
+        headers: enTetes({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+          operations: [
+            {
+              clientOpId: op.idempotencyKey,
+              type: op.syncType,
+              occurredAt: new Date(op.createdAt).toISOString(),
+              payload: body,
+            },
+          ],
+        }),
+      });
+      if (!response.ok) return await classer(response, "synchronisation");
+      const resultat = replayResponse.parse(await response.json()).results[0];
+      if (!resultat) return { kind: "rejected", detail: "Réponse de synchronisation vide" };
+      if (resultat.status === "applied" || resultat.status === "duplicate") {
+        if (op.pieceId) await db.pieces.delete(op.pieceId);
+        return { kind: "ok" };
+      }
+      return {
+        kind: resultat.status,
+        detail: resultat.conflict ?? resultat.error?.message ?? resultat.status,
+      };
+    }
+
+    // Écritures directes (fournisseurs, clôtures, validations) : même clé d'idempotence.
+    const response = await fetch(`${API_BASE}${op.path}`, {
       method: op.method,
-      headers: piece
-        ? { "Idempotency-Key": op.idempotencyKey }
-        : { "Content-Type": "application/json", "Idempotency-Key": op.idempotencyKey },
-      body: piece ? formulaire : JSON.stringify(op.body),
-      credentials: "same-origin",
+      headers: enTetes(body === undefined ? {} : { "Content-Type": "application/json" }, op.idempotencyKey),
+      body: body === undefined ? undefined : JSON.stringify(body),
     });
+    if (response.ok) return { kind: "ok" };
+    return await classer(response, op.label);
   } catch {
     return { kind: "retry" };
   }
-  if (response.ok) {
-    if (op.pieceId) await db.pieces.delete(op.pieceId);
-    return { kind: "ok" };
-  }
-  if (response.status === 408 || response.status === 429 || response.status >= 500) return { kind: "retry" };
-  const detail = await response.text().catch(() => "");
-  return {
-    kind: response.status === 409 ? "conflict" : "rejected",
-    detail: detail || String(response.status),
-  };
 }
 
 const RETRY_MS = 30_000;

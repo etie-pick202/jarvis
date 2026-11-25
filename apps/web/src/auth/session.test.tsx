@@ -12,7 +12,7 @@ describe("session", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => fakeApi(url.replace("/api", ""), init));
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => fakeApi(url.replace("/api/v1", ""), init));
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -22,7 +22,7 @@ describe("session", () => {
   it("déconnecte automatiquement après 30 minutes sans action", async () => {
     setFakeUser("gerant");
     render(
-      <SessionProvider initial={{ userId: "u2", nom: "Gérant", profils: ["gerant"] }}>
+      <SessionProvider initial={{ userId: "u2", nom: "Gérant", profils: ["gerant"], profilActif: "gerant" }}>
         <Etat />
       </SessionProvider>,
     );
@@ -36,7 +36,7 @@ describe("session", () => {
   it("garde la session locale quand le réseau tombe, et l'efface si le serveur la refuse", async () => {
     localStorage.setItem(
       "jarvis.session",
-      JSON.stringify({ userId: "u2", nom: "Gérant", profils: ["gerant"] }),
+      JSON.stringify({ userId: "u2", nom: "Gérant", profils: ["gerant"], profilActif: "gerant" }),
     );
     vi.stubGlobal("fetch", async () => {
       throw new TypeError("réseau");
@@ -52,7 +52,7 @@ describe("session", () => {
     expect(screen.getByText("Gérant:gestion")).toBeTruthy();
     unmount();
 
-    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => fakeApi(url.replace("/api", ""), init));
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => fakeApi(url.replace("/api/v1", ""), init));
     setFakeUser(null);
     render(
       <SessionProvider>

@@ -12,18 +12,17 @@ const TONES: Record<Livraison["etat"], Tone> = {
 };
 
 /** Mode livreur : aucun menu, la liste du jour et trois boutons (Parti, Livré, Problème). */
-export function LivreurMode() {
+export function LivreurMode({ source = api.livraisons }: { source?: () => Promise<Livraison[]> }) {
   const { t } = useI18n();
   const [liste, setListe] = useState<Livraison[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
-    api
-      .livraisons(controller.signal)
+    source()
       .then(setListe)
       .catch(() => undefined);
     return () => controller.abort();
-  }, []);
+  }, [source]);
 
   const marquer = (id: string, etat: Livraison["etat"]) =>
     setListe((l) => l.map((x) => (x.id === id ? { ...x, etat } : x)));

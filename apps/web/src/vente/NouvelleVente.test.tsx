@@ -26,7 +26,7 @@ describe("nouvelle vente", () => {
     vi.stubGlobal("fetch", (url: string, init?: RequestInit) =>
       init?.method === "POST"
         ? Promise.reject(new TypeError("réseau"))
-        : fakeApi(url.replace("/api", ""), init),
+        : fakeApi(url.replace("/api/v1", ""), init),
     );
   });
   afterEach(() => vi.unstubAllGlobals());
@@ -51,12 +51,19 @@ describe("nouvelle vente", () => {
     expect(screen.getByRole("button", { name: "Partager en PDF" })).toBeTruthy();
     const ops = await db.outbox.toArray();
     expect(ops).toHaveLength(1);
-    expect(ops[0]?.body).toMatchObject({
-      articleId: "ola",
-      quantite: 1,
-      paiement: "momo",
-      reception: "livraison",
-      client: { id: "c1", nom: "Ndongo Berthe" },
+    expect(ops[0]).toMatchObject({ path: "/sales", syncType: "sale" });
+    expect(ops[0]?.body).toEqual({
+      customerName: "Ndongo Berthe",
+      paymentMethod: "momo",
+      deliveryFeePerBottle: 400,
+      lines: [
+        {
+          kind: "gas",
+          brandId: "00000000-0000-4000-8000-000000000101",
+          formatId: "00000000-0000-4000-8000-000000000201",
+          quantity: 1,
+        },
+      ],
     });
   });
 

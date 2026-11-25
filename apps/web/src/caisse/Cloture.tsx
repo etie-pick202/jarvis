@@ -10,10 +10,10 @@ import { useCaisses } from "./donnees.js";
 
 const lire = (v: string): number | null => (/^\d+$/u.test(v.trim()) ? Number(v) : null);
 
-/** Clôture du jour : comptage physique par caisse, écart affiché, justification au-delà du seuil. */
+/** Clôture du jour : comptage physique par caisse, écart affiché, justification demandée dès qu'il y a un écart. */
 export function Cloture() {
   const { t } = useI18n();
-  const { actives, seuilJustification, pret } = useCaisses();
+  const { actives, pret } = useCaisses();
   const [comptes, setComptes] = useState<Record<string, string>>({});
   const [justifs, setJustifs] = useState<Record<string, string>>({});
   const [ok, setOk] = useState(false);
@@ -22,25 +22,27 @@ export function Cloture() {
     const compte = lire(comptes[c.id] ?? "");
     return { caisse: c, compte, ecart: compte === null ? null : compte - c.solde };
   });
-  const exige = (j: (typeof lignes)[number]) => j.ecart !== null && Math.abs(j.ecart) > seuilJustification;
+  const exige = (j: (typeof lignes)[number]) => j.ecart !== null && j.ecart !== 0;
   const manque = (j: (typeof lignes)[number]) => exige(j) && (justifs[j.caisse.id] ?? "").trim() === "";
   const complet = lignes.length > 0 && lignes.every((j) => j.compte !== null && !manque(j));
 
   async function cloturer(event: FormEvent) {
     event.preventDefault();
-    await ecrire({
-      method: "POST",
-      path: "/caisses/cloture",
-      label: t("caisse.cloture.titre"),
-      body: {
-        comptes: lignes.map((j) => ({
-          caisseId: j.caisse.id,
-          compte: j.compte,
-          theorique: j.caisse.solde,
-          justification: j.ecart !== 0 ? (justifs[j.caisse.id]?.trim() ?? null) : null,
-        })),
-      },
-    });
+    // Le serveur clôture une caisse à la fois : une écriture par caisse, chacune avec sa clé d'idempotence.
+    for (const j of lignes) {
+      if (j.compte === null) continue;
+      const justification = justifs[j.caisse.id]?.trim();
+      await ecrire({
+        method: "POST",
+        path: "/cash/closures",
+        label: `${t("caisse.cloture.titre")} : ${j.caisse.nom}`,
+        body: {
+          registerId: j.caisse.id,
+          countedAmount: j.compte,
+          ...(j.ecart !== 0 && justification ? { justification } : {}),
+        },
+      });
+    }
     setComptes({});
     setJustifs({});
     setOk(true);
@@ -50,7 +52,7 @@ export function Cloture() {
   return (
     <form className="carte page" onSubmit={cloturer}>
       <h1>{t("caisse.cloture.titre")}</h1>
-      <p>{`${t("caisse.cloture.aide")} ${formatFcfa(seuilJustification)}.`}</p>
+      <p>{t("caisse.cloture.aide")}</p>
       <Table
         caption={t("caisse.cloture.titre")}
         colonnes={[t("caisse.caisse"), t("caisse.theorique"), t("caisse.compte"), t("caisse.ecart")]}

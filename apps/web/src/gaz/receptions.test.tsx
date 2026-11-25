@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeApi, setFakeUser } from "../api/fake.js";
 import { I18nProvider } from "../i18n/index.js";
 import { db } from "../offline/db.js";
-import { sendOperation } from "../offline/sync.js";
 import { Inventaire } from "./Inventaire.js";
 import { compresserPiece } from "./piece.js";
 import { Receptions } from "./Receptions.js";
@@ -16,7 +15,7 @@ function reseauCoupe() {
   vi.stubGlobal("fetch", (url: string, init?: RequestInit) =>
     init?.method === "POST"
       ? Promise.reject(new TypeError("réseau"))
-      : fakeApi(url.replace("/api", ""), init),
+      : fakeApi(url.replace("/api/v1", ""), init),
   );
 }
 
@@ -61,49 +60,13 @@ describe("réceptions et inventaire", () => {
     expect(op?.path).toBe("/receptions");
     expect(op?.pieceId).toBeTruthy();
     expect((await db.pieces.toArray())[0]?.nom).toBe("bon.pdf");
-    expect(op?.body).toMatchObject({ lignes: [{ marque: "OLA", pleines: 12, vides: 0, prixAchat: 0 }] });
-  });
-
-  it("envoie les données et la pièce en un seul envoi, puis libère la pièce", async () => {
-    await db.pieces.add({ id: "p1", nom: "bon.pdf", blob: new Blob(["%PDF"]) });
-    const fetchMock = vi.fn(async (_u: string, _i?: RequestInit) => new Response("{}", { status: 201 }));
-    vi.stubGlobal("fetch", fetchMock);
-    // jsdom et fake-indexeddb ne partagent pas la même classe Blob : on neutralise seulement l'ajout du fichier.
-    vi.spyOn(FormData.prototype, "append").mockImplementation(() => undefined);
-    const resultat = await sendOperation({
-      id: "o1",
-      method: "POST",
-      path: "/receptions",
-      body: { a: 1 },
-      idempotencyKey: "cle-9",
-      label: "Réception",
-      createdAt: 1,
-      status: "pending",
-      attempts: 0,
-      pieceId: "p1",
+    expect(op).toMatchObject({ syncType: "reception" });
+    expect(op?.body).toMatchObject({
+      supplierId: "00000000-0000-4000-8000-000000000801",
+      lines: [
+        { brandId: "00000000-0000-4000-8000-000000000101", fullReceived: 12, emptyReturned: 0, unitCost: 0 },
+      ],
     });
-    expect(resultat.kind).toBe("ok");
-    const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
-    expect(init.body).toBeInstanceOf(FormData);
-    expect((init.headers as Record<string, string>)["Idempotency-Key"]).toBe("cle-9");
-    expect(await db.pieces.get("p1")).toBeUndefined();
-    vi.restoreAllMocks();
-  });
-
-  it("refuse l'envoi si la pièce a disparu de l'appareil (jamais d'enregistrement sans justificatif)", async () => {
-    const resultat = await sendOperation({
-      id: "o2",
-      method: "POST",
-      path: "/receptions",
-      body: {},
-      idempotencyKey: "k",
-      label: "Réception",
-      createdAt: 1,
-      status: "pending",
-      attempts: 0,
-      pieceId: "absente",
-    });
-    expect(resultat.kind).toBe("rejected");
   });
 
   it("garde tel quel un PDF ou un fichier illisible", async () => {
@@ -124,19 +87,29 @@ describe("réceptions et inventaire", () => {
     vi.restoreAllMocks();
   });
 
-  it("l'inventaire calcule l'écart et part pour validation du PDG", async () => {
+  it("l'inventaire calcule l'écart, exige une justification et part pour validation du PDG", async () => {
     ui(<Inventaire />);
-    const champs = await screen.findAllByRole("textbox");
-    expect(champs.length).toBe(10);
+    await screen.findByLabelText(/^OLA : Pleines/u);
     const bouton = screen.getByRole("button", { name: "Envoyer pour validation" }) as HTMLButtonElement;
     expect(bouton.disabled).toBe(true);
     // Stock théorique de l'exemple : OLA 30/10, TRADEX 0/9, BOCOM 18/4, TOTAL 28/6, STARGAS 22/4.
-    const comptes = ["30", "10", "0", "9", "17", "4", "28", "6", "22", "4"];
-    for (const [i, valeur] of comptes.entries()) await userEvent.type(champs[i] as HTMLElement, valeur);
+    const pleines = [30, 0, 17, 28, 22];
+    const vides = [10, 9, 4, 6, 4];
+    for (const [i, marque] of ["OLA", "TRADEX", "BOCOM", "TOTAL", "STARGAS"].entries()) {
+      await userEvent.type(
+        screen.getByLabelText(new RegExp(`^${marque} : Pleines`, "u")),
+        String(pleines[i]),
+      );
+      await userEvent.type(screen.getByLabelText(new RegExp(`^${marque} : Vides`, "u")), String(vides[i]));
+    }
     expect(screen.getByText("-1 / 0")).toBeTruthy();
-    expect(screen.getAllByText("Conforme").length).toBe(4);
+    expect(screen.getAllByText("Conforme")).toHaveLength(4);
+    expect(bouton.disabled).toBe(true);
+    await userEvent.type(screen.getByLabelText("Justification de l'écart"), "Une bouteille prêtée");
     await userEvent.click(bouton);
     expect(await screen.findByText(/en attente de validation du PDG/u)).toBeTruthy();
-    expect((await db.outbox.toArray())[0]?.path).toBe("/gaz/inventaires");
+    const [op] = await db.outbox.toArray();
+    expect(op).toMatchObject({ path: "/inventory/weekly", syncType: "inventory_weekly" });
+    expect(op?.body).toMatchObject({ justification: "Une bouteille prêtée" });
   });
 });

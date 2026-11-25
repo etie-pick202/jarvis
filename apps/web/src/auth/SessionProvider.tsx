@@ -1,5 +1,13 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { ApiError, api, type LoginInput, newIdempotencyKey, type Session } from "../api/index.js";
+import {
+  ApiError,
+  api,
+  garderJeton,
+  type LoginInput,
+  newIdempotencyKey,
+  oublierJeton,
+  type Session,
+} from "../api/index.js";
 import type { Profil } from "../nav/volets.js";
 
 export type Mode = "gestion" | "livreur";
@@ -44,6 +52,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
       .catch((e: unknown) => {
         if (e instanceof ApiError && e.status === 401) {
           setSession(null);
+          oublierJeton();
           localStorage.removeItem(CLE);
         }
       })
@@ -55,6 +64,7 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     setModeState("gestion");
     localStorage.removeItem(CLE);
     await api.logout(newIdempotencyKey()).catch(() => null);
+    oublierJeton();
   }, []);
 
   // Déconnexion automatique après 30 minutes sans action.
@@ -74,10 +84,25 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
   }, [session, logout]);
 
   const login = useCallback(async (input: LoginInput) => {
-    const s = await api.login(input, newIdempotencyKey());
+    const { token, session: s } = await api.login(input, newIdempotencyKey());
+    garderJeton(token);
     localStorage.setItem(CLE, JSON.stringify(s));
     setSession(s);
   }, []);
+
+  /** Bascule de profil sans reconnexion : le serveur change le profil actif ; hors ligne, seul l'affichage change. */
+  const setMode = useCallback(
+    (cible: Mode) => {
+      setModeState(cible);
+      const role = cible === "livreur" ? "livreur" : session?.profils.find((p) => p !== "livreur");
+      if (!role || !navigator.onLine) return;
+      api
+        .switchRole(role, newIdempotencyKey())
+        .then(setSession)
+        .catch(() => undefined);
+    },
+    [session],
+  );
 
   const value = useMemo<SessionState>(() => {
     const seulLivreur = session?.profils.length === 1 && session.profils[0] === "livreur";
@@ -89,9 +114,9 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
       profilsActifs: effectif === "livreur" ? ["livreur"] : (session?.profils ?? []),
       login,
       logout,
-      setMode: setModeState,
+      setMode,
     };
-  }, [session, loading, mode, login, logout]);
+  }, [session, loading, mode, login, logout, setMode]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

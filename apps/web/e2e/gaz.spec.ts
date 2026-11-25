@@ -8,7 +8,18 @@ test("CoCoGaz : stock par marque et confirmation du soir", async ({ page }) => {
   await page.goto("/gaz/stock");
   const total = page.getByRole("row", { name: /Total général/u });
   await expect(total).toContainText("131");
-  await page.getByLabel("Bouteilles comptées").fill("131");
+  // Comptage du soir : une saisie par marque, ici identique au stock théorique (aucun écart).
+  const stock: Record<string, [number, number]> = {
+    OLA: [30, 10],
+    TRADEX: [0, 9],
+    BOCOM: [18, 4],
+    TOTAL: [28, 6],
+    STARGAS: [22, 4],
+  };
+  for (const [marque, [pleines, vides]] of Object.entries(stock)) {
+    await page.getByLabel(new RegExp(`^${marque} : Pleines`, "u")).fill(String(pleines));
+    await page.getByLabel(new RegExp(`^${marque} : Vides`, "u")).fill(String(vides));
+  }
   await page.getByRole("button", { name: "Confirmer le stock" }).click();
   await expect(page.getByText("Confirmation enregistrée.")).toBeVisible();
 });

@@ -1,3 +1,4 @@
+import type { SyncOperationType } from "@jarvis/shared";
 import Dexie, { type EntityTable } from "dexie";
 
 export type OperationStatus = "pending" | "conflict" | "rejected";
@@ -18,6 +19,8 @@ export interface Operation {
   detail?: string;
   /** Pièce jointe (photo ou PDF) gardée sur l'appareil, envoyée avec l'opération. */
   pieceId?: string;
+  /** Type de rejeu (/sync/replay) ; absent = écriture directe sur `path`. */
+  syncType?: SyncOperationType;
 }
 
 export interface Piece {
