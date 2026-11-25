@@ -63,6 +63,9 @@ export const cashRoutes = new Hono<AppEnv>()
     const date = c.req.query("date");
     return c.json(await svc.listClosures(c.get("deps"), date ? parse(day, date) : undefined));
   })
+  .get("/closure-threshold", requirePermission("cash.read"), async (c) =>
+    c.json({ threshold: await svc.closureThreshold(c.get("deps")) }),
+  )
   .put("/closure-threshold", requirePermission("cash.manage"), async (c) => {
     const { threshold } = await parseJson(c, setClosureThresholdInput);
     return c.json(await svc.setClosureThreshold(c.get("deps"), c.get("user").id, threshold));
