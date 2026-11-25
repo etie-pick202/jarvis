@@ -5,26 +5,41 @@ import { fcfa } from "./money.js";
 const atLeastOne = (o: Record<string, unknown>) => Object.values(o).some((v) => v !== undefined);
 const atLeastOneField = { message: "Au moins un champ à modifier" };
 
-export const createBrandInput = z.object({
-  name: z.string().trim().min(1).max(60),
-  /** Valeur d'emballage d'une bouteille vide de cette marque (FCFA). */
-  packagingValue: fcfa,
-});
+const packagingValueNeeded = {
+  message: "La valeur d'emballage est obligatoire quand elle est connue",
+  path: ["packagingValue"],
+};
+
+export const createBrandInput = z
+  .object({
+    name: z.string().trim().min(1).max(60),
+    /** Valeur d'emballage d'une bouteille vide de cette marque (FCFA). Omise si elle est inconnue. */
+    packagingValue: fcfa.optional(),
+    /** Faux pour déclarer la valeur inconnue (marque non relevée) ; vrai par défaut. */
+    packagingValueKnown: z.boolean().optional(),
+  })
+  .refine((b) => b.packagingValueKnown === false || b.packagingValue !== undefined, packagingValueNeeded);
 export type CreateBrandInput = z.infer<typeof createBrandInput>;
 
 export const updateBrandInput = z
   .object({
     name: z.string().trim().min(1).max(60).optional(),
     packagingValue: fcfa.optional(),
+    /** Faux : valeur inconnue (écart des échanges à régulariser) ; vrai exige `packagingValue`. */
+    packagingValueKnown: z.boolean().optional(),
     active: z.boolean().optional(),
   })
-  .refine(atLeastOne, atLeastOneField);
+  .refine(atLeastOne, atLeastOneField)
+  .refine((b) => b.packagingValueKnown !== true || b.packagingValue !== undefined, packagingValueNeeded);
 export type UpdateBrandInput = z.infer<typeof updateBrandInput>;
 
 export const brand = z.object({
   id,
   name: z.string(),
+  /** 0 quand la valeur est inconnue (voir `packagingValueKnown`). */
   packagingValue: fcfa,
+  /** Faux tant que la valeur d'emballage n'a pas été relevée ; absent = connue. */
+  packagingValueKnown: z.boolean().optional(),
   active: z.boolean(),
 });
 export type Brand = z.infer<typeof brand>;

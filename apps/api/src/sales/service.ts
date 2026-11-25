@@ -2,6 +2,7 @@ import type { Database } from "@jarvis/db";
 import { schema } from "@jarvis/db";
 import { type CreateSaleInput, type Sale, WALKIN_CUSTOMER } from "@jarvis/shared";
 import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { auditAndNotifyPdg } from "../audit/service.js";
 import { appendCashEntry, formatNumber, nextSequence, registerForPayment } from "../cash/ledger.js";
 import { dayRange } from "../cash/rules.js";
 import { currentGasPrice } from "../catalogue/service.js";
@@ -33,6 +34,7 @@ export function toSale(row: SaleRow, lines: SaleLineRow[]): Sale {
       deliveryFee: l.deliveryFee,
       returnedBrandId: l.returnedBrandId,
       packagingGap: l.packagingGap,
+      packagingGapPending: l.packagingGapPending,
       total: l.total,
     })),
     authorId: row.authorId,
@@ -114,6 +116,7 @@ export async function createSaleDetailed(
       delta: number;
       exchange: boolean;
     }[] = [];
+    const pendingGaps: string[] = [];
     for (const line of gasLines) {
       const given = await loadBrand(tx, line.brandId);
       const returned = line.returnedBrandId ? await loadBrand(tx, line.returnedBrandId) : given;
@@ -121,12 +124,18 @@ export async function createSaleDetailed(
       if (!format?.active) throw new AppError(422, "invalid_request", "Format inconnu ou désactivé");
       const price = await currentGasPrice(tx, line.formatId, line.brandId, priceAt);
       if (!price) throw new AppError(422, "invalid_request", "Aucun prix défini pour ce format");
+      // Échange avec une marque dont la valeur d'emballage est inconnue : la vente passe (même prix pour le
+      // client), l'écart n'est pas calculé et reste à régulariser par le PDG.
+      const packagingUnknown =
+        returned.id !== given.id && !(given.packagingValueKnown && returned.packagingValueKnown);
+      if (packagingUnknown) pendingGaps.push(`${given.name}/${returned.name}`);
       const r = computeGasLine(
         price,
         line.quantity,
         deliveryFee,
         given.packagingValue,
         returned.packagingValue,
+        packagingUnknown,
       );
       computed.push({
         saleId: "",
@@ -139,6 +148,7 @@ export async function createSaleDetailed(
         transportContribution: r.transportContribution,
         deliveryFee: r.deliveryFee,
         packagingGap: r.packagingGap,
+        packagingGapPending: r.packagingGapPending,
         purchaseCost: r.purchaseCost,
         total: r.total,
       });
@@ -243,6 +253,19 @@ export async function createSaleDetailed(
       saleId: saleRow.id,
       createdAt: now,
     });
+    if (pendingGaps.length > 0) {
+      await auditAndNotifyPdg(
+        tx,
+        {
+          action: "sale.packaging_unknown",
+          entity: "sale",
+          entityId: saleRow.id,
+          actorId: authorId,
+          details: { number, exchanges: pendingGaps },
+        },
+        `Échange ${pendingGaps.join(", ")} (vente ${number}) : valeur d'emballage inconnue, écart à régulariser`,
+      );
+    }
     return { sale: toSale(saleRow, lineRows), shortages };
   });
 }

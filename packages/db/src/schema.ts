@@ -68,6 +68,8 @@ export const brands = pgTable("brands", {
   name: text("name").notNull().unique(),
   /** Valeur d'emballage (bouteille vide consignée) en FCFA, pour l'écart d'échange. */
   packagingValue: integer("packaging_value").notNull().default(0),
+  /** Faux tant que la valeur n'a pas été relevée (BOCOM) : l'écart d'un échange est alors à régulariser. */
+  packagingValueKnown: boolean("packaging_value_known").notNull().default(true),
   active: boolean("active").notNull().default(true),
   createdAt: createdAt(),
 });
@@ -178,6 +180,8 @@ export const saleLines = pgTable("sale_lines", {
   deliveryFee: integer("delivery_fee").notNull().default(0),
   /** Écart de valeur d'emballage en FCFA : positif = gain, négatif = perte. */
   packagingGap: integer("packaging_gap").notNull().default(0),
+  /** Vrai si l'écart n'a pu être calculé (valeur d'emballage inconnue) : écart enregistré à 0, à régulariser. */
+  packagingGapPending: boolean("packaging_gap_pending").notNull().default(false),
   purchaseCost: integer("purchase_cost").notNull().default(0),
   total: integer("total").notNull(),
 });

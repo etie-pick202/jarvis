@@ -32,6 +32,7 @@ export async function seed(databaseUrl: string, password: string) {
         { name: "Alpha Gaz (fictif)", packagingValue: 20000 },
         { name: "Boreal Gaz (fictif)", packagingValue: 17500 },
         { name: "Cobalt Gaz (fictif)", packagingValue: 15900 },
+        { name: "Delta Gaz (fictif)", packagingValue: 0, packagingValueKnown: false },
       ])
       .onConflictDoNothing()
       .returning({ id: brands.id });

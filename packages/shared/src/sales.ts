@@ -56,6 +56,8 @@ export const saleLine = z.object({
   returnedBrandId: id.nullable(),
   /** Écart de valeur d'emballage : positif = gain, négatif = perte, nul hors échange. */
   packagingGap: signedInt,
+  /** Vrai si l'écart n'a pas pu être calculé (valeur d'emballage inconnue) : il vaut 0, à régulariser. */
+  packagingGapPending: z.boolean().optional(),
   total: fcfa,
 });
 export type SaleLine = z.infer<typeof saleLine>;

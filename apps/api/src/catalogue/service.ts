@@ -39,9 +39,25 @@ function first<T>(rows: T[], message = "Introuvable"): T {
 export const listBrands = (deps: Deps) => deps.db.select().from(brands).orderBy(brands.name);
 export const listFormats = (deps: Deps) => deps.db.select().from(formats).orderBy(formats.weightGrams);
 
+/** Valeur inconnue : stockée à 0 et marquée comme telle ; déclarer une valeur la rend connue. */
+function packagingColumns(input: {
+  packagingValue?: number | undefined;
+  packagingValueKnown?: boolean | undefined;
+}) {
+  if (input.packagingValueKnown === false) return { packagingValue: 0, packagingValueKnown: false };
+  if (input.packagingValue !== undefined)
+    return { packagingValue: input.packagingValue, packagingValueKnown: true };
+  return {};
+}
+
 export async function createBrand(deps: Deps, actorId: string, input: CreateBrandInput) {
   return guardUnique(async () => {
-    const row = first(await deps.db.insert(brands).values(input).returning());
+    const row = first(
+      await deps.db
+        .insert(brands)
+        .values({ name: input.name, ...packagingColumns(input) })
+        .returning(),
+    );
     await recordAudit(deps.db, {
       action: "brand.create",
       entity: "brand",
@@ -56,7 +72,15 @@ export async function createBrand(deps: Deps, actorId: string, input: CreateBran
 export async function updateBrand(deps: Deps, actorId: string, brandId: string, input: UpdateBrandInput) {
   return guardUnique(async () => {
     const row = first(
-      await deps.db.update(brands).set(input).where(eq(brands.id, brandId)).returning(),
+      await deps.db
+        .update(brands)
+        .set({
+          ...(input.name !== undefined ? { name: input.name } : {}),
+          ...(input.active !== undefined ? { active: input.active } : {}),
+          ...packagingColumns(input),
+        })
+        .where(eq(brands.id, brandId))
+        .returning(),
       "Marque introuvable",
     );
     await recordAudit(deps.db, {
