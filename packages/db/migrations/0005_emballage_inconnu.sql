@@ -1,2 +1,0 @@
-ALTER TABLE "brands" ADD COLUMN "packaging_value_known" boolean DEFAULT true NOT NULL;--> statement-breakpoint
-ALTER TABLE "sale_lines" ADD COLUMN "packaging_gap_pending" boolean DEFAULT false NOT NULL;

@@ -36,13 +36,6 @@
       "when": 1795532570935,
       "tag": "0004_vente_hors_ligne",
       "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1795618567268,
-      "tag": "0005_emballage_inconnu",
-      "breakpoints": true
     }
   ]
 }
