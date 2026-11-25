@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
 import { useSession } from "../auth/SessionProvider.js";
 import { useI18n } from "../i18n/index.js";
@@ -13,6 +14,7 @@ import {
 } from "../nav/volets.js";
 import { StatusLight } from "../offline/StatusLight.js";
 import { Button } from "../ui/Button.js";
+import { IconeRubrique } from "../visuels/IconeRubrique.js";
 import { MarqueJarvis } from "../visuels/LogoJarvis.js";
 import { Icone } from "./icones.js";
 import { LivreurMode } from "./LivreurMode.js";
@@ -88,7 +90,9 @@ export function Shell() {
           <div className="coque__zone">
             {courant && <Rubriques volet={courant} profils={profilsActifs} />}
             <main id="contenu" className="coque__contenu">
-              <Outlet />
+              <Suspense fallback={<p role="status">{t("page.chargement")}</p>}>
+                <Outlet />
+              </Suspense>
             </main>
           </div>
           <nav className="coque__bas" aria-label={t("nav.volets")}>
@@ -117,6 +121,7 @@ function Rubriques({ volet, profils }: { volet: Volet; profils: readonly Profil[
       <h2 className="coque__titre">{volet.nom}</h2>
       {rubriquesPour(volet, profils).map((r: Rubrique) => (
         <NavLink key={r.id} to={cheminVolet(volet, r)} className="rubrique">
+          <IconeRubrique volet={volet.id} rubrique={r.id} />
           {t(r.label)}
         </NavLink>
       ))}

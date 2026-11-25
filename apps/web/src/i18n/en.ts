@@ -231,6 +231,15 @@ export const en: Record<MessageKey, string> = {
   "rapport.sage": "CSV files for Excel. Export to Sage 100 i7 will be offered once the format is confirmed.",
   "visuel.jarvis": "JARVIS, the COCOSAB management assistant",
   "visuel.cocosab": "COCOSAB",
+  "page.introuvable.texte": "This page does not exist or has moved. Go back to the home screen.",
+  "horsligne.titre": "You are offline",
+  "horsligne.texte":
+    "This screen has not been loaded on this phone yet. Connect once to keep it available offline.",
+  "sync.conflit.titre": "A stock changed during the outage",
+  "sync.conflit.texte": "Nothing is erased: review each flagged operation, the CEO has been notified.",
+  "session.expiree.titre": "Your session has expired",
+  "session.expiree.texte":
+    "To protect the cash desks, JARVIS signs you out after a period of inactivity. Your pending entries are kept.",
   "page.bientot": "This screen is coming soon.",
   "page.introuvable": "Page not found",
   "page.retour": "Back to home",

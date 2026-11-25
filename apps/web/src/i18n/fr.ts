@@ -230,6 +230,15 @@ export const fr = {
     "Fichiers CSV pour Excel. L'export vers Sage 100 i7 sera proposé quand le format sera confirmé.",
   "visuel.jarvis": "JARVIS, l'assistant de gestion de COCOSAB",
   "visuel.cocosab": "COCOSAB",
+  "page.introuvable.texte": "Cette page n'existe pas ou a été déplacée. Revenez à l'accueil.",
+  "horsligne.titre": "Vous êtes hors ligne",
+  "horsligne.texte":
+    "Cet écran n'a pas encore été chargé sur ce téléphone. Reconnectez-vous une fois pour le garder disponible hors ligne.",
+  "sync.conflit.titre": "Un stock a changé pendant la coupure",
+  "sync.conflit.texte": "Rien n'est effacé : vérifiez chaque opération signalée, le PDG est prévenu.",
+  "session.expiree.titre": "Votre session a expiré",
+  "session.expiree.texte":
+    "Pour protéger les caisses, JARVIS déconnecte après un temps d'inactivité. Vos saisies en attente sont conservées.",
   "page.bientot": "Cet écran arrive bientôt.",
   "page.introuvable": "Page introuvable",
   "page.retour": "Retour à l'accueil",

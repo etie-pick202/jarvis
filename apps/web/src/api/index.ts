@@ -142,6 +142,7 @@ export const api = {
           nom: `Gaz ${f.label} ${b.name}`,
           genre: "gaz",
           marque: b.name,
+          formatLibelle: f.label,
           prix: prix.amount + prix.transportContribution,
           stock: stock.find((s) => s.brandId === b.id && s.formatId === f.id)?.full ?? 0,
           valeurEmballage: b.packagingValue,

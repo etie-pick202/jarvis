@@ -7,6 +7,8 @@ import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Field } from "../ui/Field.js";
 import { Segmented } from "../ui/Segmented.js";
+import { FormatBouteille } from "../visuels/FormatBouteille.js";
+import { MarqueGaz } from "../visuels/MarqueGaz.js";
 import { useCatalogue, useSuggestions } from "./donnees.js";
 import { Recu, type RecuVente } from "./Recu.js";
 import {
@@ -122,7 +124,14 @@ export function NouvelleVente() {
                       if (a.genre !== "gaz") setEchange(false);
                     }}
                   />
-                  <span>{a.nom}</span>
+                  {a.genre === "gaz" && a.marque ? (
+                    <span className="vente__nom">
+                      <MarqueGaz nom={a.marque} compacte />
+                      {a.formatLibelle && <FormatBouteille libelle={a.formatLibelle} />}
+                    </span>
+                  ) : (
+                    <span>{a.nom}</span>
+                  )}
                   <strong>{formatFcfa(a.prix)}</strong>
                   {a.stock === 0 ? <Chip tone="danger">{t("vente.indisponible")}</Chip> : null}
                 </label>
