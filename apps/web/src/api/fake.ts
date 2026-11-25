@@ -1,323 +1,446 @@
 /**
- * Faux serveur en mémoire (données d'exemple fictives) pour travailler sans API.
- * Activé seulement par `VITE_API_MOCK=1` ; absent du bundle de production.
+ * Faux serveur en mémoire (données d'exemple fictives) qui répond avec les formes réelles de l'API /api/v1.
+ * Sert aux tests et au développement sans backend ; activé par `VITE_API_MOCK=1`, absent de la production.
  */
-import type { Badges, Livraison, Session } from "./contracts.js";
+import type { Role } from "@jarvis/shared";
 
-const USERS: Record<string, Session> = {
-  pdg: { userId: "u1", nom: "Direction", profils: ["pdg"] },
-  gerant: { userId: "u2", nom: "Gérant", profils: ["gerant", "livreur"] },
-  caissier: { userId: "u3", nom: "Caissier", profils: ["caissier"] },
-  livreur: { userId: "u4", nom: "Livreur", profils: ["livreur"] },
+const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+
+const MARQUES = [
+  { id: uuid(101), name: "OLA", packagingValue: 15900, full: 30, empty: 10 },
+  { id: uuid(102), name: "TRADEX", packagingValue: 17500, full: 0, empty: 9 },
+  { id: uuid(103), name: "BOCOM", packagingValue: 15900, full: 18, empty: 4 },
+  { id: uuid(104), name: "TOTAL", packagingValue: 17500, full: 28, empty: 6 },
+  { id: uuid(105), name: "STARGAS", packagingValue: 20000, full: 22, empty: 4 },
+];
+const FORMAT = { id: uuid(201), label: "12,5 kg", weightGrams: 12500, priceCeiling: null, active: true };
+const SEUIL_BAS = 10;
+
+const USERS: Record<string, { id: string; displayName: string; roles: Role[] }> = {
+  pdg: { id: uuid(1), displayName: "Direction", roles: ["pdg"] },
+  gerant: { id: uuid(2), displayName: "Gérant", roles: ["gerant", "livreur"] },
+  caissier: { id: uuid(3), displayName: "Caissier", roles: ["caissier"] },
+  livreur: { id: uuid(4), displayName: "Livreur", roles: ["livreur"] },
 };
 
-const BADGES: Badges = { commandes: 3, stockBas: 2, echeances: 4, validations: 1 };
+const REGISTRES = [
+  { id: "sales_cash", label: "Ventes en espèces", active: true, balance: 215300 },
+  { id: "canal_om", label: "Canal+ Orange Money", active: true, balance: 96500 },
+  { id: "canal_cash", label: "Canal+ en espèces", active: true, balance: 42000 },
+  { id: "settlement_om_momo", label: "Règlement OM et MoMo", active: true, balance: 115712 },
+  { id: "transaction_om", label: "Transaction Orange Money", active: false, balance: 0 },
+  { id: "transaction_momo", label: "Transaction MoMo", active: false, balance: 0 },
+];
 
-const LIVRAISONS: Livraison[] = [
+const CLIENTS = [
+  { id: uuid(301), name: "Ndongo Berthe", phone: "237600000001" },
+  { id: uuid(302), name: "Ndongo Jean", phone: null },
+  { id: uuid(303), name: "Mbarga Alice", phone: null },
+  { id: uuid(304), name: "Kamga Paul", phone: null },
+  { id: uuid(305), name: "Fotso Marc", phone: null },
+  { id: uuid(306), name: "Biyik Claire", phone: null },
+];
+
+const jour = "2026-11-24";
+const ligneVente = (brand: string, returned: string | null, gap: number) => ({
+  kind: "gas",
+  brandId: brand,
+  formatId: FORMAT.id,
+  articleId: null,
+  quantity: 1,
+  unitPrice: 6500,
+  transportContribution: 300,
+  deliveryFee: 0,
+  returnedBrandId: returned,
+  packagingGap: gap,
+  total: 6800,
+});
+const VENTES = [
   {
-    id: "CMD-0142",
-    client: "Mme Ndongo",
-    quartier: "Bastos",
-    article: "Gaz 12,5 kg OLA",
-    montant: 7200,
-    etat: "a_livrer",
+    id: uuid(401),
+    number: "TK1993",
+    customerName: "Fotso Marc",
+    paymentMethod: "cash",
+    total: 6800,
+    lines: [ligneVente(uuid(105), uuid(104), -2500)],
+    authorId: uuid(2),
+    createdAt: `${jour}T09:12:00.000Z`,
+    reversalOf: null,
   },
   {
-    id: "CMD-0143",
-    client: "Mme Mbarga",
-    quartier: "Melen",
-    article: "Gaz 12,5 kg TOTAL",
-    montant: 7200,
-    etat: "a_livrer",
+    id: uuid(402),
+    number: "TK1994",
+    customerName: "Kamga Paul",
+    paymentMethod: "cash",
+    total: 6800,
+    lines: [ligneVente(uuid(101), uuid(104), 1600)],
+    authorId: uuid(2),
+    createdAt: `${jour}T10:40:00.000Z`,
+    reversalOf: null,
   },
 ];
 
-const CATALOGUE = [
+const COMPTAGES = [
   {
-    id: "ola",
-    nom: "Gaz 12,5 kg OLA",
-    genre: "gaz",
-    marque: "OLA",
-    prix: 6800,
-    stock: 30,
-    valeurEmballage: 15900,
+    id: uuid(501),
+    kind: "weekly",
+    brandId: uuid(103),
+    formatId: FORMAT.id,
+    countedFull: 17,
+    countedEmpty: 4,
+    theoreticalFull: 18,
+    theoreticalEmpty: 4,
+    justification: "Une bouteille prêtée",
+    createdAt: `${jour}T18:10:00.000Z`,
+    validatedAt: null,
   },
-  {
-    id: "tradex",
-    nom: "Gaz 12,5 kg TRADEX",
-    genre: "gaz",
-    marque: "TRADEX",
-    prix: 6800,
-    stock: 0,
-    valeurEmballage: 17500,
-  },
-  { id: "bocom", nom: "Gaz 12,5 kg BOCOM", genre: "gaz", marque: "BOCOM", prix: 6800, stock: 18 },
-  {
-    id: "total",
-    nom: "Gaz 12,5 kg TOTAL",
-    genre: "gaz",
-    marque: "TOTAL",
-    prix: 6800,
-    stock: 8,
-    valeurEmballage: 17500,
-  },
-  {
-    id: "stargas",
-    nom: "Gaz 12,5 kg STARGAS",
-    genre: "gaz",
-    marque: "STARGAS",
-    prix: 6800,
-    stock: 3,
-    valeurEmballage: 20000,
-  },
-  { id: "detendeur", nom: "Détendeur", genre: "autre", prix: 4500, stock: 6 },
-  { id: "tuyau", nom: "Tuyau gaz 1,5 m", genre: "autre", prix: 2500, stock: 10 },
 ];
 
-const GAZ_STOCK = [
-  { marque: "OLA", pleines: 30, vides: 10, seuil: 10 },
-  { marque: "TRADEX", pleines: 0, vides: 9, seuil: 10 },
-  { marque: "BOCOM", pleines: 18, vides: 4, seuil: 10 },
-  { marque: "TOTAL", pleines: 28, vides: 6, seuil: 10 },
-  { marque: "STARGAS", pleines: 22, vides: 4, seuil: 10 },
+const HISTORIQUE_PRIX = [
+  {
+    id: uuid(601),
+    formatId: FORMAT.id,
+    brandId: null,
+    amount: 6500,
+    transportContribution: 300,
+    purchaseCost: 6170,
+    changedBy: null,
+    effectiveFrom: "2026-11-01T08:00:00.000Z",
+  },
 ];
 
-const ECHANGES = [
+const ARTICLES = [
   {
-    id: "e1",
-    date: "2026-11-24T09:12:00Z",
-    client: "Fotso Marc",
-    remise: "STARGAS",
-    rapportee: "TOTAL",
-    ecart: -2500,
+    id: uuid(701),
+    name: "Détendeur",
+    price: 4500,
+    purchaseCost: 3000,
+    trackStock: true,
+    stockQty: 6,
+    active: true,
   },
   {
-    id: "e2",
-    date: "2026-11-24T10:40:00Z",
-    client: "Kamga Paul",
-    remise: "OLA",
-    rapportee: "TOTAL",
-    ecart: 1600,
+    id: uuid(702),
+    name: "Tuyau gaz 1,5 m",
+    price: 2500,
+    purchaseCost: 1500,
+    trackStock: true,
+    stockQty: 10,
+    active: true,
   },
 ];
 
 const FOURNISSEURS = [
-  { id: "f1", nom: "Dépôt Central", telephone: "237600000010", marques: ["OLA", "TOTAL"] },
-  { id: "f2", nom: "Gaz du Mfoundi", telephone: "237600000011", marques: ["TRADEX", "BOCOM", "STARGAS"] },
+  {
+    id: uuid(801),
+    name: "Dépôt Central",
+    phone: "237600000010",
+    active: true,
+    brandIds: [uuid(101), uuid(104)],
+  },
+  {
+    id: uuid(802),
+    name: "Gaz du Mfoundi",
+    phone: "237600000011",
+    active: true,
+    brandIds: [uuid(102), uuid(103), uuid(105)],
+  },
 ];
 
 const RECEPTIONS = [
-  { id: "r1", date: "2026-11-20T08:30:00Z", fournisseur: "Dépôt Central", pleines: 24, vides: 24 },
-  { id: "r2", date: "2026-11-12T14:05:00Z", fournisseur: "Gaz du Mfoundi", pleines: 18, vides: 16 },
-];
-
-const CAISSES = {
-  seuilJustification: 500,
-  caisses: [
-    { id: "ventes", nom: "Ventes en espèces", solde: 215300, fond: 180000, actif: true, especes: true },
-    { id: "canal-om", nom: "Canal+ Orange Money", solde: 96500, fond: 80000, actif: true, especes: false },
-    { id: "canal-esp", nom: "Canal+ en espèces", solde: 42000, fond: 30000, actif: true, especes: true },
-    {
-      id: "reglement",
-      nom: "Règlement OM et MoMo",
-      solde: 115712,
-      fond: 100000,
-      actif: true,
-      especes: false,
-    },
-    { id: "trans-om", nom: "Transaction Orange Money", solde: 0, fond: 0, actif: false, especes: false },
-    { id: "trans-momo", nom: "Transaction MoMo", solde: 0, fond: 0, actif: false, especes: false },
-  ],
-};
-
-const TABLEAU = { caJour: 108800, nbVentes: 16, livraisonsEnCours: 2, echeances: 4 };
-
-const ALERTES = [
-  { id: "a1", texte: "Gaz TRADEX en rupture : vente bloquée", niveau: "danger" },
-  { id: "a2", texte: "4 échéances Canal+ cette semaine", niveau: "alerte" },
-  { id: "a3", texte: "Écart de clôture hier : Canal+ en espèces, -1 000 FCFA (justifié)", niveau: "alerte" },
-];
-
-const VALIDATIONS = [
   {
-    id: "v1",
-    genre: "inventaire",
-    resume: "Inventaire hebdomadaire : BOCOM pleines -1",
-    auteur: "Gérant",
-    date: "2026-11-23T18:10:00Z",
-  },
-  {
-    id: "v2",
-    genre: "annulation",
-    resume: "Vente 1991 annulée : erreur de moyen de paiement",
-    auteur: "Gérant",
-    date: "2026-11-24T11:25:00Z",
+    id: uuid(901),
+    supplierId: uuid(801),
+    receivedAt: "2026-11-20T08:30:00.000Z",
+    lines: [
+      { brandId: uuid(101), formatId: FORMAT.id, fullReceived: 12, emptyReturned: 12, unitCost: 6170 },
+      { brandId: uuid(104), formatId: FORMAT.id, fullReceived: 12, emptyReturned: 12, unitCost: 6170 },
+    ],
   },
 ];
 
 const AUDIT = [
   {
-    id: "l1",
-    date: "2026-11-24T11:25:00Z",
-    auteur: "Gérant",
-    action: "Annulation de vente",
-    detail: "Vente 1991, erreur de moyen de paiement",
+    id: uuid(1001),
+    action: "sale.cancel",
+    entity: "sale",
+    entityId: uuid(401),
+    details: { justification: "Erreur de moyen de paiement" },
+    createdAt: `${jour}T11:25:00.000Z`,
   },
   {
-    id: "l2",
-    date: "2026-11-23T18:12:00Z",
-    auteur: "Gérant",
-    action: "Écart d'inventaire",
-    detail: "BOCOM pleines -1",
-  },
-  {
-    id: "l3",
-    date: "2026-11-20T09:00:00Z",
-    auteur: "Direction",
-    action: "Changement de prix",
-    detail: "Recharge 12,5 kg : transport 300 FCFA",
+    id: uuid(1002),
+    action: "inventory.count",
+    entity: "inventory",
+    entityId: uuid(501),
+    details: { ecart: -1 },
+    createdAt: `${jour}T18:12:00.000Z`,
   },
 ];
 
-const RAPPORTS = {
-  clients: {
-    colonnes: ["Heure", "Client", "Article", "Qté", "Prix unitaire", "Paiement", "Total", "Marge", "Marge %"],
-    lignes: [
-      ["08:52", "Ndongo Berthe", "Gaz OLA 12,5 kg", 1, 6800, "Espèces", 6800, 730, "10,74"],
-      [
-        "09:12",
-        "Fotso Marc",
-        "Gaz STARGAS 12,5 kg (échange TOTAL)",
-        1,
-        6800,
-        "Espèces",
-        6800,
-        -1770,
-        "-26,03",
-      ],
-      ["10:40", "Kamga Paul", "Gaz TOTAL 12,5 kg", 1, 6800, "Espèces", 6800, 730, "10,74"],
-    ],
-    pied: ["Total", "", "", 3, "", "", 20400, -310, ""],
+const NOTIFICATIONS = [
+  {
+    id: uuid(1101),
+    message: "Écart d'inventaire : BOCOM, une bouteille pleine en moins",
+    createdAt: `${jour}T18:12:00.000Z`,
+    readAt: null,
   },
-  journal: {
-    colonnes: [
-      "Date",
-      "Caisse",
-      "N° pièce",
-      "Sens",
-      "Mode",
-      "Client",
-      "Libellé",
-      "Montant",
-      "Solde après",
-      "Opérateur",
-    ],
-    lignes: [
-      [
-        "2026-11-24 08:52",
-        "Ventes en espèces",
-        "RGTVT2449",
-        "Entrée",
-        "Espèces",
-        "Ndongo Berthe",
-        "Vente gaz OLA",
-        6800,
-        215300,
-        "Gérant",
-      ],
-      [
-        "2026-11-24 09:30",
-        "Ventes en espèces",
-        "SORT0112",
-        "Sortie",
-        "Espèces",
-        "Client comptoir",
-        "Transport",
-        5000,
-        210300,
-        "Gérant",
-      ],
-    ],
-  },
-  x: {
-    colonnes: ["Caisse", "Type", "N° pièce", "Libellé", "Montant"],
-    lignes: [
-      ["Ventes en espèces", "FDC", "FDC0001", "Fond de caisse", 180000],
-      ["Ventes en espèces", "REG", "RGTVT2449", "Règlement vente 1993", 6800],
-      ["Ventes en espèces", "MSC", "SORT0112", "Sortie de caisse : transport", -5000],
-    ],
-    pied: ["Total général", "", "", "", 181800],
-  },
+];
+
+const RAPPORT_CLIENTS = {
+  day: jour,
+  lines: [
+    {
+      saleNumber: "TK1991",
+      at: `${jour}T08:52:00.000Z`,
+      customerName: "Ndongo Berthe",
+      item: "Gaz OLA 12,5 kg",
+      quantity: 1,
+      unitPrice: 6800,
+      paymentMethod: "cash",
+      total: 6800,
+      margin: 630,
+      marginPercent: 9.26,
+    },
+    {
+      saleNumber: "TK1993",
+      at: `${jour}T09:12:00.000Z`,
+      customerName: "Fotso Marc",
+      item: "Gaz STARGAS/TOTAL 12,5 kg",
+      quantity: 1,
+      unitPrice: 6800,
+      paymentMethod: "cash",
+      total: 6800,
+      margin: -1870,
+      marginPercent: -27.5,
+    },
+    {
+      saleNumber: "TK1994",
+      at: `${jour}T10:40:00.000Z`,
+      customerName: "Kamga Paul",
+      item: "Gaz TOTAL 12,5 kg",
+      quantity: 1,
+      unitPrice: 6800,
+      paymentMethod: "orange_money",
+      total: 6800,
+      margin: 630,
+      marginPercent: 9.26,
+    },
+  ],
+  totals: { quantity: 3, total: 20400, margin: -610, marginPercent: -2.99 },
 };
 
-const CLIENTS = [
-  { id: "c1", nom: "Ndongo Berthe", telephone: "237600000001" },
-  { id: "c2", nom: "Ndongo Jean" },
-  { id: "c3", nom: "Mbarga Alice" },
-  { id: "c4", nom: "Kamga Paul" },
-  { id: "c5", nom: "Fotso Marc" },
-  { id: "c6", nom: "Biyik Claire" },
-];
+const RAPPORT_JOURNAL = {
+  day: jour,
+  entries: [
+    {
+      at: `${jour}T08:52:00.000Z`,
+      register: "Ventes en espèces",
+      number: "RG0001",
+      type: "REG",
+      direction: "in",
+      paymentMethod: "cash",
+      customerName: "Ndongo Berthe",
+      label: "Vente TK1991",
+      amount: 6800,
+      balanceAfter: 215300,
+      operator: "Gérant",
+    },
+    {
+      at: `${jour}T09:30:00.000Z`,
+      register: "Ventes en espèces",
+      number: "MS0001",
+      type: "MSC",
+      direction: "out",
+      paymentMethod: "cash",
+      customerName: null,
+      label: "Transport",
+      amount: 5000,
+      balanceAfter: 210300,
+      operator: "Gérant",
+    },
+  ],
+  total: 469512,
+  inCash: 257300,
+};
+
+const RAPPORT_X = {
+  day: jour,
+  registers: [
+    {
+      label: "Ventes en espèces",
+      opening: 180000,
+      movements: [
+        { number: "RG0001", type: "REG", label: "Vente TK1991", amount: 6800 },
+        { number: "MS0001", type: "MSC", label: "Transport", amount: -5000 },
+      ],
+      net: 1800,
+      closing: 181800,
+    },
+  ],
+  grandTotal: 181800,
+};
 
 const CLE_FAUX = "jarvis.fake-user";
 
-/** L'utilisateur « connecté » survit au rechargement, comme le ferait un cookie de session. */
-export function setFakeUser(id: string | null): void {
-  if (id) localStorage.setItem(CLE_FAUX, id);
+/** L'utilisateur « connecté » survit au rechargement, comme le ferait un jeton de session. */
+export function setFakeUser(id: string | null, profilActif?: Role): void {
+  if (id) localStorage.setItem(CLE_FAUX, profilActif ? `${id}:${profilActif}` : id);
   else localStorage.removeItem(CLE_FAUX);
 }
 
-function currentUser(): Session | null {
-  return USERS[localStorage.getItem(CLE_FAUX) ?? ""] ?? null;
+function utilisateur() {
+  const [id = "", actif] = (localStorage.getItem(CLE_FAUX) ?? "").split(":");
+  const u = USERS[id];
+  if (!u) return null;
+  const activeRole = (actif as Role | undefined) ?? u.roles[0] ?? "gerant";
+  return { id: u.id, username: id, displayName: u.displayName, roles: u.roles, activeRole };
 }
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
+const erreur = (status: number, code: string, message: string) => json({ error: { code, message } }, status);
 
+/** Répond comme le backend. `path` est relatif à /api/v1 (avec sa chaîne de requête). */
 export async function fakeApi(path: string, init?: RequestInit): Promise<Response> {
-  if (path === "/health") return json({ status: "ok" });
-  if (path === "/auth/login") {
-    const body = JSON.parse(String(init?.body ?? "{}")) as { identifiant?: string; motDePasse?: string };
-    const user = USERS[body.identifiant ?? ""];
-    if (!user || body.motDePasse !== "demo") return json({ erreur: "identifiants" }, 401);
-    setFakeUser(body.identifiant ?? null);
-    return json(user);
+  const url = new URL(path, "http://fake");
+  const route = url.pathname;
+  const ecriture = Boolean(init?.method && init.method !== "GET");
+
+  if (route === "/auth/login") {
+    const body = JSON.parse(String(init?.body ?? "{}")) as { username?: string; password?: string };
+    if (!USERS[body.username ?? ""] || body.password !== "demo-jarvis") {
+      return erreur(401, "unauthorized", "Identifiants invalides");
+    }
+    setFakeUser(body.username ?? null);
+    return json({ token: `fake-${body.username}`, user: utilisateur() });
   }
-  if (path === "/auth/logout") {
+  const moi = utilisateur();
+  if (!moi) return erreur(401, "unauthorized", "Non connecté");
+
+  if (route === "/auth/logout") {
     setFakeUser(null);
     return new Response(null, { status: 204 });
   }
-  const current = currentUser();
-  if (!current) return json({ erreur: "non connecté" }, 401);
-  if (path === "/auth/me") return json(current);
-  if (init?.method && init.method !== "GET") return json({ ok: true }, 201);
-  if (path === "/catalogue") return json(CATALOGUE);
-  if (path === "/pilotage/tableau") return json(TABLEAU);
-  if (path === "/pilotage/alertes") return json(ALERTES);
-  if (path === "/pilotage/validations") return json(VALIDATIONS);
-  if (path === "/pilotage/audit") return json(AUDIT);
-  if (path.startsWith("/rapports/")) {
-    const rapport = (RAPPORTS as Record<string, unknown>)[path.slice(10)];
-    return rapport ? json(rapport) : json({ erreur: "introuvable" }, 404);
+  if (route === "/auth/me") return json(moi);
+  if (route === "/auth/switch-role") {
+    const { role } = JSON.parse(String(init?.body ?? "{}")) as { role: Role };
+    if (!moi.roles.includes(role)) return erreur(403, "forbidden", "Profil non attribué");
+    setFakeUser(moi.username, role);
+    return json(utilisateur());
   }
-  if (path === "/caisses") return json(CAISSES);
-  if (path === "/gaz/receptions") return json(RECEPTIONS);
-  if (path === "/gaz/stock") return json(GAZ_STOCK);
-  if (path === "/gaz/echanges") return json(ECHANGES);
-  if (path === "/fournisseurs") return json(FOURNISSEURS);
-  if (path === "/clients") return json(CLIENTS);
-  if (path === "/badges") return json(BADGES);
-  if (path === "/livraisons/jour") return json(LIVRAISONS);
-  return json({ erreur: "introuvable" }, 404);
+  if (route === "/sync/replay") {
+    const { operations } = JSON.parse(String(init?.body ?? "{}")) as { operations: { clientOpId: string }[] };
+    return json({
+      results: operations.map((o) => ({ clientOpId: o.clientOpId, status: "applied", applied: true })),
+    });
+  }
+  if (route === "/receipts" && ecriture)
+    return json({ id: uuid(1201), contentType: "application/pdf", size: 1 }, 201);
+  if (ecriture) return json({ ok: true }, 201);
+
+  switch (route) {
+    case "/catalogue/brands":
+      return json(
+        MARQUES.map(({ id, name, packagingValue }) => ({ id, name, packagingValue, active: true })),
+      );
+    case "/catalogue/formats":
+      return json([FORMAT]);
+    case `/catalogue/prices/${FORMAT.id}/history`:
+      return json(HISTORIQUE_PRIX);
+    case "/catalogue/articles":
+      return json(ARTICLES);
+    case "/stock":
+      return json(
+        MARQUES.map((m) => ({
+          brandId: m.id,
+          brandName: m.name,
+          formatId: FORMAT.id,
+          formatLabel: FORMAT.label,
+          full: m.full,
+          empty: m.empty,
+          total: m.full + m.empty,
+          threshold: SEUIL_BAS,
+          available: m.full > 0,
+          low: m.full <= SEUIL_BAS,
+        })),
+      );
+    case "/stock/alerts":
+      return json(
+        MARQUES.filter((m) => m.full <= SEUIL_BAS).map((m) => ({
+          brandId: m.id,
+          brandName: m.name,
+          formatId: FORMAT.id,
+          formatLabel: FORMAT.label,
+          full: m.full,
+          empty: m.empty,
+          total: m.full + m.empty,
+          threshold: SEUIL_BAS,
+          available: m.full > 0,
+          low: true,
+        })),
+      );
+    case "/customers": {
+      const q = (url.searchParams.get("q") ?? "").toLowerCase();
+      return json(
+        q
+          ? CLIENTS.filter((c) =>
+              c.name
+                .toLowerCase()
+                .split(" ")
+                .some((mot) => mot.startsWith(q)),
+            )
+          : [],
+      );
+    }
+    case "/sales":
+      return json(VENTES);
+    case "/suppliers":
+      return json(FOURNISSEURS);
+    case "/receptions":
+      return json(RECEPTIONS);
+    case "/inventory":
+      return json(COMPTAGES);
+    case "/cash/registers":
+      return json(REGISTRES);
+    case "/control/audit":
+      return json(AUDIT);
+    case "/control/notifications":
+      return json(NOTIFICATIONS);
+    case "/reports/customers":
+      return json(RAPPORT_CLIENTS);
+    case "/reports/cash-journal":
+      return json(RAPPORT_JOURNAL);
+    case "/reports/x":
+      return json(RAPPORT_X);
+    case "/reports/gas-situation":
+      return json({
+        rows: MARQUES.map((m) => ({ brand: m.name, full: m.full, empty: m.empty, total: m.full + m.empty })),
+        totals: { full: 98, empty: 33, total: 131 },
+      });
+    default:
+      if (route.startsWith("/reports/export/")) {
+        return new Response("﻿N° vente;Total\r\nTK1991;6800", {
+          headers: { "Content-Type": "text/csv; charset=utf-8" },
+        });
+      }
+      return erreur(404, "not_found", "Route inconnue");
+  }
 }
 
 export function installFakeApi(): void {
   const real = window.fetch.bind(window);
   window.fetch = (input, init) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-    if (!url.startsWith("/api/")) return real(input, init);
+    const interne = url.startsWith("/api/v1/")
+      ? url.slice("/api/v1".length)
+      : url === "/health"
+        ? "/health"
+        : null;
+    if (interne === null) return real(input, init);
     // Comme un vrai réseau : sans connexion, l'appel échoue.
-    return navigator.onLine ? fakeApi(url.slice(4), init) : Promise.reject(new TypeError("hors ligne"));
+    if (!navigator.onLine) return Promise.reject(new TypeError("hors ligne"));
+    return interne === "/health" ? Promise.resolve(json({ status: "ok" })) : fakeApi(interne, init);
   };
 }

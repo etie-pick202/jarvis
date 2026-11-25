@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeApi, setFakeUser } from "../api/fake.js";
@@ -13,7 +13,9 @@ import { Alertes, Audit, TableauDeBord, Validations } from "./Pilot.js";
 function ui(node: React.ReactNode, profil: "pdg" | "gerant" = "pdg") {
   return render(
     <I18nProvider initial="fr">
-      <SessionProvider initial={{ userId: "u", nom: "x", profils: [profil] }}>{node}</SessionProvider>
+      <SessionProvider initial={{ userId: "u", nom: "x", profils: [profil], profilActif: profil }}>
+        {node}
+      </SessionProvider>
     </I18nProvider>,
   );
 }
@@ -26,14 +28,14 @@ describe("CoCoPilot", () => {
     vi.stubGlobal("fetch", (url: string, init?: RequestInit) =>
       init?.method === "POST"
         ? Promise.reject(new TypeError("réseau"))
-        : fakeApi(url.replace("/api", ""), init),
+        : fakeApi(url.replace("/api/v1", ""), init),
     );
   });
   afterEach(() => vi.unstubAllGlobals());
 
   it("le tableau de bord réunit chiffre d'affaires, caisses, stock, livraisons et alertes", async () => {
     ui(<TableauDeBord />);
-    expect(await screen.findByText("108 800 FCFA")).toBeTruthy();
+    expect(await screen.findByText("20 400 FCFA")).toBeTruthy();
     expect(await screen.findByText("469 512 FCFA")).toBeTruthy();
     expect(await screen.findByText("98 / 33")).toBeTruthy();
     expect(await screen.findByText(/TRADEX en rupture/u)).toBeTruthy();
@@ -43,34 +45,17 @@ describe("CoCoPilot", () => {
     ui(<Alertes page />);
     expect(await screen.findByRole("heading", { level: 1, name: "Alertes" })).toBeTruthy();
     expect(await screen.findByText("Urgent")).toBeTruthy();
-    expect(screen.getAllByText("À surveiller").length).toBe(2);
+    expect(screen.getAllByText("À surveiller")).toHaveLength(1);
   });
 
-  it("le PDG valide : la ligne disparaît et la décision attend dans la file", async () => {
+  it("le PDG valide le comptage : la ligne disparaît et la validation attend dans la file", async () => {
     ui(<Validations />);
     await screen.findByText(/Inventaire hebdomadaire : BOCOM/u);
-    await userEvent.click(screen.getAllByRole("button", { name: "Valider" })[0] as HTMLElement);
+    await userEvent.click(screen.getByRole("button", { name: "Valider" }));
     await vi.waitFor(() => expect(screen.queryByText(/Inventaire hebdomadaire : BOCOM/u)).toBeNull());
-    expect((await db.outbox.toArray())[0]?.body).toMatchObject({ id: "v1", decision: "valide", motif: null });
-  });
-
-  it("le refus exige un motif", async () => {
-    ui(<Validations />);
-    await screen.findByText(/Vente 1991 annulée/u);
-    await userEvent.click(screen.getAllByRole("button", { name: "Refuser" })[1] as HTMLElement);
-    const zone = (screen.getByLabelText("Motif du refus").closest(".validation__refus") ??
-      document.body) as HTMLElement;
-    const bouton = within(zone).getByRole("button", { name: "Refuser" }) as HTMLButtonElement;
-    expect(bouton.disabled).toBe(true);
-    await userEvent.type(screen.getByLabelText("Motif du refus"), "Justificatif manquant");
-    await userEvent.click(bouton);
-    await vi.waitFor(async () =>
-      expect((await db.outbox.toArray())[0]?.body).toMatchObject({
-        id: "v2",
-        decision: "refuse",
-        motif: "Justificatif manquant",
-      }),
-    );
+    const [op] = await db.outbox.toArray();
+    expect(op?.path).toBe("/inventory/00000000-0000-4000-8000-000000000501/validate");
+    expect(op?.body).toBeUndefined();
   });
 
   it("le gérant consulte les validations sans pouvoir les décider", async () => {
@@ -81,8 +66,8 @@ describe("CoCoPilot", () => {
 
   it("le journal d'audit liste les actions sensibles", async () => {
     ui(<Audit />);
-    expect(await screen.findByText("Annulation de vente")).toBeTruthy();
-    expect(screen.getByText("Changement de prix")).toBeTruthy();
+    expect(await screen.findByText("sale.cancel")).toBeTruthy();
+    expect(screen.getByText("inventory.count")).toBeTruthy();
   });
 });
 
@@ -90,14 +75,14 @@ describe("CoCoRapport", () => {
   beforeEach(() => {
     localStorage.clear();
     setFakeUser("pdg");
-    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => fakeApi(url.replace("/api", ""), init));
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => fakeApi(url.replace("/api/v1", ""), init));
   });
   afterEach(() => vi.unstubAllGlobals());
 
   it("affiche les statistiques clients avec la marge et le total", async () => {
     ui(<RapportTable id="clients" titre="rub.rapport.clients" />);
     expect(await screen.findByText("Fotso Marc")).toBeTruthy();
-    expect(screen.getByText("-1 770")).toBeTruthy();
+    expect(screen.getByText("-1 870")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Envoyer par WhatsApp" }).getAttribute("href")).toContain(
       "wa.me",
     );

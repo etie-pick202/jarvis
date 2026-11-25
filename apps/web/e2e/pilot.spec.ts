@@ -8,7 +8,7 @@ test("CoCoPilot et CoCoRapport : le PDG voit le tableau de bord, valide et consu
 }) => {
   await seConnecter(page, "pdg");
   await expect(page.getByRole("heading", { level: 1, name: "Tableau de bord" })).toBeVisible();
-  await expect(page.getByText("108 800 FCFA")).toBeVisible();
+  await expect(page.getByText("20 400 FCFA")).toBeVisible();
 
   await page.goto("/pilot/validations");
   await page.getByRole("button", { name: "Valider" }).first().click();

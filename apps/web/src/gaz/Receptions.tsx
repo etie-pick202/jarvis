@@ -24,6 +24,8 @@ const nombre = (v: string) => (v.trim() === "" ? 0 : Number(v));
 export function Receptions() {
   const { t, lang } = useI18n();
   const { data: fournisseurs } = useCached("fournisseurs", api.fournisseurs, []);
+  const { data: marques } = useCached("marques", api.marques, []);
+  const { data: formats } = useCached("formats", api.formats, []);
   const { data: recues } = useCached("gaz-receptions", api.receptions, []);
   const enAttente = useOutbox().filter((o) => o.path === "/receptions" && o.status === "pending");
   const [fournisseurId, setFournisseurId] = useState("");
@@ -33,13 +35,27 @@ export function Receptions() {
   const [enregistree, setEnregistree] = useState(false);
   const idFournisseur = useId();
   const fournisseur = fournisseurs.find((f) => f.id === fournisseurId);
-  const saisies = (fournisseur?.marques ?? []).map((marque) => ({ marque, ...(lignes[marque] ?? VIDE) }));
+
+  // Une ligne par marque fournie et par format : le serveur compte les bouteilles par marque et par format.
+  const saisies = (fournisseur?.brandIds ?? []).flatMap((brandId) =>
+    formats.map((f) => {
+      const cle = `${brandId}:${f.id}`;
+      const nom = marques.find((m) => m.id === brandId)?.nom ?? "?";
+      return {
+        cle,
+        brandId,
+        formatId: f.id,
+        titre: formats.length > 1 ? `${nom} ${f.libelle}` : nom,
+        ...(lignes[cle] ?? VIDE),
+      };
+    }),
+  );
   const quantites = saisies.some((l) => nombre(l.pleines) > 0 || nombre(l.vides) > 0);
   const valide = fournisseur !== undefined && date !== "" && quantites && piece !== null;
   const jour = new Intl.DateTimeFormat(lang, { day: "2-digit", month: "short", year: "numeric" });
 
-  function maj(marque: string, champ: keyof Ligne, valeur: string) {
-    setLignes((l) => ({ ...l, [marque]: { ...(l[marque] ?? VIDE), [champ]: valeur } }));
+  function maj(cle: string, champ: keyof Ligne, valeur: string) {
+    setLignes((l) => ({ ...l, [cle]: { ...(l[cle] ?? VIDE), [champ]: valeur } }));
     setEnregistree(false);
   }
 
@@ -53,18 +69,20 @@ export function Receptions() {
     await ecrire({
       method: "POST",
       path: "/receptions",
+      syncType: "reception",
       label: `${t("gaz.reception.titre")} : ${fournisseur.nom}`,
       pieceId,
       body: {
-        fournisseurId: fournisseur.id,
-        date,
-        lignes: saisies
+        supplierId: fournisseur.id,
+        receivedAt: `${date}T12:00:00.000Z`,
+        lines: saisies
           .filter((l) => nombre(l.pleines) > 0 || nombre(l.vides) > 0)
           .map((l) => ({
-            marque: l.marque,
-            pleines: nombre(l.pleines),
-            vides: nombre(l.vides),
-            prixAchat: nombre(l.prix),
+            brandId: l.brandId,
+            formatId: l.formatId,
+            fullReceived: nombre(l.pleines),
+            emptyReturned: nombre(l.vides),
+            unitCost: nombre(l.prix),
           })),
       },
     });
@@ -103,25 +121,25 @@ export function Receptions() {
           onChange={(e) => setDate(e.target.value)}
         />
         {saisies.map((l) => (
-          <fieldset key={l.marque} className="reception__ligne">
-            <legend className="champ__label">{l.marque}</legend>
+          <fieldset key={l.cle} className="reception__ligne">
+            <legend className="champ__label">{l.titre}</legend>
             <Field
               label={t("gaz.reception.pleines")}
               inputMode="numeric"
               value={l.pleines}
-              onChange={(e) => maj(l.marque, "pleines", e.target.value)}
+              onChange={(e) => maj(l.cle, "pleines", e.target.value)}
             />
             <Field
               label={t("gaz.reception.vides")}
               inputMode="numeric"
               value={l.vides}
-              onChange={(e) => maj(l.marque, "vides", e.target.value)}
+              onChange={(e) => maj(l.cle, "vides", e.target.value)}
             />
             <Field
               label={t("gaz.reception.prix")}
               inputMode="numeric"
               value={l.prix}
-              onChange={(e) => maj(l.marque, "prix", e.target.value)}
+              onChange={(e) => maj(l.cle, "prix", e.target.value)}
             />
           </fieldset>
         ))}

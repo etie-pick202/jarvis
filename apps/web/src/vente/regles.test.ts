@@ -3,6 +3,7 @@ import type { Article } from "../api/index.js";
 import { recuPdf } from "./pdf.js";
 import {
   chercherClients,
+  corpsVente,
   detailGaz,
   ecartEmballage,
   formatFcfa,
@@ -70,5 +71,50 @@ describe("règles de la vente", () => {
     expect(texte.startsWith("%PDF-1.4")).toBe(true);
     expect(texte).toContain("(COCOSAB \\(reçu\\)) Tj");
     expect(texte.trimEnd().endsWith("%%EOF")).toBe(true);
+  });
+});
+
+describe("corps de la vente (contrat de l'API)", () => {
+  const ola: Article = { ...gaz("OLA", 5), brandId: "b-ola", formatId: "f1" };
+  const total: Article = { ...gaz("TOTAL", 5), brandId: "b-total", formatId: "f1" };
+  const tuyau: Article = {
+    id: "t",
+    nom: "Tuyau",
+    genre: "autre",
+    prix: 2500,
+    stock: 3,
+    articleId: "a-tuyau",
+  };
+
+  it("envoie la marque rapportée d'un échange, sans prix ni total (le serveur les calcule)", () => {
+    const corps = corpsVente(
+      { article: ola, quantite: 2, reception: "comptoir", echange: "TOTAL" },
+      "Mme X",
+      "especes",
+      [ola, total],
+    );
+    expect(corps).toEqual({
+      customerName: "Mme X",
+      paymentMethod: "cash",
+      lines: [{ kind: "gas", brandId: "b-ola", formatId: "f1", quantity: 2, returnedBrandId: "b-total" }],
+    });
+  });
+
+  it("ajoute les frais de livraison par bouteille seulement pour le gaz livré", () => {
+    expect(
+      corpsVente({ article: ola, quantite: 1, reception: "livraison", echange: null }, "X", "om", [ola])
+        .deliveryFeePerBottle,
+    ).toBe(400);
+    const libre = corpsVente(
+      { article: tuyau, quantite: 1, reception: "livraison", echange: null },
+      "Client comptoir",
+      "momo",
+      [],
+    );
+    expect(libre).toEqual({
+      customerName: "Client comptoir",
+      paymentMethod: "momo",
+      lines: [{ kind: "article", articleId: "a-tuyau", quantity: 1 }],
+    });
   });
 });

@@ -11,6 +11,18 @@ import { StockGaz } from "./StockGaz.js";
 
 const ui = (node: React.ReactNode) => render(<I18nProvider initial="fr">{node}</I18nProvider>);
 
+/** Stock de l'exemple : pleines et vides par marque (OLA, TRADEX, BOCOM, TOTAL, STARGAS). */
+const PLEINES = [30, 0, 18, 28, 22];
+const VIDES = [10, 9, 4, 6, 4];
+const MARQUES = ["OLA", "TRADEX", "BOCOM", "TOTAL", "STARGAS"];
+
+async function compter(pleines: number[], vides: number[]) {
+  for (const [i, marque] of MARQUES.entries()) {
+    await userEvent.type(screen.getByLabelText(new RegExp(`^${marque} : Pleines`, "u")), String(pleines[i]));
+    await userEvent.type(screen.getByLabelText(new RegExp(`^${marque} : Vides`, "u")), String(vides[i]));
+  }
+}
+
 describe("CoCoGaz", () => {
   beforeEach(async () => {
     localStorage.clear();
@@ -20,7 +32,7 @@ describe("CoCoGaz", () => {
     vi.stubGlobal("fetch", (url: string, init?: RequestInit) =>
       init?.method === "POST"
         ? Promise.reject(new TypeError("réseau"))
-        : fakeApi(url.replace("/api", ""), init),
+        : fakeApi(url.replace("/api/v1", ""), init),
     );
   });
   afterEach(() => vi.unstubAllGlobals());
@@ -41,29 +53,29 @@ describe("CoCoGaz", () => {
     await screen.findByText("Total général");
     const confirmer = screen.getByRole("button", { name: "Confirmer le stock" }) as HTMLButtonElement;
     expect(confirmer.disabled).toBe(true);
-    await userEvent.type(screen.getByLabelText("Bouteilles comptées"), "129");
-    expect(screen.getByRole("alert").textContent).toContain("-2");
+    await compter([30, 0, 17, 28, 22], VIDES); // BOCOM : une pleine en moins
+    expect(screen.getByRole("alert").textContent).toContain("Écart");
     expect(confirmer.disabled).toBe(true);
-    await userEvent.type(screen.getByLabelText("Justification de l'écart"), "Deux bouteilles prêtées");
+    await userEvent.type(screen.getByLabelText("Justification de l'écart"), "Une bouteille prêtée");
     expect(confirmer.disabled).toBe(false);
     await userEvent.click(confirmer);
     expect(await screen.findByText("Confirmation enregistrée.")).toBeTruthy();
-    const ops = await db.outbox.toArray();
-    expect(ops[0]?.body).toMatchObject({
-      compte: 129,
-      theorique: 131,
-      justification: "Deux bouteilles prêtées",
-    });
+    const [op] = await db.outbox.toArray();
+    expect(op).toMatchObject({ path: "/inventory/evening", syncType: "inventory_evening" });
+    expect(op?.body).toMatchObject({ justification: "Une bouteille prêtée" });
+    expect(op?.body).toMatchObject({ lines: [{}, {}, {}, {}, {}] });
   });
 
   it("la confirmation sans écart part sans justification", async () => {
     ui(<StockGaz />);
     await screen.findByText("Total général");
-    await userEvent.type(screen.getByLabelText("Bouteilles comptées"), "131");
+    await compter(PLEINES, VIDES);
+    expect(screen.getAllByText("Conforme")).toHaveLength(5);
     await userEvent.click(screen.getByRole("button", { name: "Confirmer le stock" }));
-    await vi.waitFor(async () =>
-      expect((await db.outbox.toArray())[0]?.body).toMatchObject({ justification: null }),
-    );
+    await vi.waitFor(async () => {
+      const [op] = await db.outbox.toArray();
+      expect(op?.body).not.toHaveProperty("justification");
+    });
   });
 
   it("liste les échanges avec le gain ou la perte d'emballage", async () => {
@@ -79,9 +91,11 @@ describe("CoCoGaz", () => {
     expect(ajouter.disabled).toBe(true);
     await userEvent.type(screen.getByLabelText("Nom"), "Gaz Express");
     await userEvent.type(screen.getByLabelText("Téléphone"), "237600000099");
-    await userEvent.click(screen.getByRole("checkbox", { name: "OLA" }));
+    await userEvent.click(await screen.findByRole("checkbox", { name: "OLA" }));
     await userEvent.click(ajouter);
     expect(await screen.findByText("Gaz Express")).toBeTruthy();
-    expect((await db.outbox.toArray())[0]?.path).toBe("/fournisseurs");
+    const [op] = await db.outbox.toArray();
+    expect(op?.path).toBe("/suppliers");
+    expect(op?.body).toMatchObject({ name: "Gaz Express", phone: "237600000099" });
   });
 });

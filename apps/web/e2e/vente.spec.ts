@@ -13,8 +13,8 @@ test("vente de gaz hors ligne : reçu immédiat, envoi à la reconnexion", async
   await expect(page.getByRole("status").first()).toContainText("Hors ligne");
 
   await page.getByRole("radio", { name: /OLA/u }).check();
-  await page.getByLabel(/Nom du client/u).fill("Ndongo");
-  await page.getByRole("button", { name: "Ndongo Berthe" }).click();
+  // Hors ligne et sans client déjà vu : le nom saisi suffit, le serveur retrouve ou crée le client.
+  await page.getByLabel(/Nom du client/u).fill("Ndongo Berthe");
   await page.getByRole("button", { name: "Suivant" }).click();
   await page.getByRole("button", { name: "Suivant" }).click();
   await page.getByRole("button", { name: /Encaisser 6 800 FCFA/u }).click();

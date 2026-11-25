@@ -7,10 +7,10 @@ import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Field } from "../ui/Field.js";
 import { Segmented } from "../ui/Segmented.js";
-import { useCatalogue } from "./donnees.js";
+import { useCatalogue, useSuggestions } from "./donnees.js";
 import { Recu, type RecuVente } from "./Recu.js";
 import {
-  chercherClients,
+  corpsVente,
   detailGaz,
   ecartEmballage,
   formatFcfa,
@@ -27,7 +27,7 @@ const CLIENT_COMPTOIR = "Client comptoir";
 /** Nouvelle vente en trois écrans : article, quantité, moyen de paiement. */
 export function NouvelleVente() {
   const { t } = useI18n();
-  const { articles, clients, pret, consommer } = useCatalogue();
+  const { articles, pret, consommer } = useCatalogue();
   const [etape, setEtape] = useState<1 | 2 | 3>(1);
   const [article, setArticle] = useState<Article | null>(null);
   const [nom, setNom] = useState("");
@@ -43,7 +43,7 @@ export function NouvelleVente() {
 
   const gaz = article?.genre === "gaz";
   const marques = articles.filter((a) => a.genre === "gaz" && a.marque);
-  const suggestions = client ? [] : chercherClients(clients, nom);
+  const suggestions = useSuggestions(nom, client === null);
   const nomFinal = nom.trim() || (gaz ? "" : CLIENT_COMPTOIR);
   const echangeValide = !echange || rapportee !== "";
   const etape1Ok = article !== null && article.stock > 0 && nomFinal !== "" && echangeValide;
@@ -74,16 +74,10 @@ export function NouvelleVente() {
     // Enregistrée d'abord sur l'appareil (hors ligne d'abord), puis envoyée dès que le réseau le permet.
     const op = await enqueue({
       method: "POST",
-      path: "/ventes",
+      path: "/sales",
+      syncType: "sale",
       label: `${panier.article.nom} × ${panier.quantite} · ${nomFinal}`,
-      body: {
-        articleId: panier.article.id,
-        quantite: panier.quantite,
-        client: { id: client?.id ?? null, nom: nomFinal },
-        paiement,
-        reception: panier.reception,
-        echangeMarque: panier.echange,
-      },
+      body: corpsVente(panier, nomFinal, paiement, marques),
     });
     consommer(panier.article.id, panier.quantite);
     void flush(sendOperation);

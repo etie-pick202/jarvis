@@ -53,9 +53,10 @@ export function Depenses() {
     if (!source || somme === null) return;
     await ecrire({
       method: "POST",
-      path: "/caisses/depenses",
+      path: "/cash/expenses",
+      syncType: "expense",
       label: `${t("caisse.depense")} : ${libelle.trim()} (${formatFcfa(somme)})`,
-      body: { caisseId: source.id, montant: somme, libelle: libelle.trim() },
+      body: { registerId: source.id, amount: somme, label: libelle.trim() },
     });
     setMontant("");
     setLibelle("");
@@ -95,6 +96,7 @@ export function Transferts() {
   const { actives } = useCaisses();
   const [de, setDe] = useState("");
   const [vers, setVers] = useState("");
+  const [libelle, setLibelle] = useState("");
   const [montant, setMontant] = useState("");
   const [ok, setOk] = useState(false);
   const somme = lireMontant(montant);
@@ -107,9 +109,15 @@ export function Transferts() {
     if (!source || somme === null) return;
     await ecrire({
       method: "POST",
-      path: "/caisses/transferts",
+      path: "/cash/transfers",
+      syncType: "transfer",
       label: `${t("caisse.transfert")} (${formatFcfa(somme)})`,
-      body: { de, vers, montant: somme },
+      body: {
+        fromRegisterId: de,
+        toRegisterId: vers,
+        amount: somme,
+        label: libelle.trim() || t("caisse.transfert"),
+      },
     });
     setMontant("");
     setOk(true);
@@ -134,6 +142,7 @@ export function Transferts() {
           setOk(false);
         }}
       />
+      <Field label={t("caisse.libelle")} value={libelle} onChange={(e) => setLibelle(e.target.value)} />
       {insuffisant && (
         <p role="alert" className="connexion__erreur">
           {`${t("caisse.insuffisant")} ${formatFcfa(source?.solde ?? 0)}`}

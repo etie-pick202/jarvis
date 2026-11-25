@@ -14,6 +14,7 @@ export interface NewOperation {
   body: unknown;
   label: string;
   pieceId?: string;
+  syncType?: Operation["syncType"];
 }
 
 let dernierHorodatage = 0;

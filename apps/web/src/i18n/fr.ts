@@ -135,6 +135,8 @@ export const fr = {
   "gaz.rupture": "Rupture",
   "gaz.bas": "Stock bas",
   "gaz.soir.titre": "Confirmation du soir",
+  "gaz.soir.aide":
+    "Comptez les bouteilles de chaque marque : un écart avec le stock théorique est signalé et doit être justifié.",
   "gaz.soir.theorique": "Bouteilles attendues (pleines et vides)",
   "gaz.soir.compte": "Bouteilles comptées",
   "gaz.soir.ecart": "Écart avec le stock théorique",
@@ -193,7 +195,8 @@ export const fr = {
   "caisse.enregistrer": "Enregistrer",
   "caisse.ok": "Mouvement enregistré : le solde est à jour.",
   "caisse.cloture.titre": "Clôture du jour",
-  "caisse.cloture.aide": "Comptez l'argent de chaque caisse. Une justification est demandée au-delà de",
+  "caisse.cloture.aide":
+    "Comptez l'argent de chaque caisse. Une justification est demandée dès qu'il y a un écart.",
   "caisse.caisse": "Caisse",
   "caisse.theorique": "Solde théorique",
   "caisse.compte": "Comptage",
@@ -220,6 +223,7 @@ export const fr = {
   "pilot.auteur": "Auteur",
   "pilot.action": "Action",
   "pilot.detail": "Détail",
+  "rapport.export.erreur": "Export impossible pour le moment (hors ligne ou droits insuffisants).",
   "rapport.csv": "Exporter en CSV",
   "rapport.mail": "Envoyer par e-mail",
   "rapport.sage":

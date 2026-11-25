@@ -7,16 +7,15 @@ import { Button } from "../ui/Button.js";
 import { Field } from "../ui/Field.js";
 import { Table } from "../ui/Table.js";
 
-const MARQUES = ["OLA", "TRADEX", "BOCOM", "TOTAL", "STARGAS"];
-
 /** Fiches fournisseurs : nom, téléphone, marques fournies. Une réception est toujours liée à un fournisseur. */
 export function Fournisseurs() {
   const { t } = useI18n();
   const { data, modifier } = useCached("fournisseurs", api.fournisseurs, []);
   const [nom, setNom] = useState("");
   const [telephone, setTelephone] = useState("");
-  const [marques, setMarques] = useState<string[]>([]);
-  const valide = nom.trim() !== "" && telephone.trim() !== "" && marques.length > 0;
+  const { data: marquesDispo } = useCached("marques", api.marques, []);
+  const [choisies, setChoisies] = useState<string[]>([]);
+  const valide = nom.trim() !== "" && choisies.length > 0;
 
   async function ajouter(event: FormEvent) {
     event.preventDefault();
@@ -24,18 +23,23 @@ export function Fournisseurs() {
       id: crypto.randomUUID(),
       nom: nom.trim(),
       telephone: telephone.trim(),
-      marques,
+      brandIds: choisies,
+      marques: marquesDispo.filter((m) => choisies.includes(m.id)).map((m) => m.nom),
     };
     await ecrire({
       method: "POST",
-      path: "/fournisseurs",
+      path: "/suppliers",
       label: `${t("gaz.fournisseur.nouveau")} : ${fiche.nom}`,
-      body: fiche,
+      body: {
+        name: fiche.nom,
+        ...(fiche.telephone ? { phone: fiche.telephone } : {}),
+        brandIds: fiche.brandIds,
+      },
     });
     modifier((d) => [...d, fiche]);
     setNom("");
     setTelephone("");
-    setMarques([]);
+    setChoisies([]);
   }
 
   return (
@@ -67,16 +71,16 @@ export function Fournisseurs() {
         <fieldset className="vente__groupe">
           <legend className="champ__label">{t("gaz.marques")}</legend>
           <div className="cases">
-            {MARQUES.map((m) => (
-              <label key={m} className="cases__case">
+            {marquesDispo.map((m) => (
+              <label key={m.id} className="cases__case">
                 <input
                   type="checkbox"
-                  checked={marques.includes(m)}
+                  checked={choisies.includes(m.id)}
                   onChange={(e) =>
-                    setMarques((l) => (e.target.checked ? [...l, m] : l.filter((x) => x !== m)))
+                    setChoisies((l) => (e.target.checked ? [...l, m.id] : l.filter((x) => x !== m.id)))
                   }
                 />
-                {m}
+                {m.nom}
               </label>
             ))}
           </div>

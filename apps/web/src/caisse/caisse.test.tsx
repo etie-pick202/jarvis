@@ -21,7 +21,7 @@ describe("CoCoCaisse", () => {
     vi.stubGlobal("fetch", (url: string, init?: RequestInit) =>
       init?.method === "POST"
         ? Promise.reject(new TypeError("réseau"))
-        : fakeApi(url.replace("/api", ""), init),
+        : fakeApi(url.replace("/api/v1", ""), init),
     );
   });
   afterEach(() => vi.unstubAllGlobals());
@@ -48,7 +48,7 @@ describe("CoCoCaisse", () => {
     await userEvent.type(screen.getByLabelText("Libellé"), "Transport");
     await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     expect(await screen.findByText("Total : 464 512 FCFA")).toBeTruthy();
-    expect((await db.outbox.toArray())[0]?.body).toMatchObject({ caisseId: "ventes", montant: 5000 });
+    expect((await db.outbox.toArray())[0]?.body).toMatchObject({ registerId: "sales_cash", amount: 5000 });
   });
 
   it("refuse une dépense supérieure au solde", async () => {
@@ -78,7 +78,7 @@ describe("CoCoCaisse", () => {
     expect(screen.getByText("Total : 469 512 FCFA")).toBeTruthy();
   });
 
-  it("la clôture demande une justification au-delà du seuil de 500 FCFA", async () => {
+  it("la clôture demande une justification dès qu'il y a un écart, une écriture par caisse", async () => {
     ui(<Cloture />);
     await screen.findByText("Ventes en espèces");
     const bouton = screen.getByRole("button", { name: "Clôturer la journée" }) as HTMLButtonElement;
@@ -103,11 +103,13 @@ describe("CoCoCaisse", () => {
     expect(bouton.disabled).toBe(false);
     await userEvent.click(bouton);
     expect(await screen.findByText("Clôture enregistrée.")).toBeTruthy();
-    const body = (await db.outbox.toArray())[0]?.body as {
-      comptes: { caisseId: string; justification: string | null }[];
-    };
-    expect(body.comptes.find((c) => c.caisseId === "canal-esp")?.justification).toBe("Monnaie rendue");
-    expect(body.comptes.find((c) => c.caisseId === "ventes")?.justification).toBeNull();
+    const ops = await db.outbox.toArray();
+    expect(ops).toHaveLength(4);
+    const corps = (id: string) =>
+      ops.find((o) => (o.body as { registerId: string }).registerId === id)?.body as Record<string, unknown>;
+    expect(ops[0]).toMatchObject({ path: "/cash/closures" });
+    expect(corps("canal_cash")).toMatchObject({ countedAmount: 41000, justification: "Monnaie rendue" });
+    expect(corps("sales_cash")).not.toHaveProperty("justification");
   });
 
   it("calcule l'effet des mouvements en attente et lit les montants entiers", () => {
@@ -120,22 +122,22 @@ describe("CoCoCaisse", () => {
         {
           ...base,
           method: "POST",
-          path: "/caisses/depenses",
-          body: { caisseId: "a", montant: 100 },
+          path: "/cash/expenses",
+          body: { registerId: "a", amount: 100 },
           status: "pending",
         },
         {
           ...base,
           method: "POST",
-          path: "/caisses/transferts",
-          body: { de: "a", vers: "b", montant: 40 },
+          path: "/cash/transfers",
+          body: { fromRegisterId: "a", toRegisterId: "b", amount: 40 },
           status: "pending",
         },
         {
           ...base,
           method: "POST",
-          path: "/caisses/depenses",
-          body: { caisseId: "a", montant: 999 },
+          path: "/cash/expenses",
+          body: { registerId: "a", amount: 999 },
           status: "conflict",
         },
       ]),
