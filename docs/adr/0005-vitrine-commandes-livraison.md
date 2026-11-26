@@ -25,6 +25,11 @@ livraison selon le quartier, contact et raison sociale.
 - Alerte du gérant : compteur des commandes en attente (`GET /orders/summary`).
 - Paiement mobile : le client donne la référence, le gérant la confirme à la main.
 
+- La remise (livraison ou retrait) crée la vente aux prix de la commande, dans la même transaction que le
+  changement d'état : stock, vide rapporté, caisse et rapports suivent. Aucune vente à crédit : un paiement mobile
+  non confirmé bloque la remise, sauf encaissement en espèces.
+- Un livreur ne voit et ne modifie que les livraisons qui lui sont confiées.
+
 ## Conséquences
 
 Tout se règle dans l'application, sans reprogrammation.
