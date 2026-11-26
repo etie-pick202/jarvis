@@ -9,12 +9,25 @@ const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0
 const MARQUES = [
   { id: uuid(101), name: "OLA", packagingValue: 15900, full: 30, empty: 10 },
   { id: uuid(102), name: "TRADEX", packagingValue: 17500, full: 0, empty: 9 },
-  { id: uuid(103), name: "BOCOM", packagingValue: 15900, full: 18, empty: 4 },
+  { id: uuid(103), name: "BOCOM", packagingValue: 0, known: false, full: 18, empty: 4 },
   { id: uuid(104), name: "TOTAL", packagingValue: 17500, full: 28, empty: 6 },
   { id: uuid(105), name: "STARGAS", packagingValue: 20000, full: 22, empty: 4 },
 ];
 const FORMAT = { id: uuid(201), label: "12,5 kg", weightGrams: 12500, priceCeiling: null, active: true };
 const SEUIL_BAS = 10;
+
+const ligneStock = (m: (typeof MARQUES)[number]) => ({
+  brandId: m.id,
+  brandName: m.name,
+  formatId: FORMAT.id,
+  formatLabel: FORMAT.label,
+  full: m.full,
+  empty: m.empty,
+  total: m.full + m.empty,
+  threshold: SEUIL_BAS,
+  available: m.full > 0,
+  low: m.full <= SEUIL_BAS,
+});
 
 const USERS: Record<string, { id: string; displayName: string; roles: Role[] }> = {
   pdg: { id: uuid(1), displayName: "Direction", roles: ["pdg"] },
@@ -24,12 +37,12 @@ const USERS: Record<string, { id: string; displayName: string; roles: Role[] }> 
 };
 
 const REGISTRES = [
-  { id: "sales_cash", label: "Ventes en espèces", active: true, balance: 215300 },
-  { id: "canal_om", label: "Canal+ Orange Money", active: true, balance: 96500 },
-  { id: "canal_cash", label: "Canal+ en espèces", active: true, balance: 42000 },
-  { id: "settlement_om_momo", label: "Règlement OM et MoMo", active: true, balance: 115712 },
-  { id: "transaction_om", label: "Transaction Orange Money", active: false, balance: 0 },
-  { id: "transaction_momo", label: "Transaction MoMo", active: false, balance: 0 },
+  { id: "sales_cash", label: "Ventes en espèces", active: true, balance: 215300, opening: 180000 },
+  { id: "canal_om", label: "Canal+ Orange Money", active: true, balance: 96500, opening: 80000 },
+  { id: "canal_cash", label: "Canal+ en espèces", active: true, balance: 42000, opening: 30000 },
+  { id: "settlement_om_momo", label: "Règlement OM et MoMo", active: true, balance: 115712, opening: 100000 },
+  { id: "transaction_om", label: "Transaction Orange Money", active: false, balance: 0, opening: 0 },
+  { id: "transaction_momo", label: "Transaction MoMo", active: false, balance: 0, opening: 0 },
 ];
 
 const CLIENTS = [
@@ -42,7 +55,7 @@ const CLIENTS = [
 ];
 
 const jour = "2026-11-24";
-const ligneVente = (brand: string, returned: string | null, gap: number) => ({
+const ligneVente = (brand: string, returned: string | null, gap: number, pending = false) => ({
   kind: "gas",
   brandId: brand,
   formatId: FORMAT.id,
@@ -53,6 +66,7 @@ const ligneVente = (brand: string, returned: string | null, gap: number) => ({
   deliveryFee: 0,
   returnedBrandId: returned,
   packagingGap: gap,
+  packagingGapPending: pending,
   total: 6800,
 });
 const VENTES = [
@@ -78,6 +92,17 @@ const VENTES = [
     createdAt: `${jour}T10:40:00.000Z`,
     reversalOf: null,
   },
+  {
+    id: uuid(403),
+    number: "TK1995",
+    customerName: "Biyik Claire",
+    paymentMethod: "momo",
+    total: 6800,
+    lines: [ligneVente(uuid(101), uuid(103), 0, true)],
+    authorId: uuid(2),
+    createdAt: `${jour}T11:05:00.000Z`,
+    reversalOf: null,
+  },
 ];
 
 const COMPTAGES = [
@@ -93,21 +118,25 @@ const COMPTAGES = [
     justification: "Une bouteille prêtée",
     createdAt: `${jour}T18:10:00.000Z`,
     validatedAt: null,
+    status: "pending",
+    authorName: "Gérant",
+    validatedByName: null,
+    rejectedByName: null,
+    rejectedAt: null,
+    rejectionReason: null,
   },
 ];
 
-const HISTORIQUE_PRIX = [
-  {
-    id: uuid(601),
-    formatId: FORMAT.id,
-    brandId: null,
-    amount: 6500,
-    transportContribution: 300,
-    purchaseCost: 6170,
-    changedBy: null,
-    effectiveFrom: "2026-11-01T08:00:00.000Z",
-  },
-];
+const PRIX_COURANT = {
+  id: uuid(601),
+  formatId: FORMAT.id,
+  brandId: null,
+  amount: 6500,
+  transportContribution: 300,
+  purchaseCost: 6170,
+  changedBy: null,
+  effectiveFrom: "2026-11-01T08:00:00.000Z",
+};
 
 const ARTICLES = [
   {
@@ -165,6 +194,8 @@ const AUDIT = [
     action: "sale.cancel",
     entity: "sale",
     entityId: uuid(401),
+    actorId: uuid(2),
+    actorName: "Gérant",
     details: { justification: "Erreur de moyen de paiement" },
     createdAt: `${jour}T11:25:00.000Z`,
   },
@@ -173,6 +204,8 @@ const AUDIT = [
     action: "inventory.count",
     entity: "inventory",
     entityId: uuid(501),
+    actorId: null,
+    actorName: null,
     details: { ecart: -1 },
     createdAt: `${jour}T18:12:00.000Z`,
   },
@@ -235,6 +268,7 @@ const RAPPORT_JOURNAL = {
   entries: [
     {
       at: `${jour}T08:52:00.000Z`,
+      registerId: "sales_cash",
       register: "Ventes en espèces",
       number: "RG0001",
       type: "REG",
@@ -248,6 +282,7 @@ const RAPPORT_JOURNAL = {
     },
     {
       at: `${jour}T09:30:00.000Z`,
+      registerId: "sales_cash",
       register: "Ventes en espèces",
       number: "MS0001",
       type: "MSC",
@@ -268,11 +303,26 @@ const RAPPORT_X = {
   day: jour,
   registers: [
     {
+      registerId: "sales_cash",
       label: "Ventes en espèces",
       opening: 180000,
       movements: [
-        { number: "RG0001", type: "REG", label: "Vente TK1991", amount: 6800 },
-        { number: "MS0001", type: "MSC", label: "Transport", amount: -5000 },
+        {
+          line: 1,
+          at: `${jour}T08:52:00.000Z`,
+          number: "RG0001",
+          type: "REG",
+          label: "Vente TK1991",
+          amount: 6800,
+        },
+        {
+          line: 2,
+          at: `${jour}T09:30:00.000Z`,
+          number: "MS0001",
+          type: "MSC",
+          label: "Transport",
+          amount: -5000,
+        },
       ],
       net: 1800,
       closing: 181800,
@@ -280,6 +330,29 @@ const RAPPORT_X = {
   ],
   grandTotal: 181800,
 };
+
+const SEUIL_CLOTURE = 500;
+
+/** Vue agrégée, calculée à partir des mêmes données que les autres routes. */
+function tableauDeBord() {
+  return {
+    day: jour,
+    sales: { count: 3, quantity: 3, total: 20400, margin: -610, marginPercent: -2.99 },
+    registers: REGISTRES.map(({ id, label, active, opening, balance }) => ({
+      id,
+      label,
+      active,
+      opening,
+      balance,
+    })),
+    stock: {
+      full: MARQUES.reduce((n, m) => n + m.full, 0),
+      empty: MARQUES.reduce((n, m) => n + m.empty, 0),
+      alerts: MARQUES.filter((m) => m.full <= SEUIL_BAS).map(ligneStock),
+    },
+    unreadNotifications: 1,
+  };
+}
 
 const CLE_FAUX = "jarvis.fake-user";
 
@@ -343,44 +416,24 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   switch (route) {
     case "/catalogue/brands":
       return json(
-        MARQUES.map(({ id, name, packagingValue }) => ({ id, name, packagingValue, active: true })),
+        MARQUES.map(({ id, name, packagingValue, known }) => ({
+          id,
+          name,
+          packagingValue,
+          packagingValueKnown: known ?? true,
+          active: true,
+        })),
       );
     case "/catalogue/formats":
       return json([FORMAT]);
-    case `/catalogue/prices/${FORMAT.id}/history`:
-      return json(HISTORIQUE_PRIX);
+    case `/catalogue/prices/${FORMAT.id}/current`:
+      return json(PRIX_COURANT);
     case "/catalogue/articles":
       return json(ARTICLES);
     case "/stock":
-      return json(
-        MARQUES.map((m) => ({
-          brandId: m.id,
-          brandName: m.name,
-          formatId: FORMAT.id,
-          formatLabel: FORMAT.label,
-          full: m.full,
-          empty: m.empty,
-          total: m.full + m.empty,
-          threshold: SEUIL_BAS,
-          available: m.full > 0,
-          low: m.full <= SEUIL_BAS,
-        })),
-      );
+      return json(MARQUES.map(ligneStock));
     case "/stock/alerts":
-      return json(
-        MARQUES.filter((m) => m.full <= SEUIL_BAS).map((m) => ({
-          brandId: m.id,
-          brandName: m.name,
-          formatId: FORMAT.id,
-          formatLabel: FORMAT.label,
-          full: m.full,
-          empty: m.empty,
-          total: m.full + m.empty,
-          threshold: SEUIL_BAS,
-          available: m.full > 0,
-          low: true,
-        })),
-      );
+      return json(MARQUES.filter((m) => m.full <= SEUIL_BAS).map(ligneStock));
     case "/customers": {
       const q = (url.searchParams.get("q") ?? "").toLowerCase();
       return json(
@@ -395,7 +448,15 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       );
     }
     case "/sales":
-      return json(VENTES);
+      return json(
+        url.searchParams.get("type") === "exchange"
+          ? VENTES.filter((v) => v.lines.some((l) => l.returnedBrandId && l.returnedBrandId !== l.brandId))
+          : VENTES,
+      );
+    case "/cash/closure-threshold":
+      return json({ threshold: SEUIL_CLOTURE });
+    case "/reports/dashboard":
+      return json(tableauDeBord());
     case "/suppliers":
       return json(FOURNISSEURS);
     case "/receptions":
