@@ -2,6 +2,7 @@ import {
   canalFormulas,
   canalPayment,
   canalPayments,
+  canalReminders,
   canalSubscriber,
   canalSubscribers,
 } from "@jarvis/shared";
@@ -100,6 +101,19 @@ describe("Canal+ : formules, abonnés, échéances (API)", () => {
     expect(await names("/due")).toEqual(["Paul Essomba", "Aïcha Mbarga"]);
     expect(await names("/due?within=0")).toEqual(["Paul Essomba"]);
     expect((await get("/due?within=-1")).status).toBe(422);
+  });
+
+  it("rappels : message et lien WhatsApp prêts, comptés au tableau de bord", async () => {
+    const list = canalReminders.parse(await (await get("/reminders")).json());
+    expect(list.map((r) => r.name)).toEqual(["Paul Essomba", "Aïcha Mbarga"]);
+    expect(list[0]?.message).toContain("a expiré le 10/11/2026");
+    expect(list[1]?.message).toContain("expire le 28/11/2026");
+    expect(list[0]?.whatsappUrl).toMatch(/^https:\/\/wa\.me\/237690000000\?text=Bonjour/);
+    const en = canalReminders.parse(await (await get("/reminders?lang=en&within=0")).json());
+    expect(en[0]?.message).toContain("expired on 10/11/2026");
+    expect((await get("/reminders?lang=de")).status).toBe(422);
+    const board = await t.app.request("/api/v1/reports/dashboard", authGet(gerant));
+    expect(await board.json()).toMatchObject({ canalDue: 2 });
   });
 
   it("encaissement : caisse Canal+, échéance prolongée, annulation tracée", async () => {

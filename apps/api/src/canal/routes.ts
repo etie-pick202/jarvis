@@ -2,6 +2,7 @@ import {
   canalPaymentInput,
   createCanalFormulaInput,
   createCanalSubscriberInput,
+  language,
   updateCanalFormulaInput,
   updateCanalSubscriberInput,
 } from "@jarvis/shared";
@@ -93,6 +94,15 @@ export const canalRoutes = new Hono<AppEnv>()
       201,
     );
   })
+  .get("/reminders", requirePermission("canal.read"), async (c) =>
+    c.json(
+      await svc.reminders(
+        c.get("deps"),
+        parse(within, c.req.query("within")),
+        parse(language.default("fr"), c.req.query("lang")),
+      ),
+    ),
+  )
   .get("/due", requirePermission("canal.read"), async (c) =>
     c.json(await svc.dueSubscribers(c.get("deps"), parse(within, c.req.query("within")))),
   );

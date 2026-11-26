@@ -118,3 +118,12 @@ export const canalPayments = z.array(canalPayment);
 
 /** Rejeu hors ligne d'un encaissement : le même corps, avec la fiche visée. */
 export const canalPaymentSyncPayload = canalPaymentInput.extend({ subscriberId: id });
+
+/** Langue d'un message envoyé au client. */
+export const language = z.enum(["fr", "en"]);
+export type Language = z.infer<typeof language>;
+
+/** Relance prête à envoyer : le gérant ouvre le lien, WhatsApp est prérempli. */
+export const canalReminder = canalSubscriber.extend({ message: z.string(), whatsappUrl: z.url() });
+export type CanalReminder = z.infer<typeof canalReminder>;
+export const canalReminders = z.array(canalReminder);

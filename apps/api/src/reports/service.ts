@@ -1,5 +1,6 @@
 import { schema } from "@jarvis/db";
 import { and, asc, eq, gte, isNull, lt, sql } from "drizzle-orm";
+import { dueSubscribers } from "../canal/service.js";
 import { balanceBefore } from "../cash/ledger.js";
 import { dayRange } from "../cash/rules.js";
 import { listRegisters } from "../cash/service.js";
@@ -227,7 +228,7 @@ export async function stockCsv(deps: Deps) {
 // ---------- Tableau de bord du PDG ----------
 /** Vue agrégée : ventes et marge du jour, soldes des caisses, stock, alertes et notifications non lues. */
 export async function dashboard(deps: Deps, day: string) {
-  const [stats, levels, registers, unread] = await Promise.all([
+  const [stats, levels, registers, unread, due] = await Promise.all([
     customerStats(deps, day),
     stockLevels(deps),
     listRegisters(deps),
@@ -235,6 +236,7 @@ export async function dashboard(deps: Deps, day: string) {
       .select({ n: sql<number>`count(*)::int` })
       .from(notifications)
       .where(and(eq(notifications.recipientRole, "pdg"), isNull(notifications.readAt))),
+    dueSubscribers(deps, 7),
   ]);
   const alerts = levels.filter((l) => l.low);
   return {
@@ -259,5 +261,6 @@ export async function dashboard(deps: Deps, day: string) {
       alerts,
     },
     unreadNotifications: unread[0]?.n ?? 0,
+    canalDue: due.length,
   };
 }
