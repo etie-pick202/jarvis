@@ -1,3 +1,4 @@
+export * from "./canal.js";
 export * from "./cash.js";
 export * from "./catalogue.js";
 export * from "./common.js";
