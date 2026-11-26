@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { api, nombreFr, type Rapport } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import type { MessageKey } from "../i18n/fr.js";
 import { useI18n } from "../i18n/index.js";
 import { Button } from "../ui/Button.js";
+import { Etat } from "../ui/Etat.js";
+import { usePagination, VoirPlus } from "../ui/listes.js";
 import { Table } from "../ui/Table.js";
 import { enCsv, enTexte, lienMail, lienWhatsapp, telecharger } from "./export.js";
 
@@ -15,20 +17,31 @@ function Cellule({ v }: { v: string | number }) {
   );
 }
 
+interface PropsRapport {
+  id: "clients" | "journal" | "x";
+  titre: MessageKey;
+}
+
+/** La clé évite qu'un rapport affiche un instant les données (ou l'erreur) du précédent. */
+export function RapportTable(props: Readonly<PropsRapport>) {
+  return <Rapport1 key={props.id} {...props} />;
+}
+
 /** Un rapport quotidien consultable à l'écran, avec envoi par WhatsApp ou e-mail et export CSV. */
-export function RapportTable({ id, titre }: { id: "clients" | "journal" | "x"; titre: MessageKey }) {
+function Rapport1({ id, titre }: Readonly<PropsRapport>) {
   const { t } = useI18n();
-  const { data, pret } = useCached(`rapport-${id}`, (s) => api.rapport(id, s), VIDE);
+  const charger = useCallback((s: AbortSignal) => api.rapport(id, s), [id]);
+  const lecture = useCached(`rapport-${id}`, charger, VIDE);
+  const { data } = lecture;
+  const { visibles, restants, plus } = usePagination(data.lignes);
   const nom = t(titre);
   const texte = enTexte(nom, data);
   return (
     <section className="carte">
       <h1>{nom}</h1>
-      {!pret && data.colonnes.length === 0 ? (
-        <p role="status">{t("page.chargement")}</p>
-      ) : (
+      <Etat {...lecture} vide={data.lignes.length === 0} messageVide={t("rapport.vide")}>
         <Table caption={nom} colonnes={data.colonnes}>
-          {data.lignes.map((l, i) => (
+          {visibles.map((l, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: lignes d'un rapport figé, sans identifiant propre
             <tr key={i}>
               {l.map((v, j) => (
@@ -46,7 +59,8 @@ export function RapportTable({ id, titre }: { id: "clients" | "journal" | "x"; t
             </tr>
           )}
         </Table>
-      )}
+        <VoirPlus restants={restants} plus={plus} />
+      </Etat>
       <div className="vente__actions">
         <Button
           variant="noir"
@@ -68,29 +82,32 @@ export function RapportTable({ id, titre }: { id: "clients" | "journal" | "x"; t
 /** Situation gaz : par marque, pleines, vides et total, avec le total général. */
 export function SituationGaz() {
   const { t } = useI18n();
-  const { data } = useCached("rapport-gaz", (s) => api.situationGaz(s), VIDE);
+  const lecture = useCached("rapport-gaz", api.situationGaz, VIDE);
+  const { data } = lecture;
   const texte = enTexte(t("rub.rapport.gaz"), data);
   return (
     <section className="carte">
       <h1>{t("rub.rapport.gaz")}</h1>
-      <Table caption={t("rub.rapport.gaz")} colonnes={data.colonnes}>
-        {data.lignes.map((l) => (
-          <tr key={String(l[0])}>
-            {l.map((v, j) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: colonnes fixes
-              <Cellule key={j} v={v} />
-            ))}
-          </tr>
-        ))}
-        {data.pied && (
-          <tr className="tableau__total">
-            {data.pied.map((v, j) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: colonnes fixes
-              <Cellule key={j} v={v} />
-            ))}
-          </tr>
-        )}
-      </Table>
+      <Etat {...lecture} vide={data.lignes.length === 0} messageVide={t("rapport.vide")}>
+        <Table caption={t("rub.rapport.gaz")} colonnes={data.colonnes}>
+          {data.lignes.map((l) => (
+            <tr key={String(l[0])}>
+              {l.map((v, j) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: colonnes fixes
+                <Cellule key={j} v={v} />
+              ))}
+            </tr>
+          ))}
+          {data.pied && (
+            <tr className="tableau__total">
+              {data.pied.map((v, j) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: colonnes fixes
+                <Cellule key={j} v={v} />
+              ))}
+            </tr>
+          )}
+        </Table>
+      </Etat>
       <div className="vente__actions">
         <Button
           variant="noir"
