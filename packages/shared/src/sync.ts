@@ -9,6 +9,7 @@ export const syncOperationType = z.enum([
   "reception",
   "inventory_weekly",
   "inventory_evening",
+  "canal_payment",
 ]);
 export type SyncOperationType = z.infer<typeof syncOperationType>;
 
