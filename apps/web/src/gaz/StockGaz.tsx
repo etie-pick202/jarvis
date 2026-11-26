@@ -2,16 +2,17 @@ import { api } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import { useI18n } from "../i18n/index.js";
 import { Chip } from "../ui/Chip.js";
+import { Etat } from "../ui/Etat.js";
 import { Table } from "../ui/Table.js";
 import { FormatBouteille } from "../visuels/FormatBouteille.js";
-import { EtatVide } from "../visuels/Illustration.js";
 import { MarqueGaz } from "../visuels/MarqueGaz.js";
 import { Comptage } from "./Inventaire.js";
 
 /** Stock plein et vide par marque, alerte de seuil bas, confirmation du soir. */
 export function StockGaz() {
   const { t } = useI18n();
-  const { data, pret, hors } = useCached("gaz-stock", api.gazStock, []);
+  const lecture = useCached("gaz-stock", api.gazStock, []);
+  const { data } = lecture;
   const formats = new Set(data.map((s) => s.formatId));
   const pleines = data.reduce((n, s) => n + s.pleines, 0);
   const vides = data.reduce((n, s) => n + s.vides, 0);
@@ -20,16 +21,7 @@ export function StockGaz() {
     <div className="page">
       <section className="carte">
         <h1>{t("gaz.stock.titre")}</h1>
-        {data.length === 0 && hors ? (
-          <EtatVide
-            genre="hors-ligne"
-            titre={t("horsligne.titre")}
-            texte={t("horsligne.texte")}
-            role="status"
-          />
-        ) : !pret && data.length === 0 ? (
-          <p role="status">{t("page.chargement")}</p>
-        ) : (
+        <Etat {...lecture} vide={data.length === 0} messageVide={t("gaz.stock.vide")}>
           <Table
             caption={t("gaz.stock.titre")}
             colonnes={[t("gaz.marque"), t("gaz.pleines"), t("gaz.vides"), t("gaz.total"), ""]}
@@ -60,9 +52,10 @@ export function StockGaz() {
               <td />
             </tr>
           </Table>
-        )}
+        </Etat>
       </section>
-      <Comptage kind="evening" />
+      {/* Sans stock lu, rien à confirmer : un seul message d'erreur sur la page. */}
+      {lecture.charge && <Comptage kind="evening" />}
     </div>
   );
 }

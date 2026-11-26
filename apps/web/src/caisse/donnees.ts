@@ -34,13 +34,14 @@ export function deltasEnAttente(ops: readonly Operation[]): Record<string, numbe
  * Le solde n'est jamais saisi à la main ; à la reconnexion le serveur recalcule et fait foi.
  */
 export function useCaisses() {
-  const { data, pret } = useCached("caisses", api.caisses, VIDE);
+  const lecture = useCached("caisses", api.caisses, VIDE);
+  const { data } = lecture;
   const ops = useOutbox();
   const caisses = useMemo(() => {
     const deltas = deltasEnAttente(ops);
     return data.map((c) => ({ ...c, solde: c.solde + (deltas[c.id] ?? 0) }));
   }, [data, ops]);
-  return { caisses, actives: caisses.filter((c) => c.actif), pret };
+  return { caisses, actives: caisses.filter((c) => c.actif), lecture };
 }
 
 export const totalSoldes = (caisses: readonly Caisse[]) => caisses.reduce((n, c) => n + c.solde, 0);

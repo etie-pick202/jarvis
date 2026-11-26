@@ -2,10 +2,11 @@ import { useCallback, useState } from "react";
 import { api, type CanalSubscriber } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import { useI18n } from "../i18n/index.js";
+import { Etat } from "../ui/Etat.js";
+import { usePagination, VoirPlus } from "../ui/listes.js";
 import { Segmented } from "../ui/Segmented.js";
 import { Table } from "../ui/Table.js";
 import { formatFcfa } from "../vente/regles.js";
-import { EtatVide } from "../visuels/Illustration.js";
 import { EtatChip } from "./EtatChip.js";
 import { dateCourte, lienRappel } from "./regles.js";
 
@@ -21,9 +22,24 @@ function useEcheances(jours: Fenetre) {
  * le gérant relance l'abonné sans frais.
  */
 export function Echeances({ rappels = false }: { rappels?: boolean }) {
-  const { t, lang } = useI18n();
   const [jours, setJours] = useState<Fenetre>("7");
-  const { data, hors } = useEcheances(jours);
+  // La clé repart d'un état neuf à chaque fenêtre (sinon on verrait un instant les données de la précédente).
+  return <Liste key={jours} jours={jours} setJours={setJours} rappels={rappels} />;
+}
+
+function Liste({
+  jours,
+  setJours,
+  rappels,
+}: Readonly<{
+  jours: Fenetre;
+  setJours: (j: Fenetre) => void;
+  rappels: boolean;
+}>) {
+  const { t, lang } = useI18n();
+  const lecture = useEcheances(jours);
+  const { data } = lecture;
+  const { visibles, restants, plus } = usePagination(data);
   const titre = rappels ? t("rub.canal.rappels") : t("rub.canal.echeances");
 
   const message = (a: CanalSubscriber) =>
@@ -49,13 +65,7 @@ export function Echeances({ rappels = false }: { rappels?: boolean }) {
           { value: "30", label: t("canal.jours.30") },
         ]}
       />
-      {data.length === 0 ? (
-        hors ? (
-          <EtatVide genre="hors-ligne" titre={t("horsligne.titre")} texte={t("horsligne.texte")} />
-        ) : (
-          <EtatVide genre="vide" titre={t("canal.aucune.echeance")} />
-        )
-      ) : (
+      <Etat {...lecture} vide={data.length === 0} messageVide={t("canal.aucune.echeance")}>
         <Table
           caption={titre}
           colonnes={[
@@ -65,7 +75,7 @@ export function Echeances({ rappels = false }: { rappels?: boolean }) {
             rappels ? t("canal.rappel") : t("canal.telephone"),
           ]}
         >
-          {data.map((a) => (
+          {visibles.map((a) => (
             <tr key={a.id}>
               <th scope="row">{a.name}</th>
               <td>{a.formulaName}</td>
@@ -90,7 +100,8 @@ export function Echeances({ rappels = false }: { rappels?: boolean }) {
             </tr>
           ))}
         </Table>
-      )}
+        <VoirPlus restants={restants} plus={plus} />
+      </Etat>
     </section>
   );
 }
