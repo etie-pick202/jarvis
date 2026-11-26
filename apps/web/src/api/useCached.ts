@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 
+/** À changer quand la forme d'un modèle de vue change : l'ancienne copie locale est alors ignorée. */
+const PREFIXE = "jarvis.cache.v2.";
+
 function lire<T>(cle: string, defaut: T): T {
   try {
     const brut = localStorage.getItem(cle);
@@ -15,7 +18,7 @@ export function useCached<T>(
   charger: (signal: AbortSignal) => Promise<T>,
   defaut: T,
 ): { data: T; pret: boolean; hors: boolean; modifier: (f: (d: T) => T) => void } {
-  const [data, setData] = useState<T>(() => lire(`jarvis.cache.${cle}`, defaut));
+  const [data, setData] = useState<T>(() => lire(`${PREFIXE}${cle}`, defaut));
   const [pret, setPret] = useState(false);
   const [hors, setHors] = useState(false);
 
@@ -23,7 +26,7 @@ export function useCached<T>(
     const controller = new AbortController();
     charger(controller.signal)
       .then((d) => {
-        localStorage.setItem(`jarvis.cache.${cle}`, JSON.stringify(d));
+        localStorage.setItem(`${PREFIXE}${cle}`, JSON.stringify(d));
         setData(d);
         setHors(false);
       })
@@ -37,7 +40,7 @@ export function useCached<T>(
     (f: (d: T) => T) =>
       setData((d) => {
         const suivant = f(d);
-        localStorage.setItem(`jarvis.cache.${cle}`, JSON.stringify(suivant));
+        localStorage.setItem(`${PREFIXE}${cle}`, JSON.stringify(suivant));
         return suivant;
       }),
     [cle],
