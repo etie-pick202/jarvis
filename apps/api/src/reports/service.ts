@@ -7,7 +7,14 @@ import { listRegisters } from "../cash/service.js";
 import type { Deps } from "../http.js";
 import { lineMargin } from "../sales/compute.js";
 import { stockLevels } from "../stock/service.js";
-import { CASH_REGISTERS_IN_CASH, gasLabel, marginPercent, signed, signedEntry, toCsv } from "./compute.js";
+import {
+  CASH_REGISTERS_IN_CASH,
+  type CsvCell,
+  gasLabel,
+  marginPercent,
+  signed,
+  signedEntry,
+} from "./compute.js";
 
 const { sales, saleLines, brands, formats, articles, cashEntries, cashRegisters, users, notifications } =
   schema;
@@ -153,11 +160,29 @@ export async function gasSituation(deps: Deps) {
   };
 }
 
-// ---------- Exports CSV ----------
-export async function salesCsv(deps: Deps, day: string) {
-  const r = await customerStats(deps, day);
-  return toCsv(
-    [
+// ---------- Exports (CSV ou Excel) ----------
+export interface Table {
+  headers: string[];
+  rows: CsvCell[][];
+}
+
+/** Les jours d'activité de `from` à `to` inclus. */
+export function daysOf(from: string, to: string): string[] {
+  const days: string[] = [];
+  for (
+    let at = Date.parse(`${from}T00:00:00.000Z`);
+    at <= Date.parse(`${to}T00:00:00.000Z`);
+    at += 86_400_000
+  ) {
+    days.push(new Date(at).toISOString().slice(0, 10));
+  }
+  return days;
+}
+
+export async function salesTable(deps: Deps, days: string[]): Promise<Table> {
+  const reports = await Promise.all(days.map((d) => customerStats(deps, d)));
+  return {
+    headers: [
       "Ticket",
       "Date",
       "Client",
@@ -169,25 +194,27 @@ export async function salesCsv(deps: Deps, day: string) {
       "Marge",
       "Marge %",
     ],
-    r.lines.map((l) => [
-      l.saleNumber,
-      l.at,
-      l.customerName,
-      l.item,
-      l.quantity,
-      l.unitPrice,
-      l.paymentMethod,
-      l.total,
-      l.margin,
-      l.marginPercent,
-    ]),
-  );
+    rows: reports.flatMap((r) =>
+      r.lines.map((l) => [
+        l.saleNumber,
+        l.at,
+        l.customerName,
+        l.item,
+        l.quantity,
+        l.unitPrice,
+        l.paymentMethod,
+        l.total,
+        l.margin,
+        l.marginPercent,
+      ]),
+    ),
+  };
 }
 
-export async function cashCsv(deps: Deps, day: string) {
-  const r = await cashJournal(deps, day);
-  return toCsv(
-    [
+export async function cashTable(deps: Deps, days: string[]): Promise<Table> {
+  const journals = await Promise.all(days.map((d) => cashJournal(deps, d)));
+  return {
+    headers: [
       "Date",
       "Caisse",
       "Pièce",
@@ -199,30 +226,32 @@ export async function cashCsv(deps: Deps, day: string) {
       "Solde après",
       "Opérateur",
     ],
-    r.entries.map((e) => [
-      e.at,
-      e.register,
-      e.number,
-      e.direction === "in" ? "Entrée" : "Sortie",
-      e.paymentMethod,
-      e.customerName,
-      e.label,
-      e.amount,
-      e.balanceAfter,
-      e.operator,
-    ]),
-  );
+    rows: journals.flatMap((r) =>
+      r.entries.map((e) => [
+        e.at,
+        e.register,
+        e.number,
+        e.direction === "in" ? "Entrée" : "Sortie",
+        e.paymentMethod,
+        e.customerName,
+        e.label,
+        e.amount,
+        e.balanceAfter,
+        e.operator,
+      ]),
+    ),
+  };
 }
 
-export async function stockCsv(deps: Deps) {
+export async function stockTable(deps: Deps): Promise<Table> {
   const r = await gasSituation(deps);
-  return toCsv(
-    ["Marque", "Pleines", "Vides", "Total"],
-    [
+  return {
+    headers: ["Marque", "Pleines", "Vides", "Total"],
+    rows: [
       ...r.rows.map((x) => [x.brand, x.full, x.empty, x.total]),
       ["TOTAL", r.totals.full, r.totals.empty, r.totals.total],
     ],
-  );
+  };
 }
 
 // ---------- Tableau de bord du PDG ----------
