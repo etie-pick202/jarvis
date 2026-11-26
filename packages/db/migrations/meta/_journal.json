@@ -71,6 +71,13 @@
       "when": 1795733691858,
       "tag": "0009_orange_money_momo",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795734760044,
+      "tag": "0010_quartiers",
+      "breakpoints": true
     }
   ]
 }
