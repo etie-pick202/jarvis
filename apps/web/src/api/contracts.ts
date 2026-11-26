@@ -21,6 +21,8 @@ export interface Badges {
   validations: number;
 }
 
+export type { CanalFormula, CanalSubscriber } from "@jarvis/shared";
+
 export interface Livraison {
   id: string;
   client: string;

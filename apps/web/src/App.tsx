@@ -12,6 +12,8 @@ import { Plus } from "./shell/Plus.js";
 import { Shell } from "./shell/Shell.js";
 
 // Écrans chargés à la demande : le premier affichage ne télécharge que la coque et la connexion.
+const Abonnes = lazy(() => import("./canal/Abonnes.js").then((m) => ({ default: m.Abonnes })));
+const Echeances = lazy(() => import("./canal/Echeances.js").then((m) => ({ default: m.Echeances })));
 const Cloture = lazy(() => import("./caisse/Cloture.js").then((m) => ({ default: m.Cloture })));
 const Depenses = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Depenses })));
 const Transferts = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Transferts })));
@@ -212,6 +214,30 @@ export function App() {
               element={
                 <Garde volet="rapport">
                   <Exports />
+                </Garde>
+              }
+            />
+            <Route
+              path="canal/abonnes"
+              element={
+                <Garde volet="canal">
+                  <Abonnes />
+                </Garde>
+              }
+            />
+            <Route
+              path="canal/echeances"
+              element={
+                <Garde volet="canal">
+                  <Echeances />
+                </Garde>
+              }
+            />
+            <Route
+              path="canal/rappels"
+              element={
+                <Garde volet="canal">
+                  <Echeances rappels />
                 </Garde>
               }
             />
