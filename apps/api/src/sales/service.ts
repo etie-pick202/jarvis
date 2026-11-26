@@ -7,6 +7,7 @@ import { appendCashEntry, formatNumber, nextSequence, registerForPayment } from 
 import { dayRange } from "../cash/rules.js";
 import { currentGasPrice } from "../catalogue/service.js";
 import { findOrCreateCustomer } from "../customers/service.js";
+import { reservedArticle, reservedFull } from "../delivery/reservations.js";
 import { AppError, type Deps } from "../http.js";
 import { appendStockMove, lockStock, stockOf } from "../stock/ledger.js";
 import { aggregateFullDemand, computeGasLine } from "./compute.js";
@@ -99,7 +100,8 @@ export async function createSaleDetailed(
     for (const d of demand.values()) await lockStock(tx, d.brandId, d.formatId);
     for (const d of demand.values()) {
       const brand = await loadBrand(tx, d.brandId);
-      const available = await stockOf(tx, d.brandId, d.formatId, "full");
+      const available =
+        (await stockOf(tx, d.brandId, d.formatId, "full")) - (await reservedFull(tx, d.brandId, d.formatId));
       if (available < d.quantity) {
         const message = `Rupture : ${brand.name} (${available} plein(s) en stock, ${d.quantity} demandé(s))`;
         if (!options.allowOutOfStock) throw new AppError(409, "out_of_stock", message);
@@ -186,7 +188,8 @@ export async function createSaleDetailed(
     for (const line of articleLinesIn) {
       const art = articleRows.find((a) => a.id === line.articleId);
       if (!art?.active) throw new AppError(404, "not_found", "Article introuvable ou désactivé");
-      if (art.trackStock && art.stockQty < (articleDemand.get(art.id) ?? 0)) {
+      const free = art.trackStock ? art.stockQty - (await reservedArticle(tx, art.id)) : 0;
+      if (art.trackStock && free < (articleDemand.get(art.id) ?? 0)) {
         throw new AppError(409, "out_of_stock", `Rupture : ${art.name}`);
       }
       computed.push({
