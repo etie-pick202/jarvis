@@ -463,3 +463,34 @@ export const canalPayments = pgTable(
     uniqueIndex("canal_payments_one_reversal").on(t.reversalOf).where(sql`${t.reversalOf} is not null`),
   ],
 );
+
+/** Dépôts et retraits Orange Money et MoMo (ajout seul). */
+export const moneyOperations = pgTable(
+  "money_operations",
+  {
+    id: id(),
+    operator: text("operator").notNull(),
+    kind: text("kind").notNull(),
+    amount: integer("amount").notNull(),
+    commission: integer("commission").notNull().default(0),
+    phone: text("phone").notNull(),
+    customerName: text("customer_name"),
+    reference: text("reference").notNull(),
+    cashEntryId: uuid("cash_entry_id")
+      .notNull()
+      .references(() => cashEntries.id),
+    floatEntryId: uuid("float_entry_id")
+      .notNull()
+      .references(() => cashEntries.id),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    reversalOf: uuid("reversal_of").references((): AnyPgColumn => moneyOperations.id),
+    justification: text("justification"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("money_operations_reference").on(t.operator, t.reference).where(sql`${t.reversalOf} is null`),
+    uniqueIndex("money_operations_one_reversal").on(t.reversalOf).where(sql`${t.reversalOf} is not null`),
+  ],
+);
