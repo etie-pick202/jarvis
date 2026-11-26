@@ -324,12 +324,21 @@ export const api = {
     })),
 
   badges: async (signal?: AbortSignal): Promise<Badges> => {
-    const [bas, attente] = await Promise.all([
+    const [bas, attente, echeances] = await Promise.all([
       sansDroit(get("/stock/alerts", contrat.stockRows, signal), []),
       sansDroit(get("/inventory?pending=1", contrat.countRows, signal), []),
+      sansDroit(get("/canal/due?within=7", contrat.canalSubscribers, signal), []),
     ]);
-    return { commandes: 0, stockBas: bas.length, echeances: 0, validations: attente.length };
+    return { commandes: 0, stockBas: bas.length, echeances: echeances.length, validations: attente.length };
   },
+
+  /** Canal+ : formules, abonnés (liste complète, filtrée sur l'appareil) et échéances proches. */
+  formulesCanal: (signal?: AbortSignal): Promise<contrat.CanalFormula[]> =>
+    get("/canal/formulas", contrat.canalFormulas, signal),
+  abonnesCanal: (signal?: AbortSignal): Promise<contrat.CanalSubscriber[]> =>
+    get("/canal/subscribers", contrat.canalSubscribers, signal),
+  echeancesCanal: (jours: number, signal?: AbortSignal): Promise<contrat.CanalSubscriber[]> =>
+    get(`/canal/due?within=${jours}`, contrat.canalSubscribers, signal),
 
   /** Livraisons du jour : le module de livraison n'a pas encore de contrat côté serveur (lot 3). */
   livraisons: async (): Promise<Livraison[]> => [],
