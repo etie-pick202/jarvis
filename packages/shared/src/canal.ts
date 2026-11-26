@@ -1,0 +1,82 @@
+import { z } from "zod";
+import { id, isoDateTime, signedInt } from "./common.js";
+import { fcfa } from "./money.js";
+
+/** Canal+ : formules, abonnés et échéances (cahier des charges, « Canal+ et services annexes »). */
+
+const phone = z.string().trim().min(6).max(30);
+const decoderNumber = z.string().trim().min(3).max(40);
+const atLeastOne = (o: Record<string, unknown>) => Object.values(o).some((v) => v !== undefined);
+const atLeastOneField = { message: "Au moins un champ à modifier" };
+
+export const createCanalFormulaInput = z.object({
+  name: z.string().trim().min(1).max(60),
+  price: fcfa.positive(),
+  /** Durée couverte par un paiement, en mois. */
+  months: z.number().int().min(1).max(24).default(1),
+  /** Commission perçue par paiement si COCOSAB est agent agréé ; 0 sinon (point ouvert). */
+  commission: fcfa.default(0),
+});
+export type CreateCanalFormulaInput = z.infer<typeof createCanalFormulaInput>;
+
+export const updateCanalFormulaInput = z
+  .object({
+    name: z.string().trim().min(1).max(60).optional(),
+    price: fcfa.positive().optional(),
+    months: z.number().int().min(1).max(24).optional(),
+    commission: fcfa.optional(),
+    active: z.boolean().optional(),
+  })
+  .refine(atLeastOne, atLeastOneField);
+export type UpdateCanalFormulaInput = z.infer<typeof updateCanalFormulaInput>;
+
+export const canalFormula = z.object({
+  id,
+  name: z.string(),
+  price: fcfa,
+  months: z.number().int(),
+  commission: fcfa,
+  active: z.boolean(),
+});
+export type CanalFormula = z.infer<typeof canalFormula>;
+export const canalFormulas = z.array(canalFormula);
+
+export const createCanalSubscriberInput = z.object({
+  name: z.string().trim().min(1).max(120),
+  phone,
+  decoderNumber,
+  formulaId: id,
+  /** Échéance en cours si l'abonné en a déjà une (saisie progressive, aucun import). */
+  expiresOn: z.iso.date().nullable().optional(),
+});
+export type CreateCanalSubscriberInput = z.infer<typeof createCanalSubscriberInput>;
+
+export const updateCanalSubscriberInput = z
+  .object({
+    name: z.string().trim().min(1).max(120).optional(),
+    phone: phone.optional(),
+    decoderNumber: decoderNumber.optional(),
+    formulaId: id.optional(),
+    expiresOn: z.iso.date().nullable().optional(),
+    active: z.boolean().optional(),
+  })
+  .refine(atLeastOne, atLeastOneField);
+export type UpdateCanalSubscriberInput = z.infer<typeof updateCanalSubscriberInput>;
+
+export const canalSubscriber = z.object({
+  id,
+  name: z.string(),
+  phone: z.string(),
+  decoderNumber: z.string(),
+  formulaId: id,
+  formulaName: z.string(),
+  formulaPrice: fcfa,
+  /** Dernier jour couvert (AAAA-MM-JJ) ; null si aucun abonnement enregistré. */
+  expiresOn: z.iso.date().nullable(),
+  /** Jours restants jusqu'à l'échéance (négatif : dépassée) ; null sans échéance. */
+  daysLeft: signedInt.nullable(),
+  active: z.boolean(),
+  createdAt: isoDateTime,
+});
+export type CanalSubscriber = z.infer<typeof canalSubscriber>;
+export const canalSubscribers = z.array(canalSubscriber);

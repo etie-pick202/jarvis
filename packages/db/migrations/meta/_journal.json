@@ -50,6 +50,13 @@
       "when": 1795618763786,
       "tag": "0006_emballage_inconnu",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795732480056,
+      "tag": "0007_canal_abonnes",
+      "breakpoints": true
     }
   ]
 }

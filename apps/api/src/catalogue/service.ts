@@ -11,30 +11,11 @@ import type {
 } from "@jarvis/shared";
 import { desc, eq } from "drizzle-orm";
 import { recordAudit } from "../audit/service.js";
+import { guardUnique, requireRow } from "../db-errors.js";
 import { AppError, type Deps } from "../http.js";
 import { exceedsCeiling, type PriceRow, resolveGasPrice } from "./pricing.js";
 
 const { brands, formats, gasPrices, articles, articlePriceHistory } = schema;
-
-function isUniqueViolation(err: unknown): boolean {
-  const e = err as { code?: string; cause?: { code?: string } };
-  return e?.code === "23505" || e?.cause?.code === "23505";
-}
-
-async function guardUnique<T>(run: () => Promise<T>, message: string): Promise<T> {
-  try {
-    return await run();
-  } catch (err) {
-    if (isUniqueViolation(err)) throw new AppError(409, "conflict", message);
-    throw err;
-  }
-}
-
-function first<T>(rows: T[], message = "Introuvable"): T {
-  const row = rows[0];
-  if (!row) throw new AppError(404, "not_found", message);
-  return row;
-}
 
 export const listBrands = (deps: Deps) => deps.db.select().from(brands).orderBy(brands.name);
 export const listFormats = (deps: Deps) => deps.db.select().from(formats).orderBy(formats.weightGrams);
@@ -52,7 +33,7 @@ function packagingColumns(input: {
 
 export async function createBrand(deps: Deps, actorId: string, input: CreateBrandInput) {
   return guardUnique(async () => {
-    const row = first(
+    const row = requireRow(
       await deps.db
         .insert(brands)
         .values({ name: input.name, ...packagingColumns(input) })
@@ -71,7 +52,7 @@ export async function createBrand(deps: Deps, actorId: string, input: CreateBran
 
 export async function updateBrand(deps: Deps, actorId: string, brandId: string, input: UpdateBrandInput) {
   return guardUnique(async () => {
-    const row = first(
+    const row = requireRow(
       await deps.db
         .update(brands)
         .set({
@@ -96,7 +77,7 @@ export async function updateBrand(deps: Deps, actorId: string, brandId: string, 
 
 export async function createFormat(deps: Deps, actorId: string, input: CreateFormatInput) {
   return guardUnique(async () => {
-    const row = first(
+    const row = requireRow(
       await deps.db
         .insert(formats)
         .values({ ...input, priceCeiling: input.priceCeiling ?? null })
@@ -115,7 +96,7 @@ export async function createFormat(deps: Deps, actorId: string, input: CreateFor
 
 export async function updateFormat(deps: Deps, actorId: string, formatId: string, input: UpdateFormatInput) {
   return guardUnique(async () => {
-    const row = first(
+    const row = requireRow(
       await deps.db.update(formats).set(input).where(eq(formats.id, formatId)).returning(),
       "Format introuvable",
     );
@@ -141,12 +122,13 @@ export async function currentGasPrice(db: Database, formatId: string, brandId: s
 
 /** Ajoute un prix à l'historique (jamais de modification de l'ancien) ; refuse un prix au-dessus du plafond. */
 export async function setGasPrice(deps: Deps, actorId: string, input: SetGasPriceInput) {
-  const format = first(
+  const format = requireRow(
     await deps.db.select().from(formats).where(eq(formats.id, input.formatId)),
     "Format introuvable",
   );
   const brandId = input.brandId ?? null;
-  if (brandId) first(await deps.db.select().from(brands).where(eq(brands.id, brandId)), "Marque introuvable");
+  if (brandId)
+    requireRow(await deps.db.select().from(brands).where(eq(brands.id, brandId)), "Marque introuvable");
   if (exceedsCeiling(input.amount, format.priceCeiling)) {
     throw new AppError(
       422,
@@ -155,7 +137,7 @@ export async function setGasPrice(deps: Deps, actorId: string, input: SetGasPric
     );
   }
   const previous = brandId ? await currentGasPrice(deps.db, input.formatId, brandId, deps.now()) : null;
-  const row = first(
+  const row = requireRow(
     await deps.db
       .insert(gasPrices)
       .values({ ...input, brandId, changedBy: actorId, effectiveFrom: deps.now() })
@@ -173,7 +155,7 @@ export async function setGasPrice(deps: Deps, actorId: string, input: SetGasPric
 
 /** Prix en vigueur d'un format (pour une marque donnée, sinon le prix commun) ; 404 si aucun n'est défini. */
 export async function currentPrice(deps: Deps, formatId: string, brandId: string | null) {
-  first(await deps.db.select().from(formats).where(eq(formats.id, formatId)), "Format introuvable");
+  requireRow(await deps.db.select().from(formats).where(eq(formats.id, formatId)), "Format introuvable");
   const rows = await priceRows(deps.db, formatId);
   const price = resolveGasPrice(rows, formatId, brandId ?? "", deps.now());
   if (!price) throw new AppError(404, "not_found", "Aucun prix défini pour ce format");
@@ -190,7 +172,7 @@ export const gasPriceHistory = (deps: Deps, formatId: string) =>
 export const listArticles = (deps: Deps) => deps.db.select().from(articles).orderBy(articles.name);
 
 export async function createArticle(deps: Deps, actorId: string, input: CreateArticleInput) {
-  const row = first(
+  const row = requireRow(
     await deps.db
       .insert(articles)
       .values({ ...input, createdBy: actorId })
@@ -215,11 +197,13 @@ export async function updateArticle(
   articleId: string,
   input: UpdateArticleInput,
 ) {
-  const before = first(
+  const before = requireRow(
     await deps.db.select().from(articles).where(eq(articles.id, articleId)),
     "Article introuvable",
   );
-  const row = first(await deps.db.update(articles).set(input).where(eq(articles.id, articleId)).returning());
+  const row = requireRow(
+    await deps.db.update(articles).set(input).where(eq(articles.id, articleId)).returning(),
+  );
   if (input.price !== undefined && input.price !== before.price) {
     await deps.db
       .insert(articlePriceHistory)

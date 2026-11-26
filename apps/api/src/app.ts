@@ -2,6 +2,7 @@ import { deliveryTotal, errorBody, pickupTotal } from "@jarvis/shared";
 import { Hono } from "hono";
 import { z } from "zod";
 import { authRoutes } from "./auth/routes.js";
+import { canalRoutes } from "./canal/routes.js";
 import { cashRoutes } from "./cash/routes.js";
 import { catalogueRoutes } from "./catalogue/routes.js";
 import { controlRoutes } from "./control/routes.js";
@@ -35,6 +36,7 @@ export function createApp(deps: Deps) {
   const api = new Hono<AppEnv>();
   api.use("*", withDeps(deps));
   api.route("/auth", authRoutes);
+  api.route("/canal", canalRoutes);
   api.route("/cash", cashRoutes);
   api.route("/catalogue", catalogueRoutes);
   api.route("/control", controlRoutes);

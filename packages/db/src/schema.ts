@@ -3,6 +3,7 @@ import {
   type AnyPgColumn,
   boolean,
   customType,
+  date,
   index,
   integer,
   jsonb,
@@ -395,3 +396,34 @@ export const receiptFiles = pgTable("receipt_files", {
     .references(() => users.id),
   createdAt: createdAt(),
 });
+
+// ---------- Canal+ ----------
+export const canalFormulas = pgTable("canal_formulas", {
+  id: id(),
+  name: text("name").notNull().unique(),
+  price: integer("price").notNull(),
+  months: integer("months").notNull().default(1),
+  /** Commission par paiement (agent agréé) ; 0 par défaut. */
+  commission: integer("commission").notNull().default(0),
+  active: boolean("active").notNull().default(true),
+  createdAt: createdAt(),
+});
+
+export const canalSubscribers = pgTable(
+  "canal_subscribers",
+  {
+    id: id(),
+    name: text("name").notNull(),
+    searchKey: text("search_key").notNull(),
+    phone: text("phone").notNull(),
+    decoderNumber: text("decoder_number").notNull().unique(),
+    formulaId: uuid("formula_id")
+      .notNull()
+      .references(() => canalFormulas.id),
+    /** Dernier jour couvert par l'abonnement. */
+    expiresOn: date("expires_on", { mode: "string" }),
+    active: boolean("active").notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [index("canal_subscribers_expiry").on(t.expiresOn)],
+);
