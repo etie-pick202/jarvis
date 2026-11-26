@@ -1,7 +1,13 @@
-import { canalFormulas, canalSubscriber, canalSubscribers } from "@jarvis/shared";
+import {
+  canalFormulas,
+  canalPayment,
+  canalPayments,
+  canalSubscriber,
+  canalSubscribers,
+} from "@jarvis/shared";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { addUser, authGet, createTestApp, jsonPost } from "../testing/db.js";
-import { addDays, daysBetween } from "./rules.js";
+import { addDays, addMonths, daysBetween, nextExpiry } from "./rules.js";
 
 const UNKNOWN = "3f1b1c1e-8a53-4c1e-9b0e-5d1a2b3c4d5e";
 
@@ -10,6 +16,15 @@ describe("dates d'échéance", () => {
     expect(daysBetween("2026-11-24", "2026-12-01")).toBe(7);
     expect(daysBetween("2026-11-24", "2026-11-20")).toBe(-4);
     expect(addDays("2026-12-28", 7)).toBe("2027-01-04");
+  });
+});
+
+describe("prolongation d'un abonnement", () => {
+  it("part de l'échéance en cours, ou du jour du paiement si elle est dépassée", () => {
+    expect(nextExpiry("2026-12-10", "2026-11-24", 1)).toBe("2027-01-10");
+    expect(nextExpiry("2026-11-01", "2026-11-24", 1)).toBe("2026-12-24");
+    expect(nextExpiry(null, "2026-11-24", 3)).toBe("2027-02-24");
+    expect(addMonths("2027-01-31", 1)).toBe("2027-02-28");
   });
 });
 
@@ -85,5 +100,64 @@ describe("Canal+ : formules, abonnés, échéances (API)", () => {
     expect(await names("/due")).toEqual(["Paul Essomba", "Aïcha Mbarga"]);
     expect(await names("/due?within=0")).toEqual(["Paul Essomba"]);
     expect((await get("/due?within=-1")).status).toBe(422);
+  });
+
+  it("encaissement : caisse Canal+, échéance prolongée, annulation tracée", async () => {
+    const [fiche] = canalSubscribers.parse(await (await get("/subscribers?q=DEC-001")).json());
+    const path = `/subscribers/${fiche?.id}/payments`;
+    expect((await send(path, { paymentMethod: "momo" }, caissier)).status).toBe(422);
+    const first = canalPayment.parse(await (await send(path, { paymentMethod: "cash" }, caissier)).json());
+    expect(first).toMatchObject({
+      registerId: "canal_cash",
+      amount: 5500,
+      previousExpiry: "2026-11-28",
+      newExpiry: "2026-12-28",
+    });
+    const second = canalPayment.parse(await (await send(path, { paymentMethod: "orange_money" })).json());
+    expect(second).toMatchObject({ registerId: "canal_om", newExpiry: "2027-01-28" });
+
+    const cancel = (id: string, justification?: string, token = gerant) =>
+      send(`/payments/${id}/cancel`, { justification }, token);
+    expect((await cancel(first.id, "Erreur de saisie")).status).toBe(409); // pas le dernier
+    expect((await cancel(second.id)).status).toBe(422);
+    expect((await cancel(second.id, "Erreur de saisie", caissier)).status).toBe(403);
+    const reversal = canalPayment.parse(await (await cancel(second.id, "Erreur de saisie")).json());
+    expect(reversal.reversalOf).toBe(second.id);
+    expect((await cancel(second.id, "Encore une fois")).status).toBe(409);
+    expect((await cancel(reversal.id, "Encore une fois")).status).toBe(422);
+    expect((await cancel(UNKNOWN, "Erreur de saisie")).status).toBe(404);
+
+    const after = canalSubscriber.parse(await (await get(`/subscribers/${fiche?.id}`)).json());
+    expect(after.expiresOn).toBe("2026-12-28");
+    const history = canalPayments.parse(
+      await (await get(`/payments?subscriberId=${fiche?.id}&date=2026-11-24`)).json(),
+    );
+    expect(history).toHaveLength(3);
+    expect(history.filter((p) => p.cancelled).map((p) => p.id)).toEqual([second.id]);
+    const registers = (await (await t.app.request("/api/v1/cash/registers", authGet(gerant))).json()) as {
+      id: string;
+      balance: number;
+    }[];
+    expect(registers.find((r) => r.id === "canal_cash")?.balance).toBe(5500);
+    expect(registers.find((r) => r.id === "canal_om")?.balance).toBe(0);
+  });
+
+  it("encaissement saisi hors ligne : rejoué une seule fois", async () => {
+    const [fiche] = canalSubscribers.parse(await (await get("/subscribers?q=DEC-004")).json());
+    const operation = {
+      clientOpId: "op-canal-0001",
+      type: "canal_payment",
+      occurredAt: "2026-11-23T10:00:00.000Z",
+      payload: { subscriberId: fiche?.id, paymentMethod: "cash" },
+    };
+    const replay = async () =>
+      (await (
+        await t.app.request("/api/v1/sync/replay", jsonPost({ operations: [operation] }, gerant))
+      ).json()) as { results: { status: string; result: { newExpiry: string } }[] };
+    expect((await replay()).results[0]).toMatchObject({
+      status: "applied",
+      result: { newExpiry: "2026-12-23" },
+    });
+    expect((await replay()).results[0]?.status).toBe("duplicate");
   });
 });

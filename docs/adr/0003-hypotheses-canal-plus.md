@@ -18,6 +18,12 @@ commissions paramétrables, désactivables. Il ne donne ni la liste des formules
   est le dernier jour couvert ; elle se saisit à la création si elle existe déjà (aucun import).
 - Les « échéances proches » sont, par défaut, celles des 7 prochains jours, dépassées comprises.
 
+- Encaissement : le prix et la durée sont ceux de la formule au moment du paiement. Espèces ou Orange Money
+  seulement (les deux caisses Canal+). La nouvelle échéance part de l'échéance en cours si elle n'est pas dépassée,
+  sinon du jour du paiement, au même quantième.
+- Annulation : réservée au gérant et au PDG, avec justificatif et notification ; seul le dernier encaissement d'un
+  abonné peut être annulé, ce qui rétablit l'échéance précédente.
+
 ## Conséquences
 
 Les valeurs peuvent changer sans reprogrammation. La fenêtre de relance (7 jours) est un paramètre de la requête.
