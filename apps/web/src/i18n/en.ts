@@ -211,8 +211,6 @@ export const en: Record<MessageKey, string> = {
   "pilot.caisses": "Total in cash desks",
   "pilot.especes": "of which cash",
   "pilot.stock": "Full / empty bottles",
-  "pilot.livraisons": "Deliveries in progress",
-  "pilot.echeances": "Canal+ due dates",
   "pilot.aucune.alerte": "No alerts.",
   "pilot.urgent": "Urgent",
   "pilot.attention": "Watch",
@@ -240,6 +238,16 @@ export const en: Record<MessageKey, string> = {
   "session.expiree.titre": "Your session has expired",
   "session.expiree.texte":
     "To protect the cash desks, JARVIS signs you out after a period of inactivity. Your pending entries are kept.",
+  "pilot.marge": "Today's margin",
+  "pilot.stock.alertes": "Brands with a stock alert",
+  "pilot.notifications": "Unread notifications",
+  "pilot.confirmer.refus": "Confirm rejection",
+  "pilot.systeme": "System",
+  "caisse.cloture.aide.seuil":
+    "Count the money in each cash desk. A reason is required for a difference above",
+  "gaz.a.regulariser": "To be settled",
+  "vente.ecart.inconnu":
+    "Unknown packaging value: the CEO will settle the difference. The price does not change.",
   "page.bientot": "This screen is coming soon.",
   "page.introuvable": "Page not found",
   "page.retour": "Back to home",
