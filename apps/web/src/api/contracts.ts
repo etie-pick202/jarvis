@@ -96,6 +96,8 @@ export interface Caisse {
   nom: string;
   /** Solde théorique : calculé par le serveur après chaque mouvement, jamais saisi à la main. */
   solde: number;
+  /** Fond de caisse du matin : solde à l'ouverture du jour d'activité. */
+  fond: number;
   /** Les caisses en veille (transactions OM et MoMo) s'activent par un réglage. */
   actif: boolean;
   /** Part comptée en espèces (mention « dont … en espèces »). */
@@ -105,8 +107,14 @@ export interface Caisse {
 export interface Tableau {
   caJour: number;
   nbVentes: number;
-  livraisonsEnCours: number;
-  echeances: number;
+  marge: number;
+  margePct: number | null;
+  totalCaisses: number;
+  especes: number;
+  pleines: number;
+  vides: number;
+  alertesStock: number;
+  notifications: number;
 }
 
 export interface Alerte {
@@ -126,6 +134,8 @@ export interface Validation {
 export interface LigneAudit {
   id: string;
   date: string;
+  /** Vide pour une action du système. */
+  auteur: string;
   action: string;
   detail: string;
 }

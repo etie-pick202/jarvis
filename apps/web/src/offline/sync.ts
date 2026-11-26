@@ -1,5 +1,5 @@
+import { receiptSaved, replayResponse } from "@jarvis/shared";
 import { API_BASE, enTetes, erreurDe } from "../api/client.js";
-import { receiptSaved, replayResponse } from "../api/dto.js";
 import { db, type Operation } from "./db.js";
 import { flush, type SendResult } from "./outbox.js";
 
