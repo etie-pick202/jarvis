@@ -31,11 +31,11 @@ function Liste({
   jours,
   setJours,
   rappels,
-}: {
+}: Readonly<{
   jours: Fenetre;
   setJours: (j: Fenetre) => void;
   rappels: boolean;
-}) {
+}>) {
   const { t, lang } = useI18n();
   const lecture = useEcheances(jours);
   const { data } = lecture;

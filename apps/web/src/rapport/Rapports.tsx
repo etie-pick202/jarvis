@@ -23,12 +23,12 @@ interface PropsRapport {
 }
 
 /** La clé évite qu'un rapport affiche un instant les données (ou l'erreur) du précédent. */
-export function RapportTable(props: PropsRapport) {
+export function RapportTable(props: Readonly<PropsRapport>) {
   return <Rapport1 key={props.id} {...props} />;
 }
 
 /** Un rapport quotidien consultable à l'écran, avec envoi par WhatsApp ou e-mail et export CSV. */
-function Rapport1({ id, titre }: PropsRapport) {
+function Rapport1({ id, titre }: Readonly<PropsRapport>) {
   const { t } = useI18n();
   const charger = useCallback((s: AbortSignal) => api.rapport(id, s), [id]);
   const lecture = useCached(`rapport-${id}`, charger, VIDE);

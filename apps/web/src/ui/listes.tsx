@@ -14,7 +14,7 @@ export function usePagination<T>(elements: readonly T[], taille: number = PAGE) 
   };
 }
 
-export function VoirPlus({ restants, plus }: { restants: number; plus: () => void }) {
+export function VoirPlus({ restants, plus }: Readonly<{ restants: number; plus: () => void }>) {
   const { t } = useI18n();
   if (restants === 0) return null;
   return (
