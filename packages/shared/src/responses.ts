@@ -229,6 +229,8 @@ export const dashboard = z.object({
   ),
   stock: z.object({ full: signedInt, empty: signedInt, alerts: z.array(stockRow) }),
   unreadNotifications: z.number().int(),
+  /** Abonnements Canal+ dépassés ou à échéance dans les 7 jours. */
+  canalDue: z.number().int().optional(),
 });
 export type Dashboard = z.infer<typeof dashboard>;
 
