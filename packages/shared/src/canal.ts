@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cashRegisterId, paymentMethod } from "./cash.js";
 import { id, isoDateTime, signedInt } from "./common.js";
 import { fcfa } from "./money.js";
 
@@ -80,3 +81,40 @@ export const canalSubscriber = z.object({
 });
 export type CanalSubscriber = z.infer<typeof canalSubscriber>;
 export const canalSubscribers = z.array(canalSubscriber);
+
+/** Encaissement d'un abonnement ou réabonnement : prix et durée viennent de la formule. */
+export const canalPaymentInput = z.object({
+  /** Espèces ou Orange Money (les deux caisses Canal+). */
+  paymentMethod,
+  /** Changement de formule à l'occasion du paiement ; absent = formule de la fiche. */
+  formulaId: id.optional(),
+});
+export type CanalPaymentInput = z.infer<typeof canalPaymentInput>;
+
+export const canalPayment = z.object({
+  id,
+  subscriberId: id,
+  subscriberName: z.string(),
+  decoderNumber: z.string(),
+  formulaId: id,
+  formulaName: z.string(),
+  months: z.number().int(),
+  amount: fcfa,
+  commission: fcfa,
+  paymentMethod,
+  registerId: cashRegisterId,
+  previousExpiry: z.iso.date().nullable(),
+  newExpiry: z.iso.date(),
+  authorId: id,
+  authorName: z.string(),
+  createdAt: isoDateTime,
+  /** Renseigné quand cette ligne annule un encaissement. */
+  reversalOf: id.nullable(),
+  /** Vrai si cet encaissement a été annulé. */
+  cancelled: z.boolean(),
+});
+export type CanalPayment = z.infer<typeof canalPayment>;
+export const canalPayments = z.array(canalPayment);
+
+/** Rejeu hors ligne d'un encaissement : le même corps, avec la fiche visée. */
+export const canalPaymentSyncPayload = canalPaymentInput.extend({ subscriberId: id });

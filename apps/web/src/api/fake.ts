@@ -354,6 +354,37 @@ function tableauDeBord() {
   };
 }
 
+const FORMULES = [
+  { id: uuid(1301), name: "Access", price: 5000, months: 1, commission: 0, active: true },
+  { id: uuid(1302), name: "Évasion", price: 10500, months: 1, commission: 0, active: true },
+  { id: uuid(1303), name: "Tout Canal+", price: 45000, months: 1, commission: 0, active: true },
+];
+
+/** Échéances relatives au jour fictif : dépassée, proche, lointaine, sans abonnement. */
+const abonne = (n: number, name: string, formule: number, decodeur: string, jours: number | null) => ({
+  id: uuid(1400 + n),
+  name,
+  phone: `23769000000${n}`,
+  decoderNumber: decodeur,
+  formulaId: FORMULES[formule]?.id ?? uuid(1301),
+  formulaName: FORMULES[formule]?.name ?? "Access",
+  formulaPrice: FORMULES[formule]?.price ?? 5000,
+  expiresOn:
+    jours === null
+      ? null
+      : new Date(Date.parse(`${jour}T00:00:00.000Z`) + jours * 86_400_000).toISOString().slice(0, 10),
+  daysLeft: jours,
+  active: true,
+  createdAt: `${jour}T08:00:00.000Z`,
+});
+
+const ABONNES = [
+  abonne(1, "Atangana Rose", 1, "DEC-0001", -2),
+  abonne(2, "Essomba Jean", 0, "DEC-0002", 3),
+  abonne(3, "Manga Sylvie", 2, "DEC-0003", 12),
+  abonne(4, "Owona Marc", 0, "DEC-0004", null),
+];
+
 const CLE_FAUX = "jarvis.fake-user";
 
 /** L'utilisateur « connecté » survit au rechargement, comme le ferait un jeton de session. */
@@ -458,6 +489,14 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
           ? VENTES.filter((v) => v.lines.some((l) => l.returnedBrandId && l.returnedBrandId !== l.brandId))
           : VENTES,
       );
+    case "/canal/formulas":
+      return json(FORMULES);
+    case "/canal/subscribers":
+      return json(ABONNES);
+    case "/canal/due": {
+      const jours = Number(url.searchParams.get("within") ?? 7);
+      return json(ABONNES.filter((a) => a.active && a.daysLeft !== null && a.daysLeft <= jours));
+    }
     case "/cash/closure-threshold":
       return json({ threshold: SEUIL_CLOTURE });
     case "/reports/dashboard":

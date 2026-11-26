@@ -427,3 +427,39 @@ export const canalSubscribers = pgTable(
   },
   (t) => [index("canal_subscribers_expiry").on(t.expiresOn)],
 );
+
+/** Encaissements Canal+ (ajout seul) : une annulation ajoute une ligne inverse. */
+export const canalPayments = pgTable(
+  "canal_payments",
+  {
+    id: id(),
+    subscriberId: uuid("subscriber_id")
+      .notNull()
+      .references(() => canalSubscribers.id),
+    formulaId: uuid("formula_id")
+      .notNull()
+      .references(() => canalFormulas.id),
+    months: integer("months").notNull(),
+    amount: integer("amount").notNull(),
+    commission: integer("commission").notNull().default(0),
+    paymentMethod: text("payment_method").notNull(),
+    registerId: text("register_id")
+      .notNull()
+      .references(() => cashRegisters.id),
+    cashEntryId: uuid("cash_entry_id")
+      .notNull()
+      .references(() => cashEntries.id),
+    previousExpiry: date("previous_expiry", { mode: "string" }),
+    newExpiry: date("new_expiry", { mode: "string" }).notNull(),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    reversalOf: uuid("reversal_of").references((): AnyPgColumn => canalPayments.id),
+    justification: text("justification"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("canal_payments_subscriber").on(t.subscriberId, t.createdAt),
+    uniqueIndex("canal_payments_one_reversal").on(t.reversalOf).where(sql`${t.reversalOf} is not null`),
+  ],
+);

@@ -1,4 +1,5 @@
 import {
+  canalPaymentInput,
   createCanalFormulaInput,
   createCanalSubscriberInput,
   updateCanalFormulaInput,
@@ -9,9 +10,11 @@ import { z } from "zod";
 import { requireAuth, requirePermission } from "../auth/middleware.js";
 import { type AppEnv, parse, parseJson } from "../http.js";
 import { idempotency } from "../idempotency.js";
+import { cancelPayment, listPayments, recordPayment } from "./payments.js";
 import * as svc from "./service.js";
 
 const uuid = z.uuid();
+const day = z.iso.date();
 /** Fenêtre des échéances proches, en jours (7 par défaut). */
 const within = z.coerce.number().int().min(0).max(90).default(7);
 
@@ -62,6 +65,34 @@ export const canalRoutes = new Hono<AppEnv>()
       ),
     ),
   )
+  .post("/subscribers/:id/payments", requirePermission("canal.write"), async (c) =>
+    c.json(
+      await recordPayment(
+        c.get("deps"),
+        c.get("user").id,
+        parse(uuid, c.req.param("id")),
+        await parseJson(c, canalPaymentInput),
+      ),
+      201,
+    ),
+  )
+  .get("/payments", requirePermission("canal.read"), async (c) => {
+    const date = c.req.query("date");
+    const subscriberId = c.req.query("subscriberId");
+    return c.json(
+      await listPayments(c.get("deps"), {
+        ...(date ? { day: parse(day, date) } : {}),
+        ...(subscriberId ? { subscriberId: parse(uuid, subscriberId) } : {}),
+      }),
+    );
+  })
+  .post("/payments/:id/cancel", requirePermission("canal.cancel"), async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as { justification?: unknown };
+    return c.json(
+      await cancelPayment(c.get("deps"), c.get("user"), parse(uuid, c.req.param("id")), body.justification),
+      201,
+    );
+  })
   .get("/due", requirePermission("canal.read"), async (c) =>
     c.json(await svc.dueSubscribers(c.get("deps"), parse(within, c.req.query("within")))),
   );
