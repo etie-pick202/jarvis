@@ -64,6 +64,13 @@
       "when": 1795733047900,
       "tag": "0008_canal_encaissements",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795733691858,
+      "tag": "0009_orange_money_momo",
+      "breakpoints": true
     }
   ]
 }

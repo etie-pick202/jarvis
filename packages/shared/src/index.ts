@@ -4,6 +4,7 @@ export * from "./catalogue.js";
 export * from "./common.js";
 export * from "./errors.js";
 export * from "./money.js";
+export * from "./money-ops.js";
 export * from "./pricing.js";
 export * from "./responses.js";
 export * from "./roles.js";

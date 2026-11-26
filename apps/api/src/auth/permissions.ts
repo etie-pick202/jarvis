@@ -26,6 +26,9 @@ export const PERMISSIONS = {
   "canal.write": ["pdg", "gerant", "caissier"],
   "canal.cancel": ["pdg", "gerant"],
   "canal.manage": ["pdg", "gerant"],
+  "money.read": ["pdg", "gerant"],
+  "money.write": ["pdg", "gerant"],
+  "money.manage": ["pdg"],
   "sync.replay": ["pdg", "gerant", "caissier"],
 } as const satisfies Record<string, readonly Role[]>;
 
