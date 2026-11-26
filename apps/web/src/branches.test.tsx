@@ -80,7 +80,7 @@ describe("lecture avec copie locale", () => {
   beforeEach(() => localStorage.clear());
 
   it("garde la copie locale quand la lecture échoue et signale le mode hors ligne", async () => {
-    localStorage.setItem("jarvis.cache.test", JSON.stringify(["copie"]));
+    localStorage.setItem("jarvis.cache.v2.test", JSON.stringify(["copie"]));
     const { result } = renderHook(() =>
       useCached<string[]>("test", () => Promise.reject(new Error("hors ligne")), []),
     );
@@ -89,7 +89,7 @@ describe("lecture avec copie locale", () => {
   });
 
   it("ignore une copie locale illisible", () => {
-    localStorage.setItem("jarvis.cache.test", "{pas du json");
+    localStorage.setItem("jarvis.cache.v2.test", "{pas du json");
     const { result } = renderHook(() =>
       useCached<string[]>("test", () => new Promise(() => undefined), ["défaut"]),
     );
