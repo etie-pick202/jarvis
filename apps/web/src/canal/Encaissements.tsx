@@ -6,6 +6,7 @@ import { useSession } from "../auth/SessionProvider.js";
 import { useI18n } from "../i18n/index.js";
 import { ecrire } from "../offline/ecrire.js";
 import { useOutbox } from "../offline/useConnection.js";
+import { Annulation } from "../ui/Annulation.js";
 import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Etat } from "../ui/Etat.js";
@@ -189,35 +190,6 @@ function Saisie({
   );
 }
 
-function Annulation({ paiement, onFini }: { paiement: CanalPayment; onFini: (annule: boolean) => void }) {
-  const { t } = useI18n();
-  const [motif, setMotif] = useState("");
-  const [confirmer, occupe] = useEnvoi(async () => {
-    await ecrire({
-      method: "POST",
-      path: `/canal/payments/${paiement.id}/cancel`,
-      label: `${t("canal.annuler")} : ${paiement.subscriberName}`,
-      body: { justification: motif.trim() },
-    });
-    onFini(true);
-  });
-  return (
-    <div className="validation__refus">
-      <Field
-        label={`${t("canal.motif")} (${paiement.subscriberName})`}
-        value={motif}
-        onChange={(e) => setMotif(e.target.value)}
-      />
-      <Button disabled={motif.trim().length < 5 || occupe} onClick={() => void confirmer()}>
-        {t("canal.confirmer.annulation")}
-      </Button>
-      <Button variant="contour" onClick={() => onFini(false)}>
-        {t("vente.retour")}
-      </Button>
-    </div>
-  );
-}
-
 /** Abonnement et réabonnement : saisie (hors ligne comprise), journal du jour et annulation justifiée. */
 export function Encaissements() {
   const [jour, setJour] = useState(() => jourActivite(new Date()));
@@ -243,6 +215,17 @@ function Journee({ jour, setJour }: { jour: string; setJour: (j: string) => void
   );
   const heure = new Intl.DateTimeFormat(lang, { hour: "2-digit", minute: "2-digit" });
   const choisi = lecture.data.find((p) => p.id === annulation);
+
+  async function annuler(paiement: CanalPayment, justification: string) {
+    await ecrire({
+      method: "POST",
+      path: `/canal/payments/${paiement.id}/cancel`,
+      label: `${t("canal.annuler")} : ${paiement.subscriberName}`,
+      body: { justification },
+    });
+    lecture.modifier((l) => l.map((p) => (p.id === paiement.id ? { ...p, cancelled: true } : p)));
+    setAnnulation(null);
+  }
 
   return (
     <div className="page">
@@ -298,13 +281,9 @@ function Journee({ jour, setJour }: { jour: string; setJour: (j: string) => void
           {choisi && (
             <Annulation
               key={choisi.id}
-              paiement={choisi}
-              onFini={(annule) => {
-                if (annule) {
-                  lecture.modifier((l) => l.map((p) => (p.id === choisi.id ? { ...p, cancelled: true } : p)));
-                }
-                setAnnulation(null);
-              }}
+              objet={choisi.subscriberName}
+              onConfirmer={(j) => annuler(choisi, j)}
+              onAbandonner={() => setAnnulation(null)}
             />
           )}
         </Etat>
