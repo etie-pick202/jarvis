@@ -28,13 +28,17 @@ git push -u origin main
 | Automatisation | Write               | Documents, notifications             |
 | Gérant / PDG   | aucun accès au code | Ils utilisent l'application          |
 
-Tant que le propriétaire est seul sur le dépôt, le ruleset `protection-main` laisse le rôle **Admin** contourner les règles, uniquement au moment de fusionner une pull request (`bypass_mode: pull_request`, pas de push direct sur `main`). Sur un dépôt personnel, seul le propriétaire a ce rôle. À retirer de `.github/rulesets/main.json` dès que l'équipe peut relire.
+Équipe actuelle (droit Write, relecteurs dans `.github/CODEOWNERS`) : chef de projet `@ATOUGAIIEmmanuelDesire`, Data `@kerry-kate`, automatisation `@JOJO20001`. Le propriétaire `@etie-pick202` tient le rôle DevOps.
+
+Tant que le dépôt est personnel, les rulesets `protection-develop`, `protection-staging` et `protection-main` laissent le rôle **Admin** contourner les règles, uniquement au moment de fusionner une pull request (`bypass_mode: pull_request`, pas de push direct). Sur un dépôt personnel, seul le propriétaire a ce rôle. À retirer des fichiers `.github/rulesets/*.json` dès que l'équipe relit.
 
 Créer une équipe par métier (`@cocosab/chefs`, `@cocosab/devops`, `@cocosab/data`, `@cocosab/auto`) puis remplacer les `@...` du fichier `.github/CODEOWNERS`.
 
-## 3. Environnement `production` (manuel)
+## 3. Branches et environnements
 
-Settings > Environments > production : **Required reviewers** = chef de projet + DevOps, _Prevent self-review_ coché, branches/tags autorisés : `v*.*.*`. Les secrets de production se mettent ici, pas au niveau du dépôt.
+`setup-github.sh` crée `develop` et `staging` depuis `main`, fait de `develop` la branche par défaut et limite chaque environnement à sa branche (`develop` → `develop`, `staging` → `staging`, `production` → `main`). Flux : voir `CONTRIBUTING.md`.
+
+À faire à la main : Settings > Environments > production : **Required reviewers** = chef de projet + DevOps, _Prevent self-review_ coché. Les secrets de production se mettent ici, pas au niveau du dépôt.
 
 ## 4. Variables et secrets
 
@@ -44,7 +48,7 @@ Secrets et variables par environnement, SonarCloud et déploiement : voir [docs/
 ## 5. Vérifier que tout est bien actif
 
 - Pousser une branche, ouvrir une PR : la CI `verify`, `pr-title`, `gitleaks`, `codeql` doivent apparaître et bloquer la fusion si elles échouent.
-- Essayer de pousser directement sur `main` : doit être refusé.
+- Essayer de pousser directement sur `main`, `staging` ou `develop` : doit être refusé.
 - Settings > Code security : _Secret scanning_ et _Push protection_ activés.
 
 ## 6. Passage en privé plus tard

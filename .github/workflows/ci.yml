@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, staging, develop]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -172,6 +172,31 @@ jobs:
             status=1
           fi
           exit $status
+
+  flux-branches:
+    name: flux-branches
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Respect du flux develop → staging → main
+        env:
+          BASE: ${{ github.event.pull_request.base.ref }}
+          HEAD: ${{ github.event.pull_request.head.ref }}
+        run: |
+          # Fonctionnalités et corrections → develop ; develop → staging ; staging → main.
+          # Exceptions : hotfix/* vers staging ou main, retour de main ou staging vers develop,
+          # et la PR de version de release-please sur main.
+          case "$BASE" in
+            main)    case "$HEAD" in staging|hotfix/*|release-please--*) ok=1 ;; *) ok=0 ;; esac ;;
+            staging) case "$HEAD" in develop|hotfix/*) ok=1 ;; *) ok=0 ;; esac ;;
+            develop) ok=1 ;;
+            *)       ok=1 ;;
+          esac
+          if [ "$ok" != 1 ]; then
+            echo "::error::Une PR vers $BASE ne peut pas venir de $HEAD. Flux : branche de travail → develop → staging → main (hotfix/* autorisé vers staging et main)."
+            exit 1
+          fi
+          echo "Flux respecté : $HEAD → $BASE"
 
   pr-title:
     name: pr-title

@@ -1,8 +1,28 @@
-# Tant que le propriétaire est seul, il relit tout. Remplacer par les équipes (@organisation/equipe)
-# quand le dépôt passera dans une organisation (voir docs/GITHUB-SETUP.md).
-*                          @etie-pick202
-/apps/                     @etie-pick202
-/packages/shared/          @etie-pick202
-/packages/db/              @etie-pick202
-/infra/                    @etie-pick202
-/.github/                  @etie-pick202
+# Relecteurs obligatoires par zone. La dernière règle qui correspond à un fichier l'emporte.
+# Chaque personne listée a le droit d'écriture sur le dépôt.
+#   Chef de projet : @ATOUGAIIEmmanuelDesire
+#   Data           : @kerry-kate
+#   Automatisation : @JOJO20001
+#   Propriétaire, DevOps : @etie-pick202
+
+# Chef de projet : tout le dépôt par défaut, applications et contrats partagés.
+*                               @ATOUGAIIEmmanuelDesire @etie-pick202
+/apps/                          @ATOUGAIIEmmanuelDesire @etie-pick202
+/packages/shared/               @ATOUGAIIEmmanuelDesire @etie-pick202
+
+# Data : schéma, migrations, données de départ, rapports et exports.
+/packages/db/                   @kerry-kate @etie-pick202
+/apps/api/src/migrate.ts        @kerry-kate @etie-pick202
+/apps/api/src/reports/          @kerry-kate @etie-pick202
+/apps/web/src/rapport/          @kerry-kate @etie-pick202
+
+# Automatisation : documents générés (reçus PDF) et notifications (WhatsApp, rappels).
+/apps/api/src/documents/        @JOJO20001 @etie-pick202
+/apps/api/src/notifications/    @JOJO20001 @etie-pick202
+/apps/web/src/vente/pdf.ts      @JOJO20001 @etie-pick202
+/apps/web/src/vente/Recu.tsx    @JOJO20001 @etie-pick202
+
+# DevOps : infrastructure, CI/CD et réglages GitHub.
+/infra/                         @etie-pick202
+/.github/                       @etie-pick202
+/docker-compose*.yml            @etie-pick202
