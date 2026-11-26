@@ -34,7 +34,7 @@ export function Echanges() {
               </td>
               <td>
                 {e.ecart === null ? (
-                  "—"
+                  <Chip tone="alerte">{t("gaz.a.regulariser")}</Chip>
                 ) : (
                   <Chip tone={e.ecart >= 0 ? "ok" : "danger"}>
                     {`${e.ecart >= 0 ? t("gaz.gain") : t("gaz.perte")} ${formatFcfa(Math.abs(e.ecart))}`}

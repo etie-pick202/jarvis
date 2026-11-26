@@ -4,7 +4,7 @@ import { db } from "../offline/db.js";
 import { sendOperation } from "../offline/sync.js";
 import { ApiError, garderJeton, oublierJeton, request } from "./client.js";
 import { fakeApi, setFakeUser } from "./fake.js";
-import { api, prixEnVigueur, rapportClients, rapportJournal, rapportX, toSession } from "./index.js";
+import { api, rapportClients, rapportJournal, rapportX, toSession } from "./index.js";
 
 const initDe = (fn: { mock: { calls: unknown[][] } }, i: number) =>
   fn.mock.calls[i]?.[1] as RequestInit | undefined;
@@ -77,25 +77,21 @@ describe("adaptateurs de réponses", () => {
     });
   });
 
-  it("choisit l'exception de marque la plus récente, sinon le prix du format", () => {
-    const p = (brandId: string | null, amount: number, effectiveFrom: string) => ({
-      id: "x",
-      formatId: "f",
-      brandId,
-      amount,
-      transportContribution: 300,
-      purchaseCost: 0,
-      changedBy: null,
-      effectiveFrom,
-    });
-    const historique = [
-      p(null, 6500, "2026-01-01T00:00:00.000Z"),
-      p("b1", 6600, "2026-02-01T00:00:00.000Z"),
-      p("b1", 6700, "2026-03-01T00:00:00.000Z"),
-    ];
-    expect(prixEnVigueur(historique, "b1")?.amount).toBe(6700);
-    expect(prixEnVigueur(historique, "b2")?.amount).toBe(6500);
-    expect(prixEnVigueur([], "b1")).toBeNull();
+  it("lit le prix en vigueur par marque et marque inconnue la valeur d'emballage non relevée", async () => {
+    const articles = await api.catalogue();
+    expect(articles.find((a) => a.marque === "BOCOM")?.valeurEmballage).toBeUndefined();
+    expect(articles.filter((a) => a.genre === "gaz")).toHaveLength(5);
+  });
+
+  it("n'offre pas à la vente un gaz sans prix saisi", async () => {
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) =>
+      url.includes("/current")
+        ? Promise.resolve(
+            new Response('{"error":{"code":"not_found","message":"Aucun prix"}}', { status: 404 }),
+          )
+        : fakeApi(url.replace("/api/v1", ""), init),
+    );
+    expect((await api.catalogue()).filter((a) => a.genre === "gaz")).toEqual([]);
   });
 
   it("convertit la session du serveur", () => {
@@ -114,6 +110,7 @@ describe("adaptateurs de réponses", () => {
     expect((await api.echanges()).map((e) => [e.remise, e.rapportee, e.ecart])).toEqual([
       ["STARGAS", "TOTAL", -2500],
       ["OLA", "TOTAL", 1600],
+      ["OLA", "BOCOM", null],
     ]);
     expect((await api.gazStock()).reduce((n, s) => n + s.pleines, 0)).toBe(98);
     expect((await api.caisses()).filter((c) => c.especes).map((c) => c.id)).toEqual([
@@ -129,7 +126,21 @@ describe("adaptateurs de réponses", () => {
   });
 
   it("compose le tableau de bord, les alertes, les validations et le journal d'audit", async () => {
-    expect(await api.tableau()).toMatchObject({ caJour: 20400, nbVentes: 3 });
+    expect(await api.tableau()).toMatchObject({
+      caJour: 20400,
+      nbVentes: 3,
+      marge: -610,
+      totalCaisses: 469512,
+      especes: 257300,
+      pleines: 98,
+      vides: 33,
+      alertesStock: 1,
+      notifications: 1,
+    });
+    expect(await api.seuilCloture()).toBe(500);
+    expect((await api.caisses())[0]).toMatchObject({ solde: 215300, fond: 180000 });
+    expect((await api.validations())[0]?.auteur).toBe("Gérant");
+    expect((await api.audit()).map((l) => l.auteur)).toEqual(["Gérant", ""]);
     const alertes = await api.alertes();
     expect(alertes.some((a) => a.niveau === "danger" && a.texte.includes("TRADEX"))).toBe(true);
     expect((await api.validations())[0]?.resume).toContain("écart pleines -1");
@@ -173,7 +184,9 @@ describe("envoi des opérations", () => {
   it("rejoue les ventes par /sync/replay avec la clé comme identifiant d'opération", async () => {
     const fn = vi.fn(
       async (_u: string, _i?: RequestInit) =>
-        new Response(JSON.stringify({ results: [{ clientOpId: "cle-12345", status: "applied" }] })),
+        new Response(
+          JSON.stringify({ results: [{ clientOpId: "cle-12345", status: "applied", applied: true }] }),
+        ),
     );
     vi.stubGlobal("fetch", fn);
     const r = await sendOperation({
@@ -201,7 +214,14 @@ describe("envoi des opérations", () => {
       async () =>
         new Response(
           JSON.stringify({
-            results: [{ clientOpId: "cle-12345", status, conflict: "Écart de stock signalé" }],
+            results: [
+              {
+                clientOpId: "cle-12345",
+                status,
+                applied: status !== "rejected",
+                conflict: "Écart de stock signalé",
+              },
+            ],
           }),
         ),
     );
@@ -266,8 +286,11 @@ describe("envoi des opérations", () => {
     const appels: string[] = [];
     vi.stubGlobal("fetch", async (url: string) => {
       appels.push(url);
-      if (url.endsWith("/receipts")) return new Response(JSON.stringify({ id: "r-1" }), { status: 201 });
-      return new Response(JSON.stringify({ results: [{ clientOpId: "cle-12345", status: "applied" }] }));
+      if (url.endsWith("/receipts"))
+        return new Response(JSON.stringify({ id: "00000000-0000-4000-8000-000000001201" }), { status: 201 });
+      return new Response(
+        JSON.stringify({ results: [{ clientOpId: "cle-12345", status: "applied", applied: true }] }),
+      );
     });
     await db.outbox.add({
       ...base,
@@ -282,13 +305,17 @@ describe("envoi des opérations", () => {
     expect((await sendOperation(op)).kind).toBe("ok");
     expect(appels).toEqual(["/api/v1/receipts", "/api/v1/sync/replay"]);
     expect(await db.pieces.get("p1")).toBeUndefined();
-    expect((await db.outbox.get("1"))?.body).toMatchObject({ receiptId: "r-1" });
+    expect((await db.outbox.get("1"))?.body).toMatchObject({
+      receiptId: "00000000-0000-4000-8000-000000001201",
+    });
   });
 
   it("ne renvoie pas la pièce déjà envoyée et refuse si elle a disparu", async () => {
     const fn = vi.fn(
       async (_u: string) =>
-        new Response(JSON.stringify({ results: [{ clientOpId: "cle-12345", status: "applied" }] })),
+        new Response(
+          JSON.stringify({ results: [{ clientOpId: "cle-12345", status: "applied", applied: true }] }),
+        ),
     );
     vi.stubGlobal("fetch", fn);
     await db.pieces.add({ id: "p2", nom: "bon.pdf", blob: new Blob(["x"]) });

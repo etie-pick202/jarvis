@@ -51,6 +51,7 @@ describe("écrans chargés à la demande", () => {
         </SessionProvider>
       </I18nProvider>,
     );
-    expect(await screen.findByRole("heading", { level: 1, name: titre })).toBeTruthy();
+    // Le premier écran paie le chargement à la demande de son module : délai large pour une machine lente.
+    expect(await screen.findByRole("heading", { level: 1, name: titre }, { timeout: 8000 })).toBeTruthy();
   });
 });

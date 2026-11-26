@@ -195,6 +195,9 @@ export function NouvelleVente() {
                       </option>
                     ))}
                   </select>
+                  {ecart === null && rapportee !== "" && rapportee !== article?.marque && (
+                    <p role="status">{t("vente.ecart.inconnu")}</p>
+                  )}
                   {ecart !== null && (
                     <p role="status">
                       {ecart >= 0 ? t("vente.gain") : t("vente.perte")} : {formatFcfa(Math.abs(ecart))}

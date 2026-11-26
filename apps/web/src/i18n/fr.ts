@@ -209,8 +209,6 @@ export const fr = {
   "pilot.caisses": "Total des caisses",
   "pilot.especes": "dont en espèces",
   "pilot.stock": "Bouteilles pleines / vides",
-  "pilot.livraisons": "Livraisons en cours",
-  "pilot.echeances": "Échéances Canal+",
   "pilot.aucune.alerte": "Aucune alerte.",
   "pilot.urgent": "Urgent",
   "pilot.attention": "À surveiller",
@@ -239,6 +237,16 @@ export const fr = {
   "session.expiree.titre": "Votre session a expiré",
   "session.expiree.texte":
     "Pour protéger les caisses, JARVIS déconnecte après un temps d'inactivité. Vos saisies en attente sont conservées.",
+  "pilot.marge": "Marge du jour",
+  "pilot.stock.alertes": "Marques en alerte de stock",
+  "pilot.notifications": "Notifications non lues",
+  "pilot.confirmer.refus": "Confirmer le refus",
+  "pilot.systeme": "Système",
+  "caisse.cloture.aide.seuil":
+    "Comptez l'argent de chaque caisse. Une justification est demandée au-delà d'un écart de",
+  "gaz.a.regulariser": "À régulariser",
+  "vente.ecart.inconnu":
+    "Valeur d'emballage inconnue : l'écart sera régularisé par le PDG. Le prix ne change pas.",
   "page.bientot": "Cet écran arrive bientôt.",
   "page.introuvable": "Page introuvable",
   "page.retour": "Retour à l'accueil",
