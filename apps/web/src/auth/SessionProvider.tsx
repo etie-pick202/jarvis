@@ -2,6 +2,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 import {
   ApiError,
   api,
+  EVENEMENT_SESSION,
   garderJeton,
   type LoginInput,
   newIdempotencyKey,
@@ -70,6 +71,13 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
     await api.logout(newIdempotencyKey()).catch(() => null);
     oublierJeton();
   }, []);
+
+  // Jeton refusé par le serveur (expiré ou révoqué) : retour à la connexion, les saisies en attente restent.
+  useEffect(() => {
+    const expirer = () => void logout(true);
+    window.addEventListener(EVENEMENT_SESSION, expirer);
+    return () => window.removeEventListener(EVENEMENT_SESSION, expirer);
+  }, [logout]);
 
   // Déconnexion automatique après 30 minutes sans action.
   useEffect(() => {

@@ -147,3 +147,20 @@
   margin-right: 6px;
   flex: none;
 }
+
+/* Bandeau : l'écran montre une copie locale parce que la lecture a échoué. */
+.bandeau {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-3);
+  background: var(--alerte-fond);
+  color: var(--alerte-texte);
+  border-radius: var(--rayon-m);
+  padding: var(--espace-3);
+  font-size: 14px;
+  font-weight: 600;
+}
+.bandeau .btn {
+  min-height: var(--cible-min);
+}

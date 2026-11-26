@@ -6,6 +6,7 @@ import { useI18n } from "../i18n/index.js";
 import { ecrire } from "../offline/ecrire.js";
 import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
+import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
 import { Table } from "../ui/Table.js";
 import { MarqueGaz } from "../visuels/MarqueGaz.js";
@@ -26,7 +27,8 @@ const lireEntier = (v: string): number | null => (/^\d+$/u.test(v.trim()) ? Numb
  */
 export function Comptage({ kind }: { kind: "weekly" | "evening" }) {
   const { t } = useI18n();
-  const { data: stock } = useCached("gaz-stock", api.gazStock, []);
+  const lecture = useCached("gaz-stock", api.gazStock, []);
+  const stock = lecture.data;
   const [saisies, setSaisies] = useState<Record<string, Saisie>>({});
   const [justification, setJustification] = useState("");
   const [envoye, setEnvoye] = useState(false);
@@ -83,41 +85,43 @@ export function Comptage({ kind }: { kind: "weekly" | "evening" }) {
     <form className="carte" onSubmit={envoyer}>
       {kind === "weekly" ? <h1>{titre}</h1> : <h2>{titre}</h2>}
       <p>{kind === "weekly" ? t("gaz.inventaire.aide") : t("gaz.soir.aide")}</p>
-      <Table
-        caption={titre}
-        colonnes={[t("gaz.marque"), t("gaz.pleines"), t("gaz.vides"), t("gaz.ecart.stock")]}
-      >
-        {lignes.map((l) => (
-          <tr key={l.cle}>
-            <th scope="row">
-              <MarqueGaz nom={l.marque} />
-            </th>
-            <td>
-              <Field
-                label={`${l.marque} : ${t("gaz.pleines")} (${l.pleines})`}
-                inputMode="numeric"
-                value={l.c.pleines}
-                onChange={(e) => maj(l.cle, "pleines", e.target.value)}
-              />
-            </td>
-            <td>
-              <Field
-                label={`${l.marque} : ${t("gaz.vides")} (${l.vides})`}
-                inputMode="numeric"
-                value={l.c.vides}
-                onChange={(e) => maj(l.cle, "vides", e.target.value)}
-              />
-            </td>
-            <td>
-              {l.ep === null || l.ev === null ? null : (
-                <Chip tone={l.ep === 0 && l.ev === 0 ? "ok" : "danger"}>
-                  {l.ep === 0 && l.ev === 0 ? t("gaz.conforme") : `${fmt(l.ep)} / ${fmt(l.ev)}`}
-                </Chip>
-              )}
-            </td>
-          </tr>
-        ))}
-      </Table>
+      <Etat {...lecture} vide={stock.length === 0} messageVide={t("gaz.stock.vide")}>
+        <Table
+          caption={titre}
+          colonnes={[t("gaz.marque"), t("gaz.pleines"), t("gaz.vides"), t("gaz.ecart.stock")]}
+        >
+          {lignes.map((l) => (
+            <tr key={l.cle}>
+              <th scope="row">
+                <MarqueGaz nom={l.marque} />
+              </th>
+              <td>
+                <Field
+                  label={`${l.marque} : ${t("gaz.pleines")} (${l.pleines})`}
+                  inputMode="numeric"
+                  value={l.c.pleines}
+                  onChange={(e) => maj(l.cle, "pleines", e.target.value)}
+                />
+              </td>
+              <td>
+                <Field
+                  label={`${l.marque} : ${t("gaz.vides")} (${l.vides})`}
+                  inputMode="numeric"
+                  value={l.c.vides}
+                  onChange={(e) => maj(l.cle, "vides", e.target.value)}
+                />
+              </td>
+              <td>
+                {l.ep === null || l.ev === null ? null : (
+                  <Chip tone={l.ep === 0 && l.ev === 0 ? "ok" : "danger"}>
+                    {l.ep === 0 && l.ev === 0 ? t("gaz.conforme") : `${fmt(l.ep)} / ${fmt(l.ev)}`}
+                  </Chip>
+                )}
+              </td>
+            </tr>
+          ))}
+        </Table>
+      </Etat>
       {complet && ecart && (
         <>
           <p role="alert" className="connexion__erreur">
