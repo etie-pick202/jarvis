@@ -28,33 +28,42 @@ interface Props {
  * Tous les états d'une lecture au même endroit : chargement, erreur (hors ligne, serveur, droits, fonction absente,
  * réponse illisible), copie locale signalée, liste vide, et enfin le contenu.
  */
-export function Etat({ pret, charge, probleme, recharger, vide = false, messageVide, children }: Props) {
+export function Etat({
+  pret,
+  charge,
+  probleme,
+  recharger,
+  vide = false,
+  messageVide,
+  children,
+}: Readonly<Props>) {
   const { t } = useI18n();
-  const code = probleme?.code ? ` (${t("etat.code")} : ${probleme.code})` : "";
+  const libelleCode = t("etat.code");
+  const code = probleme?.code ? ` (${libelleCode} : ${probleme.code})` : "";
 
   if (probleme && !charge) {
     return (
       <EtatVide
         genre={DESSINS[probleme.genre]}
         titre={t(`etat.${probleme.genre}`)}
-        texte={`${t(`etat.${probleme.genre}.texte`)}${code}`}
+        texte={t(`etat.${probleme.genre}.texte`) + code}
         role={probleme.genre === "hors-ligne" ? "status" : "alert"}
       >
         <Button onClick={recharger}>{t("etat.reessayer")}</Button>
       </EtatVide>
     );
   }
-  if (!pret && !charge) return <p role="status">{t("page.chargement")}</p>;
+  if (!pret && !charge) return <output className="bloc">{t("page.chargement")}</output>;
 
   return (
     <>
       {probleme && (
-        <div className="bandeau" role="status">
-          <span>{`${t("etat.donnees.locales")} · ${t(`etat.${probleme.genre}`)}${code}`}</span>
+        <output className="bandeau">
+          <span>{[t("etat.donnees.locales"), t(`etat.${probleme.genre}`) + code].join(" · ")}</span>
           <Button variant="contour" onClick={recharger}>
             {t("etat.reessayer")}
           </Button>
-        </div>
+        </output>
       )}
       {vide && messageVide ? <EtatVide genre="vide" titre={messageVide} /> : children}
     </>

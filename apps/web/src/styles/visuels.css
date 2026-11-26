@@ -164,3 +164,7 @@
 .bandeau .btn {
   min-height: var(--cible-min);
 }
+
+output.bloc {
+  display: block;
+}
