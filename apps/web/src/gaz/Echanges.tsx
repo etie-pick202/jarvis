@@ -2,27 +2,28 @@ import { api } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import { useI18n } from "../i18n/index.js";
 import { Chip } from "../ui/Chip.js";
+import { Etat } from "../ui/Etat.js";
+import { usePagination, VoirPlus } from "../ui/listes.js";
 import { Table } from "../ui/Table.js";
 import { formatFcfa } from "../vente/regles.js";
-import { EtatVide } from "../visuels/Illustration.js";
 import { MarqueGaz } from "../visuels/MarqueGaz.js";
 
 /** Échanges entre marques du jour avec l'écart de valeur d'emballage (gain ou perte). */
 export function Echanges() {
   const { t, lang } = useI18n();
-  const { data } = useCached("gaz-echanges", api.echanges, []);
+  const lecture = useCached("gaz-echanges", api.echanges, []);
+  const { data } = lecture;
+  const { visibles, restants, plus } = usePagination(data);
   const heure = new Intl.DateTimeFormat(lang, { hour: "2-digit", minute: "2-digit" });
   return (
     <section className="carte">
       <h1>{t("gaz.echanges.titre")}</h1>
-      {data.length === 0 ? (
-        <EtatVide genre="vide" titre={t("gaz.echanges.vide")} />
-      ) : (
+      <Etat {...lecture} vide={data.length === 0} messageVide={t("gaz.echanges.vide")}>
         <Table
           caption={t("gaz.echanges.titre")}
           colonnes={[t("gaz.heure"), t("gaz.client"), t("gaz.remise"), t("gaz.rapportee"), t("gaz.ecart")]}
         >
-          {data.map((e) => (
+          {visibles.map((e) => (
             <tr key={e.id}>
               <td>{heure.format(new Date(e.date))}</td>
               <td>{e.client}</td>
@@ -44,7 +45,8 @@ export function Echanges() {
             </tr>
           ))}
         </Table>
-      )}
+        <VoirPlus restants={restants} plus={plus} />
+      </Etat>
     </section>
   );
 }
