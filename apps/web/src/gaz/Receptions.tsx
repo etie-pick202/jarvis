@@ -7,7 +7,9 @@ import { ecrire } from "../offline/ecrire.js";
 import { useOutbox } from "../offline/useConnection.js";
 import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
+import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
+import { usePagination, VoirPlus } from "../ui/listes.js";
 import { Table } from "../ui/Table.js";
 import { compresserPiece } from "./piece.js";
 
@@ -23,10 +25,12 @@ const nombre = (v: string) => (v.trim() === "" ? 0 : Number(v));
 /** Réception fournisseur à sa date réelle ; la pièce justificative est obligatoire. */
 export function Receptions() {
   const { t, lang } = useI18n();
-  const { data: fournisseurs } = useCached("fournisseurs", api.fournisseurs, []);
+  const lectureFournisseurs = useCached("fournisseurs", api.fournisseurs, []);
+  const fournisseurs = lectureFournisseurs.data;
   const { data: marques } = useCached("marques", api.marques, []);
   const { data: formats } = useCached("formats", api.formats, []);
-  const { data: recues } = useCached("gaz-receptions", api.receptions, []);
+  const lectureRecues = useCached("gaz-receptions", api.receptions, []);
+  const { visibles: recues, restants, plus } = usePagination(lectureRecues.data);
   const enAttente = useOutbox().filter((o) => o.path === "/receptions" && o.status === "pending");
   const [fournisseurId, setFournisseurId] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -96,99 +100,104 @@ export function Receptions() {
     <div className="page">
       <form className="carte" onSubmit={enregistrer}>
         <h1>{t("gaz.reception.titre")}</h1>
-        <div className="champ">
-          <label className="champ__label" htmlFor={idFournisseur}>
-            {t("gaz.reception.fournisseur")}
-          </label>
-          <select
-            id={idFournisseur}
-            className="champ__saisie"
-            value={fournisseurId}
-            onChange={(e) => setFournisseurId(e.target.value)}
-          >
-            <option value="">—</option>
-            {fournisseurs.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.nom}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Field
-          label={t("gaz.reception.date")}
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
-        {saisies.map((l) => (
-          <fieldset key={l.cle} className="reception__ligne">
-            <legend className="champ__label">{l.titre}</legend>
-            <Field
-              label={t("gaz.reception.pleines")}
-              inputMode="numeric"
-              value={l.pleines}
-              onChange={(e) => maj(l.cle, "pleines", e.target.value)}
-            />
-            <Field
-              label={t("gaz.reception.vides")}
-              inputMode="numeric"
-              value={l.vides}
-              onChange={(e) => maj(l.cle, "vides", e.target.value)}
-            />
-            <Field
-              label={t("gaz.reception.prix")}
-              inputMode="numeric"
-              value={l.prix}
-              onChange={(e) => maj(l.cle, "prix", e.target.value)}
-            />
-          </fieldset>
-        ))}
-        <Field
-          label={t("gaz.reception.piece")}
-          type="file"
-          accept="image/*,application/pdf"
-          onChange={(e) => {
-            setPiece(e.target.files?.[0] ?? null);
-            setEnregistree(false);
-          }}
-        />
-        {piece === null && <p className="champ__aide">{t("gaz.reception.piece.obligatoire")}</p>}
-        <Button type="submit" disabled={!valide}>
-          {t("gaz.reception.enregistrer")}
-        </Button>
-        {enregistree && <p role="status">{t("gaz.reception.ok")}</p>}
+        <Etat {...lectureFournisseurs}>
+          <div className="champ">
+            <label className="champ__label" htmlFor={idFournisseur}>
+              {t("gaz.reception.fournisseur")}
+            </label>
+            <select
+              id={idFournisseur}
+              className="champ__saisie"
+              value={fournisseurId}
+              onChange={(e) => setFournisseurId(e.target.value)}
+            >
+              <option value="">—</option>
+              {fournisseurs.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.nom}
+                </option>
+              ))}
+            </select>
+          </div>
+          <Field
+            label={t("gaz.reception.date")}
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+          {saisies.map((l) => (
+            <fieldset key={l.cle} className="reception__ligne">
+              <legend className="champ__label">{l.titre}</legend>
+              <Field
+                label={t("gaz.reception.pleines")}
+                inputMode="numeric"
+                value={l.pleines}
+                onChange={(e) => maj(l.cle, "pleines", e.target.value)}
+              />
+              <Field
+                label={t("gaz.reception.vides")}
+                inputMode="numeric"
+                value={l.vides}
+                onChange={(e) => maj(l.cle, "vides", e.target.value)}
+              />
+              <Field
+                label={t("gaz.reception.prix")}
+                inputMode="numeric"
+                value={l.prix}
+                onChange={(e) => maj(l.cle, "prix", e.target.value)}
+              />
+            </fieldset>
+          ))}
+          <Field
+            label={t("gaz.reception.piece")}
+            type="file"
+            accept="image/*,application/pdf"
+            onChange={(e) => {
+              setPiece(e.target.files?.[0] ?? null);
+              setEnregistree(false);
+            }}
+          />
+          {piece === null && <p className="champ__aide">{t("gaz.reception.piece.obligatoire")}</p>}
+          <Button type="submit" disabled={!valide}>
+            {t("gaz.reception.enregistrer")}
+          </Button>
+          {enregistree && <p role="status">{t("gaz.reception.ok")}</p>}
+        </Etat>
       </form>
 
       <section className="carte">
         <h2>{t("gaz.reception.historique")}</h2>
-        <Table
-          caption={t("gaz.reception.historique")}
-          colonnes={[
-            t("gaz.reception.date"),
-            t("gaz.reception.fournisseur"),
-            t("gaz.pleines"),
-            t("gaz.vides"),
-            "",
-          ]}
-        >
-          {enAttente.map((o) => (
-            <tr key={o.id}>
-              <td colSpan={4}>{o.label}</td>
-              <td>
-                <Chip tone="alerte">{t("sync.piece")}</Chip>
-              </td>
-            </tr>
-          ))}
-          {recues.map((r) => (
-            <tr key={r.id}>
-              <td>{jour.format(new Date(r.date))}</td>
-              <td>{r.fournisseur}</td>
-              <td>{r.pleines}</td>
-              <td>{r.vides}</td>
-              <td />
-            </tr>
-          ))}
-        </Table>
+        <Etat {...lectureRecues}>
+          <Table
+            caption={t("gaz.reception.historique")}
+            colonnes={[
+              t("gaz.reception.date"),
+              t("gaz.reception.fournisseur"),
+              t("gaz.pleines"),
+              t("gaz.vides"),
+              "",
+            ]}
+          >
+            {enAttente.map((o) => (
+              <tr key={o.id}>
+                <td colSpan={4}>{o.label}</td>
+                <td>
+                  <Chip tone="alerte">{t("sync.piece")}</Chip>
+                </td>
+              </tr>
+            ))}
+            {recues.map((r) => (
+              <tr key={r.id}>
+                <td>{jour.format(new Date(r.date))}</td>
+                <td>{r.fournisseur}</td>
+                <td>{r.pleines}</td>
+                <td>{r.vides}</td>
+                <td />
+              </tr>
+            ))}
+          </Table>
+          <VoirPlus restants={restants} plus={plus} />
+        </Etat>
       </section>
     </div>
   );

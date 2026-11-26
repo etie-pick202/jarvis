@@ -6,10 +6,11 @@ import { useSession } from "../auth/SessionProvider.js";
 import { useI18n } from "../i18n/index.js";
 import { ecrire } from "../offline/ecrire.js";
 import { Button } from "../ui/Button.js";
+import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
+import { usePagination, VoirPlus } from "../ui/listes.js";
 import { Table } from "../ui/Table.js";
 import { formatFcfa } from "../vente/regles.js";
-import { EtatVide } from "../visuels/Illustration.js";
 import { EtatChip } from "./EtatChip.js";
 import { Formules } from "./Formules.js";
 import { filtrerAbonnes } from "./regles.js";
@@ -119,12 +120,14 @@ function Fiche({
 export function Abonnes() {
   const { t } = useI18n();
   const { profilsActifs } = useSession();
-  const { data: abonnes, modifier, hors } = useCached("canal-abonnes", api.abonnesCanal, []);
+  const lecture = useCached("canal-abonnes", api.abonnesCanal, []);
+  const { data: abonnes, modifier } = lecture;
   const formules = useCached("canal-formules", api.formulesCanal, []);
   const [recherche, setRecherche] = useState("");
   const [edition, setEdition] = useState<CanalSubscriber | null>(null);
   const gere = profilsActifs.includes("pdg") || profilsActifs.includes("gerant");
-  const visibles = filtrerAbonnes(abonnes, recherche);
+  const trouves = filtrerAbonnes(abonnes, recherche);
+  const { visibles, restants, plus } = usePagination(trouves);
 
   const vue = (s: Saisie, base: CanalSubscriber | null): CanalSubscriber => {
     const f = formules.data.find((x) => x.id === s.formule);
@@ -185,11 +188,7 @@ export function Abonnes() {
           value={recherche}
           onChange={(e) => setRecherche(e.target.value)}
         />
-        {abonnes.length === 0 && hors ? (
-          <EtatVide genre="hors-ligne" titre={t("horsligne.titre")} texte={t("horsligne.texte")} />
-        ) : visibles.length === 0 ? (
-          <EtatVide genre="vide" titre={t("canal.aucun")} />
-        ) : (
+        <Etat {...lecture} vide={trouves.length === 0} messageVide={t("canal.aucun")}>
           <Table
             caption={t("canal.abonnes.titre")}
             colonnes={[
@@ -231,7 +230,8 @@ export function Abonnes() {
               </tr>
             ))}
           </Table>
-        )}
+          <VoirPlus restants={restants} plus={plus} />
+        </Etat>
       </section>
       {edition ? (
         <Fiche
