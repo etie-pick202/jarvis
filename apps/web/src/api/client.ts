@@ -4,6 +4,9 @@ import { IDEMPOTENCY_HEADER } from "@jarvis/shared";
 export const API_BASE = "/api/v1";
 const CLE_JETON = "jarvis.token";
 
+/** Émis quand le serveur refuse le jeton : la session est à reprendre. */
+export const EVENEMENT_SESSION = "jarvis:session-expiree";
+
 export const lireJeton = (): string | null => localStorage.getItem(CLE_JETON);
 export const garderJeton = (jeton: string): void => localStorage.setItem(CLE_JETON, jeton);
 export const oublierJeton = (): void => localStorage.removeItem(CLE_JETON);
@@ -67,6 +70,12 @@ export async function request<T>(path: string, options: RequestOptions<T>): Prom
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
     signal: options.signal,
   });
-  if (!response.ok) throw await erreurDe(response, `${method} ${path}`);
+  if (!response.ok) {
+    // La connexion et la déconnexion gèrent elles-mêmes leur refus (sinon la déconnexion bouclerait).
+    if (response.status === 401 && path !== "/auth/login" && path !== "/auth/logout" && lireJeton()) {
+      window.dispatchEvent(new Event(EVENEMENT_SESSION));
+    }
+    throw await erreurDe(response, `${method} ${path}`);
+  }
   return options.parse(response.status === 204 ? null : await response.json());
 }

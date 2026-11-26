@@ -4,6 +4,7 @@ import { useCached } from "../api/useCached.js";
 import { useI18n } from "../i18n/index.js";
 import { ecrire } from "../offline/ecrire.js";
 import { Button } from "../ui/Button.js";
+import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
 import { Table } from "../ui/Table.js";
 import { MarqueGaz } from "../visuels/MarqueGaz.js";
@@ -11,7 +12,8 @@ import { MarqueGaz } from "../visuels/MarqueGaz.js";
 /** Fiches fournisseurs : nom, téléphone, marques fournies. Une réception est toujours liée à un fournisseur. */
 export function Fournisseurs() {
   const { t } = useI18n();
-  const { data, modifier } = useCached("fournisseurs", api.fournisseurs, []);
+  const lecture = useCached("fournisseurs", api.fournisseurs, []);
+  const { data, modifier } = lecture;
   const [nom, setNom] = useState("");
   const [telephone, setTelephone] = useState("");
   const { data: marquesDispo } = useCached("marques", api.marques, []);
@@ -47,22 +49,24 @@ export function Fournisseurs() {
     <div className="page">
       <section className="carte">
         <h1>{t("gaz.fournisseurs.titre")}</h1>
-        <Table
-          caption={t("gaz.fournisseurs.titre")}
-          colonnes={[t("gaz.nom"), t("gaz.telephone"), t("gaz.marques")]}
-        >
-          {data.map((f) => (
-            <tr key={f.id}>
-              <th scope="row">{f.nom}</th>
-              <td>{f.telephone}</td>
-              <td className="marques-liste">
-                {f.marques.map((m) => (
-                  <MarqueGaz key={m} nom={m} compacte />
-                ))}
-              </td>
-            </tr>
-          ))}
-        </Table>
+        <Etat {...lecture} vide={data.length === 0} messageVide={t("gaz.fournisseurs.vide")}>
+          <Table
+            caption={t("gaz.fournisseurs.titre")}
+            colonnes={[t("gaz.nom"), t("gaz.telephone"), t("gaz.marques")]}
+          >
+            {data.map((f) => (
+              <tr key={f.id}>
+                <th scope="row">{f.nom}</th>
+                <td>{f.telephone}</td>
+                <td className="marques-liste">
+                  {f.marques.map((m) => (
+                    <MarqueGaz key={m} nom={m} compacte />
+                  ))}
+                </td>
+              </tr>
+            ))}
+          </Table>
+        </Etat>
       </section>
       <form className="carte" onSubmit={ajouter}>
         <h2>{t("gaz.fournisseur.nouveau")}</h2>

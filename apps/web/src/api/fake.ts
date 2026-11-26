@@ -422,6 +422,11 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   }
   const moi = utilisateur();
   if (!moi) return erreur(401, "unauthorized", "Non connecté");
+  // Panne provoquée pour les essais : « 500:/stock » fait échouer les lectures commençant par ce chemin.
+  const [statut = "", chemin = ""] = (localStorage.getItem("jarvis.fake-panne") ?? "").split(":");
+  if (!ecriture && chemin && route.startsWith(chemin)) {
+    return erreur(Number(statut), `essai_${statut}`, "Panne provoquée");
+  }
 
   if (route === "/auth/logout") {
     setFakeUser(null);

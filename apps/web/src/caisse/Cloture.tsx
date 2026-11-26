@@ -5,6 +5,7 @@ import { useI18n } from "../i18n/index.js";
 import { ecrire } from "../offline/ecrire.js";
 import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
+import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
 import { Table } from "../ui/Table.js";
 import { formatFcfa } from "../vente/regles.js";
@@ -15,7 +16,7 @@ const lire = (v: string): number | null => (/^\d+$/u.test(v.trim()) ? Number(v) 
 /** Clôture du jour : comptage physique par caisse, écart affiché, justification demandée au-delà du seuil réglé par le PDG. */
 export function Cloture() {
   const { t } = useI18n();
-  const { actives, pret } = useCaisses();
+  const { actives, lecture } = useCaisses();
   const { data: seuil } = useCached("seuil-cloture", api.seuilCloture, 0);
   const [comptes, setComptes] = useState<Record<string, string>>({});
   const [justifs, setJustifs] = useState<Record<string, string>>({});
@@ -51,51 +52,52 @@ export function Cloture() {
     setOk(true);
   }
 
-  if (!pret && actives.length === 0) return <p role="status">{t("page.chargement")}</p>;
   return (
     <form className="carte page" onSubmit={cloturer}>
       <h1>{t("caisse.cloture.titre")}</h1>
       <p>
         {seuil === 0 ? t("caisse.cloture.aide") : `${t("caisse.cloture.aide.seuil")} ${formatFcfa(seuil)}.`}
       </p>
-      <Table
-        caption={t("caisse.cloture.titre")}
-        colonnes={[t("caisse.caisse"), t("caisse.theorique"), t("caisse.compte"), t("caisse.ecart")]}
-      >
-        {lignes.map((j) => (
-          <tr key={j.caisse.id}>
-            <th scope="row">{j.caisse.nom}</th>
-            <td>{formatFcfa(j.caisse.solde)}</td>
-            <td>
-              <Field
-                label={`${j.caisse.nom} : ${t("caisse.compte")}`}
-                inputMode="numeric"
-                value={comptes[j.caisse.id] ?? ""}
-                onChange={(e) => {
-                  setComptes((c) => ({ ...c, [j.caisse.id]: e.target.value }));
-                  setOk(false);
-                }}
-              />
-              {exige(j) && (
+      <Etat {...lecture} vide={actives.length === 0} messageVide={t("caisse.vide")}>
+        <Table
+          caption={t("caisse.cloture.titre")}
+          colonnes={[t("caisse.caisse"), t("caisse.theorique"), t("caisse.compte"), t("caisse.ecart")]}
+        >
+          {lignes.map((j) => (
+            <tr key={j.caisse.id}>
+              <th scope="row">{j.caisse.nom}</th>
+              <td>{formatFcfa(j.caisse.solde)}</td>
+              <td>
                 <Field
-                  label={`${j.caisse.nom} : ${t("caisse.justification")}`}
-                  value={justifs[j.caisse.id] ?? ""}
-                  onChange={(e) => setJustifs((x) => ({ ...x, [j.caisse.id]: e.target.value }))}
+                  label={`${j.caisse.nom} : ${t("caisse.compte")}`}
+                  inputMode="numeric"
+                  value={comptes[j.caisse.id] ?? ""}
+                  onChange={(e) => {
+                    setComptes((c) => ({ ...c, [j.caisse.id]: e.target.value }));
+                    setOk(false);
+                  }}
                 />
-              )}
-            </td>
-            <td>
-              {j.ecart === null ? null : (
-                <Chip tone={j.ecart === 0 ? "ok" : "danger"}>
-                  {j.ecart === 0
-                    ? t("gaz.conforme")
-                    : `${j.ecart > 0 ? "+" : "−"}${formatFcfa(Math.abs(j.ecart))}`}
-                </Chip>
-              )}
-            </td>
-          </tr>
-        ))}
-      </Table>
+                {exige(j) && (
+                  <Field
+                    label={`${j.caisse.nom} : ${t("caisse.justification")}`}
+                    value={justifs[j.caisse.id] ?? ""}
+                    onChange={(e) => setJustifs((x) => ({ ...x, [j.caisse.id]: e.target.value }))}
+                  />
+                )}
+              </td>
+              <td>
+                {j.ecart === null ? null : (
+                  <Chip tone={j.ecart === 0 ? "ok" : "danger"}>
+                    {j.ecart === 0
+                      ? t("gaz.conforme")
+                      : `${j.ecart > 0 ? "+" : "−"}${formatFcfa(Math.abs(j.ecart))}`}
+                  </Chip>
+                )}
+              </td>
+            </tr>
+          ))}
+        </Table>
+      </Etat>
       <Button type="submit" disabled={!complet}>
         {t("caisse.cloture.valider")}
       </Button>
