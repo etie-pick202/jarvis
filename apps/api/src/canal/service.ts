@@ -1,8 +1,10 @@
 import { schema } from "@jarvis/db";
 import type {
+  CanalReminder,
   CanalSubscriber,
   CreateCanalFormulaInput,
   CreateCanalSubscriberInput,
+  Language,
   UpdateCanalFormulaInput,
   UpdateCanalSubscriberInput,
 } from "@jarvis/shared";
@@ -12,6 +14,8 @@ import { businessDate } from "../cash/rules.js";
 import { normalizeName } from "../customers/service.js";
 import { guardUnique, requireRow } from "../db-errors.js";
 import { AppError, type Deps } from "../http.js";
+import { canalReminderMessage } from "../notifications/canal.js";
+import { whatsappLink } from "../notifications/whatsapp.js";
 import { addDays, daysBetween } from "./rules.js";
 
 const { canalFormulas, canalSubscribers } = schema;
@@ -125,6 +129,15 @@ export function dueSubscribers(deps: Deps, within: number) {
       lte(canalSubscribers.expiresOn, limit),
     ),
   );
+}
+
+/** Échéances à relancer, avec le message et le lien WhatsApp préremplis. */
+export async function reminders(deps: Deps, within: number, language: Language): Promise<CanalReminder[]> {
+  const due = await dueSubscribers(deps, within);
+  return due.map((s) => {
+    const message = canalReminderMessage(s, language);
+    return { ...s, message, whatsappUrl: whatsappLink(s.phone, message) };
+  });
 }
 
 export async function createSubscriber(deps: Deps, actorId: string, input: CreateCanalSubscriberInput) {
