@@ -8,6 +8,7 @@ import { catalogueRoutes } from "./catalogue/routes.js";
 import { controlRoutes } from "./control/routes.js";
 import { customerRoutes } from "./customers/routes.js";
 import { type AppEnv, type Deps, errorResponse, withDeps } from "./http.js";
+import { moneyRoutes } from "./money/routes.js";
 import { reportRoutes } from "./reports/routes.js";
 import { salesRoutes } from "./sales/routes.js";
 import { stockRoutes } from "./stock/routes.js";
@@ -41,6 +42,7 @@ export function createApp(deps: Deps) {
   api.route("/catalogue", catalogueRoutes);
   api.route("/control", controlRoutes);
   api.route("/customers", customerRoutes);
+  api.route("/money", moneyRoutes);
   api.route("/reports", reportRoutes);
   api.route("/sales", salesRoutes);
   api.route("/sync", syncRoutes);
