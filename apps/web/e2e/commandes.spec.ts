@@ -20,3 +20,16 @@ test("Commandes : confirmer le paiement, valider, puis annuler une livraison ave
   await livraison.getByRole("button", { name: /Confirmer l.annulation/u }).click();
   await expect(livraison).toHaveCount(0);
 });
+
+test("Commandes : le gérant saisit une commande reçue par téléphone", async ({ page }) => {
+  await seConnecter(page, "gerant");
+  await page.goto("/livre/file");
+  await page.getByRole("button", { name: "Commande par téléphone" }).click();
+  const f = page.getByRole("form", { name: "Commande par téléphone" });
+  await f.getByLabel("Quantité : Gaz OLA 12,5 kg").fill("1");
+  await f.getByLabel("Client").fill("Client Essai");
+  await f.getByLabel("Téléphone").fill("690000055");
+  await f.getByLabel("Quartier", { exact: true }).selectOption({ label: "Quartier Essai Nord" });
+  await f.getByRole("button", { name: /^Enregistrer la commande/u }).click();
+  await expect(page.getByText(/Commande enregistrée/u)).toBeVisible();
+});
