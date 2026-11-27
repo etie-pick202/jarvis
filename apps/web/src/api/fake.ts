@@ -742,7 +742,7 @@ function baseNeuve(route: string): unknown {
 
 /** Répond comme le backend. `path` est relatif à /api/v1 (avec sa chaîne de requête). */
 export async function fakeApi(path: string, init?: RequestInit): Promise<Response> {
-  const url = new URL(path, "http://fake");
+  const url = new URL(path, "https://fake");
   const route = url.pathname;
   const ecriture = Boolean(init?.method && init.method !== "GET");
 
