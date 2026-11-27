@@ -585,6 +585,26 @@ function agirSurCommande(route: string, init?: RequestInit): Response {
   return json({ ...o, ...effets[action] });
 }
 
+/** Comptes d'exemple, d'après les utilisateurs du faux serveur. */
+const comptes = () =>
+  Object.entries(USERS).map(([username, u]) => ({
+    id: u.id,
+    username,
+    displayName: u.displayName,
+    roles: u.roles,
+    active: true,
+  }));
+
+/** Rejoue la création ou la modification d'un compte. */
+function ecrireCompte(route: string, init?: RequestInit): Response {
+  const corps = JSON.parse(String(init?.body ?? "{}")) as { active?: boolean; roles?: Role[] };
+  const id = route.split("/")[3];
+  if (!id) return json({ ok: true }, 201);
+  const c = comptes().find((x) => x.id === id);
+  if (!c) return erreur(404, "not_found", "Compte introuvable");
+  return json({ ...c, active: corps.active ?? c.active, roles: corps.roles ?? c.roles });
+}
+
 const CLE_FAUX = "jarvis.fake-user";
 
 /** L'utilisateur « connecté » survit au rechargement, comme le ferait un jeton de session. */
@@ -652,6 +672,7 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   if (route === "/receipts" && ecriture)
     return json({ id: uuid(1201), contentType: "application/pdf", size: 1 }, 201);
   if (ecriture && route.startsWith("/orders/")) return agirSurCommande(route, init);
+  if (ecriture && route.startsWith("/auth/users")) return ecrireCompte(route, init);
   if (ecriture) return json({ ok: true }, 201);
 
   switch (route) {
@@ -734,6 +755,10 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       const jours = Number(url.searchParams.get("within") ?? 7);
       return json(ABONNES.filter((a) => a.active && a.daysLeft !== null && a.daysLeft <= jours));
     }
+    case "/auth/users":
+      return json(comptes());
+    case "/stock/thresholds":
+      return json({ default: SEUIL_BAS, overrides: [] });
     case "/cash/closure-threshold":
       return json({ threshold: SEUIL_CLOTURE });
     case "/reports/dashboard":
