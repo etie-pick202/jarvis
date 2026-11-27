@@ -1,7 +1,7 @@
 import * as contrat from "@jarvis/shared";
 import { z } from "zod";
 import type { Profil } from "../nav/volets.js";
-import { API_BASE, ApiError, enTetes, erreurDe, request } from "./client.js";
+import { API_BASE, ApiError, enTetes, erreurDe, newIdempotencyKey, request } from "./client.js";
 import type {
   Alerte,
   Article,
@@ -254,6 +254,21 @@ export const api = {
 
   seuilCloture: async (signal?: AbortSignal): Promise<number> =>
     (await get("/cash/closure-threshold", contrat.closureThresholdResult, signal)).threshold,
+
+  /** Comptes (PDG). Écritures directes : un mot de passe n'est jamais gardé dans la file d'envoi. */
+  comptes: (signal?: AbortSignal): Promise<contrat.UserAccount[]> =>
+    get("/auth/users", contrat.userAccounts, signal),
+  creerCompte: (body: { username: string; displayName: string; password: string; roles: contrat.Role[] }) =>
+    request("/auth/users", { method: "POST", body, idempotencyKey: newIdempotencyKey(), parse: () => null }),
+  modifierCompte: (id: string, body: contrat.UpdateUserInput): Promise<contrat.UserAccount> =>
+    request(`/auth/users/${id}`, {
+      method: "PATCH",
+      body,
+      idempotencyKey: newIdempotencyKey(),
+      parse: lire(contrat.userAccount),
+    }),
+  seuilStock: async (signal?: AbortSignal): Promise<number> =>
+    (await get("/stock/thresholds", contrat.stockThresholds, signal)).default,
 
   /** Vue agrégée du PDG pour le jour d'activité. */
   tableau: async (signal?: AbortSignal): Promise<Tableau> => {

@@ -19,6 +19,11 @@ const Encaissements = lazy(() =>
 const Operations = lazy(() => import("./money/Operations.js").then((m) => ({ default: m.Operations })));
 const Float = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Float })));
 const Commissions = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Commissions })));
+const Utilisateurs = lazy(() =>
+  import("./config/Utilisateurs.js").then((m) => ({ default: m.Utilisateurs })),
+);
+const ConfigCaisses = lazy(() => import("./config/Caisses.js").then((m) => ({ default: m.ConfigCaisses })));
+const ConfigLangue = lazy(() => import("./config/Caisses.js").then((m) => ({ default: m.ConfigLangue })));
 const Echeances = lazy(() => import("./canal/Echeances.js").then((m) => ({ default: m.Echeances })));
 const Cloture = lazy(() => import("./caisse/Cloture.js").then((m) => ({ default: m.Cloture })));
 const Depenses = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Depenses })));
@@ -276,6 +281,30 @@ export function App() {
               element={
                 <Garde volet="money">
                   <Commissions />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/utilisateurs"
+              element={
+                <Garde volet="config">
+                  <Utilisateurs />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/caisses"
+              element={
+                <Garde volet="config">
+                  <ConfigCaisses />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/langue"
+              element={
+                <Garde volet="config">
+                  <ConfigLangue />
                 </Garde>
               }
             />
