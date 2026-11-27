@@ -14,10 +14,14 @@ export function Soldes() {
   const [ouverte, setOuverte] = useState<string | null>(null);
   const choisie = caisses.find((c) => c.id === ouverte);
   return (
-    <div className="page">
+    <div className="page page--large">
       <section className="carte">
         <h1>{t("caisse.soldes.titre")}</h1>
         <Etat {...lecture} vide={caisses.length === 0} messageVide={t("caisse.vide")}>
+          <p className="caisses__total">
+            <strong>{`${t("caisse.total")} : ${formatFcfa(totalSoldes(caisses))}`}</strong>
+            <span>{` · ${t("caisse.dont")} ${formatFcfa(totalEspeces(caisses))} ${t("caisse.enespeces")}`}</span>
+          </p>
           <ul className="caisses">
             {caisses.map((c) => (
               <li key={c.id} className={`caisses__carte${c.actif ? "" : " caisses__carte--veille"}`}>
@@ -40,10 +44,6 @@ export function Soldes() {
               </li>
             ))}
           </ul>
-          <p className="caisses__total">
-            <strong>{`${t("caisse.total")} : ${formatFcfa(totalSoldes(caisses))}`}</strong>
-            <span>{` · ${t("caisse.dont")} ${formatFcfa(totalEspeces(caisses))} ${t("caisse.enespeces")}`}</span>
-          </p>
         </Etat>
       </section>
       {choisie && <Journal key={choisie.id} caisse={choisie} onSolde={lecture.recharger} />}

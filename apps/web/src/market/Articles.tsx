@@ -1,10 +1,11 @@
 import type { Article, CreateArticleInput, UpdateArticleInput } from "@jarvis/shared";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { api } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import { useSession } from "../auth/SessionProvider.js";
 import { useI18n } from "../i18n/index.js";
 import { ecrire } from "../offline/ecrire.js";
+import { allerA } from "../ui/amener.js";
 import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Etat } from "../ui/Etat.js";
@@ -163,6 +164,11 @@ export function Articles() {
   const trouves = filtrerArticles(data, recherche);
   const { visibles, restants, plus } = usePagination(trouves);
   const choisi = data.find((a) => a.id === edition);
+  const fiche = useRef<HTMLDivElement>(null);
+  // La fiche est après la liste sur téléphone : « Modifier » y conduit.
+  useEffect(() => {
+    if (edition) allerA(fiche.current);
+  }, [edition]);
 
   async function ajouter(body: CreateArticleInput) {
     await ecrire({
@@ -187,9 +193,16 @@ export function Articles() {
   }
 
   return (
-    <div className="page">
+    <div className={gere ? "page page--panneau" : "page"}>
       <section className="carte">
-        <h1>{t("rub.market.articles")}</h1>
+        <div className="titre-ligne">
+          <h1>{t("rub.market.articles")}</h1>
+          {gere && (
+            <Button variant="contour" className="vers-fiche" onClick={() => allerA(fiche.current)}>
+              {t("market.nouveau")}
+            </Button>
+          )}
+        </div>
         <Field
           label={t("market.recherche")}
           type="search"
@@ -203,6 +216,7 @@ export function Articles() {
           texteVide={t("vide.articles")}
         >
           <Table
+            cartes
             caption={t("rub.market.articles")}
             colonnes={[t("market.nom"), t("canal.prix"), t("market.cout"), t("rub.market.stock"), ""]}
           >
@@ -247,23 +261,25 @@ export function Articles() {
         </Etat>
       </section>
       {gere && (
-        <Fiche
-          key={choisi?.id ?? "nouveau"}
-          article={choisi}
-          existants={data}
-          onValider={(s) =>
-            choisi
-              ? changer(choisi, {
-                  name: s.name,
-                  price: s.price,
-                  purchaseCost: s.purchaseCost,
-                  category: s.category,
-                  lowThreshold: s.lowThreshold,
-                })
-              : ajouter(s)
-          }
-          onAnnuler={() => setEdition(null)}
-        />
+        <div ref={fiche}>
+          <Fiche
+            key={choisi?.id ?? "nouveau"}
+            article={choisi}
+            existants={data}
+            onValider={(s) =>
+              choisi
+                ? changer(choisi, {
+                    name: s.name,
+                    price: s.price,
+                    purchaseCost: s.purchaseCost,
+                    category: s.category,
+                    lowThreshold: s.lowThreshold,
+                  })
+                : ajouter(s)
+            }
+            onAnnuler={() => setEdition(null)}
+          />
+        </div>
       )}
     </div>
   );
@@ -282,7 +298,11 @@ export function StockArticles() {
       <section className="carte">
         <h1>{t("rub.market.stock")}</h1>
         <Etat {...lecture} vide={suivis.length === 0} messageVide={t("market.aucun.suivi")}>
-          <Table caption={t("rub.market.stock")} colonnes={[t("market.nom"), t("market.quantite"), ""]}>
+          <Table
+            cartes
+            caption={t("rub.market.stock")}
+            colonnes={[t("market.nom"), t("market.quantite"), ""]}
+          >
             {visibles.map((a) => (
               <tr key={a.id}>
                 <th scope="row">{a.name}</th>

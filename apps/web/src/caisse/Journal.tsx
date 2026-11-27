@@ -5,6 +5,7 @@ import { useCached } from "../api/useCached.js";
 import { useSession } from "../auth/SessionProvider.js";
 import { jourActivite } from "../canal/regles.js";
 import { useI18n } from "../i18n/index.js";
+import { useAmener } from "../ui/amener.js";
 import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Correction } from "../ui/Correction.js";
@@ -94,10 +95,11 @@ export function Journal({ caisse, onSolde }: Readonly<{ caisse: Caisse; onSolde:
   const choisie = lecture.data.find((e) => e.id === ouverte);
   const heure = new Intl.DateTimeFormat(lang, { hour: "2-digit", minute: "2-digit" });
   const titre = `${t("corr.mouvements")} : ${caisse.nom}`;
+  const bloc = useAmener<HTMLElement>(false);
 
   return (
     <>
-      <section className="carte" aria-label={titre}>
+      <section ref={bloc} className="carte" aria-label={titre}>
         <h2>{titre}</h2>
         <Field
           label={t("canal.date")}
@@ -111,7 +113,7 @@ export function Journal({ caisse, onSolde }: Readonly<{ caisse: Caisse; onSolde:
         />
         {fait && <output className="bloc">{t("corr.faite")}</output>}
         <Etat {...lecture} vide={lecture.data.length === 0} messageVide={t("corr.aucun.mouvement")}>
-          <Table caption={titre} colonnes={[t("corr.piece"), t("corr.libelle"), t("corr.montant")]}>
+          <Table cartes caption={titre} colonnes={[t("corr.piece"), t("corr.libelle"), t("corr.montant")]}>
             {visibles.map((e) => (
               <tr key={e.id}>
                 <th scope="row">
