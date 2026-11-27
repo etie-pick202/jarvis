@@ -8,6 +8,8 @@ import type { Role } from "@jarvis/shared";
 export const PERMISSIONS = {
   "user.manage": ["pdg"],
   "catalog.gas.read": ["pdg", "gerant", "caissier"],
+  // Noms des marques et des formats : le livreur en a besoin pour noter le vide rapporté.
+  "catalog.reference.read": ["pdg", "gerant", "caissier", "livreur"],
   "catalog.gas.write": ["pdg"],
   "catalog.article.write": ["pdg", "gerant"],
   "sale.create": ["pdg", "gerant", "caissier"],
@@ -22,6 +24,7 @@ export const PERMISSIONS = {
   "cash.close": ["pdg", "gerant"],
   "cash.manage": ["pdg"],
   "audit.read": ["pdg", "gerant"],
+  "notification.settings.read": ["pdg", "gerant", "caissier"],
   "report.read": ["pdg", "gerant"],
   "canal.read": ["pdg", "gerant", "caissier"],
   "canal.write": ["pdg", "gerant", "caissier"],
