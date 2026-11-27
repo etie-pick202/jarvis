@@ -10,6 +10,7 @@
     "test": "vitest run --passWithNoTests",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:api": "playwright test -c playwright.real-api.config.ts",
     "icones": "node scripts/generer-icones.mjs"
   },
   "dependencies": {
