@@ -13,6 +13,8 @@ import { Plus } from "./shell/Plus.js";
 import { Shell } from "./shell/Shell.js";
 
 // Écrans chargés à la demande : le premier affichage ne télécharge que la coque et la connexion.
+const Historique = lazy(() => import("./vente/Historique.js").then((m) => ({ default: m.Historique })));
+const Clients = lazy(() => import("./vente/Clients.js").then((m) => ({ default: m.Clients })));
 const Marques = lazy(() => import("./config/Marques.js").then((m) => ({ default: m.Marques })));
 const Prix = lazy(() => import("./config/Prix.js").then((m) => ({ default: m.Prix })));
 const Utilisateurs = lazy(() =>
@@ -397,6 +399,22 @@ export function App() {
               element={
                 <Garde volet="config">
                   <Prix />
+                </Garde>
+              }
+            />
+            <Route
+              path="vente/historique"
+              element={
+                <Garde volet="vente">
+                  <Historique />
+                </Garde>
+              }
+            />
+            <Route
+              path="vente/clients"
+              element={
+                <Garde volet="vente">
+                  <Clients />
                 </Garde>
               }
             />

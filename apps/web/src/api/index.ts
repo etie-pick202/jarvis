@@ -177,6 +177,20 @@ export const api = {
       parse: lire(contrat.trackedOrder),
     }),
 
+  /** Écritures de vente d'un jour (annulations comprises). */
+  ventesDuJour: (jour: string, signal?: AbortSignal): Promise<contrat.Sale[]> =>
+    get(`/sales?date=${jour}&limit=500`, LISTES.ventes, signal),
+  /** Noms des marques et des articles, pour décrire les lignes d'une vente. */
+  nomsProduits: async (signal?: AbortSignal): Promise<Record<string, string>> => {
+    const [marques, articles] = await Promise.all([
+      sansDroit(get("/catalogue/brands", LISTES.marques, signal), []),
+      sansDroit(get("/catalogue/articles", LISTES.articles, signal), []),
+    ]);
+    return Object.fromEntries([
+      ...marques.map((m) => [m.id, `Gaz ${m.name}`]),
+      ...articles.map((a) => [a.id, a.name]),
+    ]);
+  },
   /** Réglages des tarifs : toutes les marques et tous les formats, désactivés compris. */
   marquesConfig: (signal?: AbortSignal) => get("/catalogue/brands", LISTES.marques, signal),
   formatsConfig: (signal?: AbortSignal) => get("/catalogue/formats", LISTES.formats, signal),
