@@ -12,6 +12,7 @@ Base : maquette JARVIS (identité, or et noir) et logos existants. Une recommand
 2. **Une action principale par écran** (jaune). Le reste est discret.
 3. **Dense au bureau, au pouce sur le terrain** : le PDG compare, le comptoir et le livreur agissent.
 4. **Hors ligne** : aucune ressource distante ; polices, icônes et illustrations embarquées.
+5. **Une base vide est un cas normal** : le premier démarrage guide le PDG (voir `pages/premier-demarrage.md`).
 
 ## Couleurs (jetons de `apps/web/src/styles/tokens.css`)
 

@@ -23,6 +23,12 @@ des captures : les états propres aux données réelles ne sont pas couverts. Le
 11. **Contrôles natifs** non harmonisés (« Choose File » en anglais dans une interface en français).
 12. **Mouvement** : aucune règle CSS `prefers-reduced-motion` (seul le logo en tient compte).
 
+## Priorité ajoutée : base vide
+
+La base de l'utilisateur ne contient qu'un compte PDG et les six caisses. Le premier démarrage et les états vides
+passent en priorité ([détail](pages/premier-demarrage.md)). Ces écrans vides ne sont pas encore audités : les captures
+ci-dessus montrent des données fictives.
+
 ## Direction retenue
 
 « Or et noir, atelier clair » : identité conservée (jaune, noir, crème, Inter et Space Grotesk auto-hébergées),
@@ -32,7 +38,7 @@ maquette n'en prévoit pas). Détail : [MASTER.md](MASTER.md).
 
 ## Étapes proposées (une PR chacune)
 
-1. Jetons, composants partagés, coque (barre, rubriques, navigation), états et squelettes.
+1. Jetons, composants partagés, coque (barre, rubriques, navigation), états vides et squelettes, premier démarrage.
 2. Pilotage, ventes, livraisons et mode livreur.
 3. Gaz, caisses, autres articles.
 4. Canal+, mobile money, rapports, paramètres, boutique et connexion.
