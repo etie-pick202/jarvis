@@ -72,6 +72,8 @@ describe("vitrine publique", () => {
     await plus("Gaz OLA 12,5 kg");
     await plus("Gaz OLA 12,5 kg");
     expect(texte()).toContain("14 400 FCFA");
+    // La barre du bas rappelle le total et conduit au panier.
+    await userEvent.click(screen.getByRole("button", { name: /^Voir le panier · /u }));
     await userEvent.selectOptions(screen.getByLabelText("Quartier"), "Quartier Essai Sud");
     expect(texte()).toContain("14 800 FCFA");
     await userEvent.click(screen.getByRole("radio", { name: "Retrait en boutique" }));

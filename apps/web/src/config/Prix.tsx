@@ -1,5 +1,5 @@
 import type { Brand, Format } from "@jarvis/shared";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useId, useRef, useState } from "react";
 import { api } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import { useSession } from "../auth/SessionProvider.js";
@@ -10,6 +10,7 @@ import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
 import { Suite } from "../ui/Suite.js";
 import { Table } from "../ui/Table.js";
+import { TitreFiche } from "../ui/TitreFiche.js";
 import { useEnvoi } from "../ui/useEnvoi.js";
 import { formatFcfa } from "../vente/regles.js";
 import { MarqueGaz } from "../visuels/MarqueGaz.js";
@@ -148,11 +149,16 @@ export function Prix() {
   const formats = useCached("tarifs-formats", api.formatsConfig, []);
   const nom = (id: string) => marques.data.find((m) => m.id === id)?.name ?? "?";
   const format = (id: string) => formats.data.find((f) => f.id === id)?.label ?? "?";
+  const fiche = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="page">
+    <div className={profilsActifs.includes("pdg") ? "page page--panneau" : "page"}>
       <section className="carte">
-        <h1>{t("rub.config.prix")}</h1>
+        <TitreFiche
+          titre={t("rub.config.prix")}
+          bouton={profilsActifs.includes("pdg") ? t("tarifs.prix.nouveau") : undefined}
+          fiche={fiche}
+        />
         <Etat
           {...prix}
           vide={prix.data.length === 0}
@@ -161,6 +167,7 @@ export function Prix() {
           actionVide={<Suite vers="/config/marques" libelle={t("vide.vers.marques")} />}
         >
           <Table
+            cartes
             caption={t("rub.config.prix")}
             colonnes={[
               t("gaz.marque"),
@@ -185,7 +192,9 @@ export function Prix() {
         </Etat>
       </section>
       {profilsActifs.includes("pdg") ? (
-        <NouveauPrix marques={marques.data} formats={formats.data} onFait={prix.recharger} />
+        <div ref={fiche}>
+          <NouveauPrix marques={marques.data} formats={formats.data} onFait={prix.recharger} />
+        </div>
       ) : (
         <p>{t("tarifs.reserve")}</p>
       )}

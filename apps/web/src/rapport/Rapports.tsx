@@ -40,7 +40,7 @@ function Rapport1({ id, titre }: Readonly<PropsRapport>) {
     <section className="carte">
       <h1>{nom}</h1>
       <Etat {...lecture} vide={data.lignes.length === 0} messageVide={t("rapport.vide")}>
-        <Table caption={nom} colonnes={data.colonnes}>
+        <Table cartes caption={nom} colonnes={data.colonnes}>
           {visibles.map((l, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: lignes d'un rapport figé, sans identifiant propre
             <tr key={i}>
@@ -89,7 +89,7 @@ export function SituationGaz() {
     <section className="carte">
       <h1>{t("rub.rapport.gaz")}</h1>
       <Etat {...lecture} vide={data.lignes.length === 0} messageVide={t("rapport.vide")}>
-        <Table caption={t("rub.rapport.gaz")} colonnes={data.colonnes}>
+        <Table cartes caption={t("rub.rapport.gaz")} colonnes={data.colonnes}>
           {data.lignes.map((l) => (
             <tr key={String(l[0])}>
               {l.map((v, j) => (

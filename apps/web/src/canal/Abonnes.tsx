@@ -1,15 +1,17 @@
 import { type CreateCanalSubscriberInput, toE164, type UpdateCanalSubscriberInput } from "@jarvis/shared";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { api, type CanalFormula, type CanalSubscriber } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import { useSession } from "../auth/SessionProvider.js";
 import { useI18n } from "../i18n/index.js";
 import { ecrire } from "../offline/ecrire.js";
+import { allerA } from "../ui/amener.js";
 import { Button } from "../ui/Button.js";
 import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
 import { usePagination, VoirPlus } from "../ui/listes.js";
 import { Table } from "../ui/Table.js";
+import { TitreFiche } from "../ui/TitreFiche.js";
 import { useGarde } from "../ui/useEnvoi.js";
 import { formatFcfa } from "../vente/regles.js";
 import { EtatChip } from "./EtatChip.js";
@@ -135,6 +137,11 @@ export function Abonnes() {
   const gere = profilsActifs.includes("pdg") || profilsActifs.includes("gerant");
   const trouves = filtrerAbonnes(abonnes, recherche);
   const { visibles, restants, plus } = usePagination(trouves);
+  const fiche = useRef<HTMLDivElement>(null);
+  // La fiche est après la liste sur téléphone : « Modifier » y conduit.
+  useEffect(() => {
+    if (edition) allerA(fiche.current);
+  }, [edition]);
 
   const vue = (s: Saisie, base: CanalSubscriber | null): CanalSubscriber => {
     const f = formules.data.find((x) => x.id === s.formule);
@@ -186,9 +193,9 @@ export function Abonnes() {
   }
 
   return (
-    <div className="page">
+    <div className="page page--panneau">
       <section className="carte">
-        <h1>{t("canal.abonnes.titre")}</h1>
+        <TitreFiche titre={t("canal.abonnes.titre")} bouton={t("canal.nouveau")} fiche={fiche} />
         <Field
           label={t("canal.recherche")}
           type="search"
@@ -202,6 +209,7 @@ export function Abonnes() {
           texteVide={t("vide.abonnes")}
         >
           <Table
+            cartes
             caption={t("canal.abonnes.titre")}
             colonnes={[
               t("canal.nom"),
@@ -245,24 +253,26 @@ export function Abonnes() {
           <VoirPlus restants={restants} plus={plus} />
         </Etat>
       </section>
-      {edition ? (
-        <Fiche
-          key={edition.id}
-          titre={`${t("canal.modifier")} ${edition.name}`}
-          formules={formules.data}
-          initiale={depuis(edition)}
-          onValider={(s) => changer(edition, corps(s), vue(s, edition))}
-          onAnnuler={() => setEdition(null)}
-        />
-      ) : (
-        <Fiche
-          key="nouveau"
-          titre={t("canal.nouveau")}
-          formules={formules.data}
-          initiale={VIDE}
-          onValider={ajouter}
-        />
-      )}
+      <div ref={fiche}>
+        {edition ? (
+          <Fiche
+            key={edition.id}
+            titre={`${t("canal.modifier")} ${edition.name}`}
+            formules={formules.data}
+            initiale={depuis(edition)}
+            onValider={(s) => changer(edition, corps(s), vue(s, edition))}
+            onAnnuler={() => setEdition(null)}
+          />
+        ) : (
+          <Fiche
+            key="nouveau"
+            titre={t("canal.nouveau")}
+            formules={formules.data}
+            initiale={VIDE}
+            onValider={ajouter}
+          />
+        )}
+      </div>
       {gere && <Formules formules={formules.data} modifier={formules.modifier} />}
     </div>
   );
