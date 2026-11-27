@@ -89,4 +89,53 @@ describe("historique et clients", () => {
     await userEvent.click(screen.getByRole("button", { name: "Chercher" }));
     await waitFor(() => expect(screen.getByRole("alert").textContent).toBe("Vous êtes hors ligne"));
   });
+
+  it("partage le reçu du serveur, compose un reçu local hors ligne, montre un refus", async () => {
+    const partages: File[] = [];
+    Object.assign(navigator, {
+      canShare: () => true,
+      share: async ({ files }: { files: File[] }) => void partages.push(...files),
+    });
+    ui(<Historique />);
+    const recu = await screen.findByRole("button", { name: "Reçu TK1993" });
+    const appels: string[] = [];
+    vi.stubGlobal("fetch", async (url: string) => {
+      appels.push(url);
+      return new Response("%PDF serveur");
+    });
+    await userEvent.click(recu);
+    await waitFor(() => expect(partages).toHaveLength(1));
+    expect(appels[0]).toMatch(/\/documents\/sales\/.+\/receipt\.pdf\?lang=fr$/u);
+    expect(screen.queryByText(/composé sur cet appareil/u)).toBeNull();
+
+    vi.stubGlobal("fetch", async () => {
+      throw new TypeError("réseau");
+    });
+    await userEvent.click(recu);
+    expect(await screen.findByText(/composé sur cet appareil/u)).toBeTruthy();
+    expect(partages[1]?.name).toBe("recu-TK1993.pdf");
+
+    vi.stubGlobal(
+      "fetch",
+      async () =>
+        new Response(JSON.stringify({ error: { code: "forbidden", message: "Refus essai" } }), {
+          status: 403,
+        }),
+    );
+    await userEvent.click(recu);
+    expect((await screen.findByRole("alert")).textContent).toBe("Refus essai");
+    expect(partages).toHaveLength(2);
+
+    Object.assign(navigator, {
+      share: async () => {
+        throw new DOMException("fermé", "AbortError");
+      },
+    });
+    vi.stubGlobal("fetch", async () => new Response("%PDF serveur"));
+    await userEvent.click(recu);
+    await waitFor(() => expect((recu as HTMLButtonElement).disabled).toBe(false));
+    expect(screen.queryByRole("alert")).toBeNull();
+    Reflect.deleteProperty(navigator, "canShare");
+    Reflect.deleteProperty(navigator, "share");
+  });
 });

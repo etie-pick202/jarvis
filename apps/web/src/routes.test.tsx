@@ -34,6 +34,7 @@ const ROUTES: [string, string][] = [
   ["/config/prix", "Prix"],
   ["/config/utilisateurs", "Utilisateurs et droits"],
   ["/config/caisses", "Caisses"],
+  ["/config/notifications", "Notifications"],
   ["/config/langue", "Langue"],
   ["/livre/file", "Commandes en ligne"],
   ["/livre/historique", "Historique"],

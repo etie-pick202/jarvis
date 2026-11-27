@@ -105,7 +105,7 @@ describe("CoCoRapport", () => {
     );
     ui(<Exports />);
     const boutons = await screen.findAllByRole("button", { name: /Exporter en CSV/u });
-    expect(boutons).toHaveLength(3);
+    expect(boutons).toHaveLength(4);
     await userEvent.click(boutons[0] as HTMLElement);
     expect(clic).toHaveBeenCalled();
     clic.mockRestore();

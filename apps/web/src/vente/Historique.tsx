@@ -1,5 +1,6 @@
 import type { Sale } from "@jarvis/shared";
 import { useCallback, useState } from "react";
+import { ApiError } from "../api/client.js";
 import { api } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import { useSession } from "../auth/SessionProvider.js";
@@ -12,8 +13,10 @@ import { Chip } from "../ui/Chip.js";
 import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
 import { usePagination, VoirPlus } from "../ui/listes.js";
+import { partagerFichier } from "../ui/partage.js";
 import { Table } from "../ui/Table.js";
 import { annulables, jourActivite, totalVendu } from "./net.js";
+import { recuDeVente } from "./recuServeur.js";
 import { formatFcfa } from "./regles.js";
 
 const MOYENS = { cash: "paiement.especes", orange_money: "paiement.om", momo: "paiement.momo" } as const;
@@ -26,6 +29,8 @@ function Journee({ jour, setJour }: Readonly<{ jour: string; setJour: (j: string
   const noms = useCached("noms-produits", api.nomsProduits, {});
   const attente = useOutbox().filter((o) => o.syncType === "sale").length;
   const [annulation, setAnnulation] = useState<string | null>(null);
+  const [recuEnCours, setRecuEnCours] = useState<string | null>(null);
+  const [avis, setAvis] = useState<{ texte: string; erreur: boolean } | null>(null);
   const { visibles, restants, plus } = usePagination(lecture.data);
   const peutAnnuler = profilsActifs.includes("pdg") || profilsActifs.includes("gerant");
   const permises = annulables(lecture.data);
@@ -36,6 +41,28 @@ function Journee({ jour, setJour }: Readonly<{ jour: string; setJour: (j: string
     v.lines
       .map((l) => `${noms.data[l.articleId ?? l.brandId ?? ""] ?? t("vente.article")} × ${l.quantity}`)
       .join(", ");
+
+  async function recu(vente: Sale) {
+    if (recuEnCours) return;
+    setRecuEnCours(vente.id);
+    setAvis(null);
+    try {
+      const { contenu, local } = await recuDeVente(vente, lang, () => [
+        `COCOSAB - ${t(vente.reversalOf ? "canal.annulation" : "vente.recu")} ${vente.number}`,
+        new Date(vente.createdAt).toLocaleString(lang),
+        `${t("gaz.client")} : ${vente.customerName}`,
+        detail(vente),
+        `${t("vente.total")} : ${formatFcfa(Math.abs(vente.total))}`,
+        t(MOYENS[vente.paymentMethod]),
+      ]);
+      await partagerFichier(`recu-${vente.number}.pdf`, contenu, vente.number);
+      if (local) setAvis({ texte: t("ventes.recu.local"), erreur: false });
+    } catch (e) {
+      setAvis({ texte: e instanceof ApiError ? e.message : t("ventes.recu.erreur"), erreur: true });
+    } finally {
+      setRecuEnCours(null);
+    }
+  }
 
   async function annuler(vente: Sale, justification: string) {
     await ecrire({
@@ -59,6 +86,14 @@ function Journee({ jour, setJour }: Readonly<{ jour: string; setJour: (j: string
         onChange={(e) => e.target.value && setJour(e.target.value)}
       />
       {attente > 0 && <output className="bloc">{`${attente} ${t("ventes.attente")}`}</output>}
+      {avis &&
+        (avis.erreur ? (
+          <p role="alert" className="connexion__erreur">
+            {avis.texte}
+          </p>
+        ) : (
+          <output className="bloc">{avis.texte}</output>
+        ))}
       <Etat {...lecture} vide={lecture.data.length === 0} messageVide={t("ventes.aucune")}>
         <p>
           <strong>{`${t("ventes.total")} : ${formatFcfa(totalVendu(lecture.data))}`}</strong>
@@ -85,6 +120,17 @@ function Journee({ jour, setJour }: Readonly<{ jour: string; setJour: (j: string
                 {v.reversalOf && <Chip tone="alerte">{t("canal.annulation")}</Chip>}
                 {lecture.data.some((x) => x.reversalOf === v.id) && (
                   <Chip tone="danger">{t("ventes.annulee")}</Chip>
+                )}
+                {/* Une annulation pas encore envoyée n'a pas d'identifiant côté serveur. */}
+                {!v.id.startsWith("annulation-") && (
+                  <Button
+                    variant="contour"
+                    aria-label={`${t("vente.recu")} ${v.number}`}
+                    disabled={recuEnCours !== null}
+                    onClick={() => void recu(v)}
+                  >
+                    {t("vente.recu")}
+                  </Button>
                 )}
                 {peutAnnuler && permises.has(v.id) && (
                   <Button
