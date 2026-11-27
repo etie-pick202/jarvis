@@ -3,6 +3,7 @@ import {
   DEFAULT_NOTIFICATION_SETTINGS,
   type NotificationSettings,
   notificationSettings,
+  type Role,
 } from "@jarvis/shared";
 import { eq } from "drizzle-orm";
 import { recordAudit } from "../audit/service.js";
@@ -30,4 +31,16 @@ export async function writeNotificationSettings(deps: Deps, actorId: string, inp
     details: input,
   });
   return input;
+}
+
+/** Le caissier ne voit que ce qui le concerne : ni les autres profils, ni les adresses e-mail. */
+export function visibleTo(role: Role, value: NotificationSettings): NotificationSettings {
+  if (role !== "caissier") return value;
+  const own = (list: NotificationSettings["reports"]) => list.filter((r) => r === "caissier");
+  return {
+    reminders: own(value.reminders),
+    stockAlerts: own(value.stockAlerts),
+    reports: own(value.reports),
+    reportEmails: [],
+  };
 }

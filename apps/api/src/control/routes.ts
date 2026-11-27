@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireAuth, requirePermission } from "../auth/middleware.js";
 import { type AppEnv, parse, parseJson } from "../http.js";
 import { idempotency } from "../idempotency.js";
-import { readNotificationSettings, writeNotificationSettings } from "../notifications/settings.js";
+import { readNotificationSettings, visibleTo, writeNotificationSettings } from "../notifications/settings.js";
 import * as svc from "./service.js";
 
 const uuid = z.uuid();
@@ -43,8 +43,8 @@ export const controlRoutes = new Hono<AppEnv>()
       }),
     );
   })
-  .get("/notification-settings", requirePermission("audit.read"), async (c) =>
-    c.json(await readNotificationSettings(c.get("deps"))),
+  .get("/notification-settings", requirePermission("notification.settings.read"), async (c) =>
+    c.json(visibleTo(c.get("user").activeRole, await readNotificationSettings(c.get("deps")))),
   )
   .put("/notification-settings", requirePermission("user.manage"), async (c) =>
     c.json(

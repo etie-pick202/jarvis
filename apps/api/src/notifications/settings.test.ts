@@ -26,14 +26,15 @@ describe("destinataires des notifications (API)", () => {
   });
   afterAll(() => t.close());
 
-  it("valeurs par défaut lues par le PDG et le gérant, fermées au caissier", async () => {
+  it("valeurs par défaut lues par le PDG et le gérant", async () => {
     expect(await read(gerant)).toEqual({
       reminders: ["gerant"],
       stockAlerts: ["pdg", "gerant"],
       reports: ["pdg"],
       reportEmails: [],
     });
-    expect((await t.app.request(path, authGet(caissier))).status).toBe(403);
+    const nothing = { reminders: [], stockAlerts: [], reports: [], reportEmails: [] };
+    expect(await read(caissier)).toEqual(nothing);
   });
 
   it("modifiés par le PDG seul, avec des adresses valides", async () => {
@@ -48,5 +49,23 @@ describe("destinataires des notifications (API)", () => {
     expect((await write({ ...next, reports: ["livreur"] })).status).toBe(422);
     expect((await write(next)).status).toBe(200);
     expect(await read()).toEqual(next);
+    expect(await read(gerant)).toEqual(next);
+  });
+
+  it("le caissier ne lit que sa part, sans les adresses, et n'écrit pas", async () => {
+    expect(await read(caissier)).toEqual({
+      reminders: ["caissier"],
+      stockAlerts: [],
+      reports: [],
+      reportEmails: [],
+    });
+    expect(JSON.stringify(await read(caissier))).not.toContain("direction@");
+    expect((await write(await read(caissier), caissier)).status).toBe(403);
+  });
+
+  it("fermé au livreur et sans session", async () => {
+    await addUser(t.deps, "livreur1", ["livreur"]);
+    expect((await t.app.request(path, authGet(await t.tokenFor("livreur1")))).status).toBe(403);
+    expect((await t.app.request(path)).status).toBe(401);
   });
 });
