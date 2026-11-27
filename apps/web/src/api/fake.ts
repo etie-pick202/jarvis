@@ -9,12 +9,25 @@ const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0
 const MARQUES = [
   { id: uuid(101), name: "OLA", packagingValue: 15900, full: 30, empty: 10 },
   { id: uuid(102), name: "TRADEX", packagingValue: 17500, full: 0, empty: 9 },
-  { id: uuid(103), name: "BOCOM", packagingValue: 15900, full: 18, empty: 4 },
+  { id: uuid(103), name: "BOCOM", packagingValue: 0, known: false, full: 18, empty: 4 },
   { id: uuid(104), name: "TOTAL", packagingValue: 17500, full: 28, empty: 6 },
   { id: uuid(105), name: "STARGAS", packagingValue: 20000, full: 22, empty: 4 },
 ];
 const FORMAT = { id: uuid(201), label: "12,5 kg", weightGrams: 12500, priceCeiling: null, active: true };
 const SEUIL_BAS = 10;
+
+const ligneStock = (m: (typeof MARQUES)[number]) => ({
+  brandId: m.id,
+  brandName: m.name,
+  formatId: FORMAT.id,
+  formatLabel: FORMAT.label,
+  full: m.full,
+  empty: m.empty,
+  total: m.full + m.empty,
+  threshold: SEUIL_BAS,
+  available: m.full > 0,
+  low: m.full <= SEUIL_BAS,
+});
 
 const USERS: Record<string, { id: string; displayName: string; roles: Role[] }> = {
   pdg: { id: uuid(1), displayName: "Direction", roles: ["pdg"] },
@@ -24,12 +37,12 @@ const USERS: Record<string, { id: string; displayName: string; roles: Role[] }> 
 };
 
 const REGISTRES = [
-  { id: "sales_cash", label: "Ventes en espèces", active: true, balance: 215300 },
-  { id: "canal_om", label: "Canal+ Orange Money", active: true, balance: 96500 },
-  { id: "canal_cash", label: "Canal+ en espèces", active: true, balance: 42000 },
-  { id: "settlement_om_momo", label: "Règlement OM et MoMo", active: true, balance: 115712 },
-  { id: "transaction_om", label: "Transaction Orange Money", active: false, balance: 0 },
-  { id: "transaction_momo", label: "Transaction MoMo", active: false, balance: 0 },
+  { id: "sales_cash", label: "Ventes en espèces", active: true, balance: 215300, opening: 180000 },
+  { id: "canal_om", label: "Canal+ Orange Money", active: true, balance: 96500, opening: 80000 },
+  { id: "canal_cash", label: "Canal+ en espèces", active: true, balance: 42000, opening: 30000 },
+  { id: "settlement_om_momo", label: "Règlement OM et MoMo", active: true, balance: 115712, opening: 100000 },
+  { id: "transaction_om", label: "Transaction Orange Money", active: false, balance: 0, opening: 0 },
+  { id: "transaction_momo", label: "Transaction MoMo", active: false, balance: 0, opening: 0 },
 ];
 
 const CLIENTS = [
@@ -42,7 +55,7 @@ const CLIENTS = [
 ];
 
 const jour = "2026-11-24";
-const ligneVente = (brand: string, returned: string | null, gap: number) => ({
+const ligneVente = (brand: string, returned: string | null, gap: number, pending = false) => ({
   kind: "gas",
   brandId: brand,
   formatId: FORMAT.id,
@@ -53,6 +66,7 @@ const ligneVente = (brand: string, returned: string | null, gap: number) => ({
   deliveryFee: 0,
   returnedBrandId: returned,
   packagingGap: gap,
+  packagingGapPending: pending,
   total: 6800,
 });
 const VENTES = [
@@ -78,6 +92,17 @@ const VENTES = [
     createdAt: `${jour}T10:40:00.000Z`,
     reversalOf: null,
   },
+  {
+    id: uuid(403),
+    number: "TK1995",
+    customerName: "Biyik Claire",
+    paymentMethod: "momo",
+    total: 6800,
+    lines: [ligneVente(uuid(101), uuid(103), 0, true)],
+    authorId: uuid(2),
+    createdAt: `${jour}T11:05:00.000Z`,
+    reversalOf: null,
+  },
 ];
 
 const COMPTAGES = [
@@ -93,21 +118,25 @@ const COMPTAGES = [
     justification: "Une bouteille prêtée",
     createdAt: `${jour}T18:10:00.000Z`,
     validatedAt: null,
+    status: "pending",
+    authorName: "Gérant",
+    validatedByName: null,
+    rejectedByName: null,
+    rejectedAt: null,
+    rejectionReason: null,
   },
 ];
 
-const HISTORIQUE_PRIX = [
-  {
-    id: uuid(601),
-    formatId: FORMAT.id,
-    brandId: null,
-    amount: 6500,
-    transportContribution: 300,
-    purchaseCost: 6170,
-    changedBy: null,
-    effectiveFrom: "2026-11-01T08:00:00.000Z",
-  },
-];
+const PRIX_COURANT = {
+  id: uuid(601),
+  formatId: FORMAT.id,
+  brandId: null,
+  amount: 6500,
+  transportContribution: 300,
+  purchaseCost: 6170,
+  changedBy: null,
+  effectiveFrom: "2026-11-01T08:00:00.000Z",
+};
 
 const ARTICLES = [
   {
@@ -165,6 +194,8 @@ const AUDIT = [
     action: "sale.cancel",
     entity: "sale",
     entityId: uuid(401),
+    actorId: uuid(2),
+    actorName: "Gérant",
     details: { justification: "Erreur de moyen de paiement" },
     createdAt: `${jour}T11:25:00.000Z`,
   },
@@ -173,6 +204,8 @@ const AUDIT = [
     action: "inventory.count",
     entity: "inventory",
     entityId: uuid(501),
+    actorId: null,
+    actorName: null,
     details: { ecart: -1 },
     createdAt: `${jour}T18:12:00.000Z`,
   },
@@ -235,6 +268,7 @@ const RAPPORT_JOURNAL = {
   entries: [
     {
       at: `${jour}T08:52:00.000Z`,
+      registerId: "sales_cash",
       register: "Ventes en espèces",
       number: "RG0001",
       type: "REG",
@@ -248,6 +282,7 @@ const RAPPORT_JOURNAL = {
     },
     {
       at: `${jour}T09:30:00.000Z`,
+      registerId: "sales_cash",
       register: "Ventes en espèces",
       number: "MS0001",
       type: "MSC",
@@ -268,11 +303,26 @@ const RAPPORT_X = {
   day: jour,
   registers: [
     {
+      registerId: "sales_cash",
       label: "Ventes en espèces",
       opening: 180000,
       movements: [
-        { number: "RG0001", type: "REG", label: "Vente TK1991", amount: 6800 },
-        { number: "MS0001", type: "MSC", label: "Transport", amount: -5000 },
+        {
+          line: 1,
+          at: `${jour}T08:52:00.000Z`,
+          number: "RG0001",
+          type: "REG",
+          label: "Vente TK1991",
+          amount: 6800,
+        },
+        {
+          line: 2,
+          at: `${jour}T09:30:00.000Z`,
+          number: "MS0001",
+          type: "MSC",
+          label: "Transport",
+          amount: -5000,
+        },
       ],
       net: 1800,
       closing: 181800,
@@ -280,6 +330,306 @@ const RAPPORT_X = {
   ],
   grandTotal: 181800,
 };
+
+const SEUIL_CLOTURE = 500;
+
+/** Vue agrégée, calculée à partir des mêmes données que les autres routes. */
+function tableauDeBord() {
+  return {
+    day: jour,
+    sales: { count: 3, quantity: 3, total: 20400, margin: -610, marginPercent: -2.99 },
+    registers: REGISTRES.map(({ id, label, active, opening, balance }) => ({
+      id,
+      label,
+      active,
+      opening,
+      balance,
+    })),
+    stock: {
+      full: MARQUES.reduce((n, m) => n + m.full, 0),
+      empty: MARQUES.reduce((n, m) => n + m.empty, 0),
+      alerts: MARQUES.filter((m) => m.full <= SEUIL_BAS).map(ligneStock),
+    },
+    unreadNotifications: 1,
+    canalDue: ABONNES.filter((a) => a.daysLeft !== null && a.daysLeft <= 7).length,
+  };
+}
+
+const FORMULES = [
+  { id: uuid(1301), name: "Access", price: 5000, months: 1, commission: 0, active: true },
+  { id: uuid(1302), name: "Évasion", price: 10500, months: 1, commission: 0, active: true },
+  { id: uuid(1303), name: "Tout Canal+", price: 45000, months: 1, commission: 0, active: true },
+];
+
+/** Échéances relatives au jour fictif : dépassée, proche, lointaine, sans abonnement. */
+const abonne = (n: number, name: string, formule: number, decodeur: string, jours: number | null) => ({
+  id: uuid(1400 + n),
+  name,
+  phone: `23769000000${n}`,
+  decoderNumber: decodeur,
+  formulaId: FORMULES[formule]?.id ?? uuid(1301),
+  formulaName: FORMULES[formule]?.name ?? "Access",
+  formulaPrice: FORMULES[formule]?.price ?? 5000,
+  expiresOn:
+    jours === null
+      ? null
+      : new Date(Date.parse(`${jour}T00:00:00.000Z`) + jours * 86_400_000).toISOString().slice(0, 10),
+  daysLeft: jours,
+  active: true,
+  createdAt: `${jour}T08:00:00.000Z`,
+});
+
+const ABONNES = [
+  abonne(1, "Atangana Rose", 1, "DEC-0001", -2),
+  abonne(2, "Essomba Jean", 0, "DEC-0002", 3),
+  abonne(3, "Manga Sylvie", 2, "DEC-0003", 12),
+  abonne(4, "Owona Marc", 0, "DEC-0004", null),
+];
+
+const vitrine = () => ({
+  gas: MARQUES.map((m) => ({
+    brandId: m.id,
+    brandName: m.name,
+    formatId: FORMAT.id,
+    formatLabel: FORMAT.label,
+    price: 6800,
+    available: m.full > 0,
+  })),
+  articles: ARTICLES.map((a) => ({ id: a.id, name: a.name, price: a.price, available: true })),
+  neighbourhoods: [
+    { id: uuid(1701), name: "Quartier Essai Nord", feePerBottle: 400 },
+    { id: uuid(1702), name: "Quartier Essai Sud", feePerBottle: 600 },
+  ],
+  shop: {
+    openingHours: "Lundi au samedi, 7 h à 20 h",
+    orderHours: "Commandes prises jusqu'à 18 h.",
+    phone: "+237690000000",
+    address: "Boutique d'exemple, Douala",
+    minimumOrder: 2000,
+    deliveryFeePerBottle: 400,
+  },
+});
+/** Deux encaissements d'exemple pour la date demandée. */
+const encaissementsCanal = (date: string) =>
+  ABONNES.slice(1, 3).map((a, i) => ({
+    id: uuid(1501 + i),
+    subscriberId: a.id,
+    subscriberName: a.name,
+    decoderNumber: a.decoderNumber,
+    formulaId: a.formulaId,
+    formulaName: a.formulaName,
+    months: 1,
+    amount: a.formulaPrice,
+    commission: 0,
+    paymentMethod: i === 0 ? ("cash" as const) : ("orange_money" as const),
+    registerId: i === 0 ? ("canal_cash" as const) : ("canal_om" as const),
+    previousExpiry: null,
+    newExpiry: date,
+    authorId: uuid(1),
+    authorName: "Gérant démo",
+    createdAt: `${date}T0${9 - i}:15:00.000Z`,
+    reversalOf: null,
+    cancelled: false,
+  }));
+
+const CLE_COMMANDE = "jarvis.fake-commande";
+const JETON_ESSAI = "jeton-essai-0001";
+
+/** Commande sans compte : la dernière est gardée pour que le suivi la retrouve. */
+function commandePublique(route: string, init?: RequestInit): Response {
+  const corpsRecu = JSON.parse(String(init?.body ?? "{}")) as {
+    mode?: "pickup" | "delivery";
+    paymentMethod?: string;
+    lines?: { quantity: number }[];
+  };
+  if (init?.method === "POST") {
+    const lignes = (corpsRecu.lines ?? []).map((l, i) => ({
+      label: `Produit d'essai ${i + 1}`,
+      quantity: l.quantity,
+      total: 7200 * l.quantity,
+    }));
+    const commande = {
+      number: "CMD0001",
+      deliveryCode: "4321",
+      status: "pending",
+      mode: corpsRecu.mode ?? "delivery",
+      paymentMethod: corpsRecu.paymentMethod ?? "cash",
+      paymentConfirmed: false,
+      total: lignes.reduce((n, l) => n + l.total, 0),
+      lines: lignes,
+      createdAt: `${jour}T10:00:00.000Z`,
+    };
+    localStorage.setItem(CLE_COMMANDE, JSON.stringify(commande));
+    return json({ ...commande, trackingToken: JETON_ESSAI }, 201);
+  }
+  const gardee = localStorage.getItem(CLE_COMMANDE);
+  if (!gardee || !route.startsWith(`/shop/orders/${JETON_ESSAI}`)) {
+    return erreur(404, "not_found", "Commande introuvable");
+  }
+  return json(JSON.parse(gardee));
+}
+const FLOATS = [
+  { operator: "orange_money" as const, active: true, float: 250000 },
+  { operator: "momo" as const, active: false, float: 0 },
+];
+
+const operationsMoney = (date: string) => [
+  {
+    id: uuid(1601),
+    operator: "orange_money" as const,
+    kind: "deposit" as const,
+    amount: 25000,
+    commission: 0,
+    phone: "237690000011",
+    customerName: "Client Essai",
+    reference: "OM-0001",
+    authorId: uuid(1),
+    authorName: "Gérant démo",
+    createdAt: `${date}T08:30:00.000Z`,
+    reversalOf: null,
+    cancelled: false,
+  },
+];
+
+/** Tournée d'exemple : un paiement en espèces à partir, un paiement mobile non confirmé en route. */
+const livraison = (n: number, plus: Record<string, unknown>) => ({
+  id: uuid(1800 + n),
+  number: `CMD010${n}`,
+  status: "validated",
+  customerName: `Client Essai ${n}`,
+  phone: `23769000002${n}`,
+  neighbourhoodName: "Quartier Essai Nord",
+  landmark: "Près du carrefour d'exemple",
+  latitude: null,
+  longitude: null,
+  paymentMethod: "cash",
+  paymentConfirmed: false,
+  total: 7200,
+  lines: [
+    {
+      kind: "gas",
+      brandId: uuid(101),
+      formatId: uuid(201),
+      returnedBrandId: null,
+      articleId: null,
+      label: "Recharge gaz OLA 12,5 kg",
+      quantity: 1,
+      unitPrice: 6800,
+      deliveryFee: 400,
+      total: 7200,
+    },
+  ],
+  problemNote: null,
+  ...plus,
+});
+
+const TOURNEE = [
+  livraison(1, { latitude: 4.05, longitude: 9.7 }),
+  livraison(2, { status: "out_for_delivery", paymentMethod: "momo" }),
+];
+
+/** Commandes d'exemple : à valider (paiement mobile), à livrer, à retirer, terminée. */
+const commande = (n: number, plus: Record<string, unknown>) => ({
+  id: uuid(1900 + n),
+  number: `CMD020${n}`,
+  source: "online",
+  status: "pending",
+  mode: "delivery",
+  customerName: `Acheteur Essai ${n}`,
+  phone: `23769000003${n}`,
+  neighbourhoodName: "Quartier Essai Sud",
+  landmark: null,
+  latitude: null,
+  longitude: null,
+  paymentMethod: "cash",
+  paymentReference: null,
+  paymentConfirmedAt: null,
+  deliveryFeePerBottle: 400,
+  total: 7200,
+  lines: livraison(1, {}).lines,
+  createdAt: `${jour}T08:0${n}:00.000Z`,
+  assignedTo: null,
+  problemNote: null,
+  saleId: null,
+  ...plus,
+});
+
+const LIVREURS = [{ id: uuid(4), displayName: "Livreur démo" }];
+
+const COMMANDES = [
+  commande(1, { paymentMethod: "momo", paymentReference: "MOMO-0001" }),
+  commande(2, { status: "validated", source: "phone" }),
+  commande(3, { status: "validated", mode: "pickup", neighbourhoodName: null, deliveryFeePerBottle: 0 }),
+  commande(4, { status: "delivered" }),
+];
+
+/** Rejoue la transition demandée sur la commande d'exemple. */
+function agirSurCommande(route: string, init?: RequestInit): Response {
+  const [, , id = "", action = ""] = route.split("/");
+  const o = COMMANDES.find((x) => x.id === id);
+  if (!o) return erreur(404, "not_found", "Commande introuvable");
+  const corps = JSON.parse(String(init?.body ?? "{}")) as {
+    driverId?: string;
+    deliveryFeePerBottle?: number;
+  };
+  const effets: Record<string, Record<string, unknown>> = {
+    validate: {
+      status: "validated",
+      deliveryFeePerBottle: corps.deliveryFeePerBottle ?? o.deliveryFeePerBottle,
+    },
+    "confirm-payment": { paymentConfirmedAt: `${jour}T09:00:00.000Z` },
+    assign: { assignedTo: corps.driverId },
+    collect: { status: "delivered" },
+    cancel: { status: "cancelled" },
+  };
+  return json({ ...o, ...effets[action] });
+}
+
+const reglagesBoutique = () => ({
+  ...vitrine().shop,
+  omNumber: "+237690000100",
+  momoNumber: "+237670000100",
+  eveningCountTime: "18:30",
+  deliveryFeeCeiling: 700,
+});
+/** Comptes d'exemple, d'après les utilisateurs du faux serveur. */
+const comptes = () =>
+  Object.entries(USERS).map(([username, u]) => ({
+    id: u.id,
+    username,
+    displayName: u.displayName,
+    roles: u.roles,
+    active: true,
+  }));
+
+/** Rejoue la création ou la modification d'un compte. */
+function ecrireCompte(route: string, init?: RequestInit): Response {
+  const corps = JSON.parse(String(init?.body ?? "{}")) as { active?: boolean; roles?: Role[] };
+  const id = route.split("/")[3];
+  if (!id) return json({ ok: true }, 201);
+  const c = comptes().find((x) => x.id === id);
+  if (!c) return erreur(404, "not_found", "Compte introuvable");
+  return json({ ...c, active: corps.active ?? c.active, roles: corps.roles ?? c.roles });
+}
+
+const mouvementsArticle = () => [
+  {
+    id: uuid(2001),
+    at: `${jour}T08:00:00.000Z`,
+    kind: "entry",
+    label: "Réception d'exemple",
+    delta: 10,
+    authorName: "Gérant démo",
+  },
+  {
+    id: uuid(2002),
+    at: `${jour}T11:00:00.000Z`,
+    kind: "sale",
+    label: "TK1993",
+    delta: -1,
+    authorName: "Caissier démo",
+  },
+];
 
 const CLE_FAUX = "jarvis.fake-user";
 
@@ -308,6 +658,10 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   const route = url.pathname;
   const ecriture = Boolean(init?.method && init.method !== "GET");
 
+  // Vitrine publique : aucune session requise.
+  if (route === "/shop/catalogue") return json(vitrine());
+  if (route.startsWith("/shop/orders")) return commandePublique(route, init);
+
   if (route === "/auth/login") {
     const body = JSON.parse(String(init?.body ?? "{}")) as { username?: string; password?: string };
     if (!USERS[body.username ?? ""] || body.password !== "demo-jarvis") {
@@ -318,6 +672,11 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   }
   const moi = utilisateur();
   if (!moi) return erreur(401, "unauthorized", "Non connecté");
+  // Panne provoquée pour les essais : « 500:/stock » fait échouer les lectures commençant par ce chemin.
+  const [statut = "", chemin = ""] = (localStorage.getItem("jarvis.fake-panne") ?? "").split(":");
+  if (!ecriture && chemin && route.startsWith(chemin)) {
+    return erreur(Number(statut), `essai_${statut}`, "Panne provoquée");
+  }
 
   if (route === "/auth/logout") {
     setFakeUser(null);
@@ -338,49 +697,58 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   }
   if (route === "/receipts" && ecriture)
     return json({ id: uuid(1201), contentType: "application/pdf", size: 1 }, 201);
+  if (ecriture && route === "/orders") return commandePublique("/shop/orders", init);
+  if (ecriture && route.startsWith("/orders/")) return agirSurCommande(route, init);
+  if (ecriture && route.startsWith("/auth/users")) return ecrireCompte(route, init);
   if (ecriture) return json({ ok: true }, 201);
+
+  if (route.startsWith("/catalogue/articles/") && route.endsWith("/moves")) return json(mouvementsArticle());
+
+  if (route === "/delivery/settings") return json(reglagesBoutique());
+  if (route === "/delivery/neighbourhoods") {
+    return json(vitrine().neighbourhoods.map((q) => ({ ...q, active: true })));
+  }
 
   switch (route) {
     case "/catalogue/brands":
       return json(
-        MARQUES.map(({ id, name, packagingValue }) => ({ id, name, packagingValue, active: true })),
+        MARQUES.map(({ id, name, packagingValue, known }) => ({
+          id,
+          name,
+          packagingValue,
+          packagingValueKnown: known ?? true,
+          active: true,
+        })),
       );
     case "/catalogue/formats":
       return json([FORMAT]);
-    case `/catalogue/prices/${FORMAT.id}/history`:
-      return json(HISTORIQUE_PRIX);
+    case "/catalogue/prices/current":
+      return json(
+        MARQUES.map((m) => ({
+          formatId: FORMAT.id,
+          brandId: m.id,
+          amount: PRIX_COURANT.amount,
+          transportContribution: PRIX_COURANT.transportContribution,
+          purchaseCost: PRIX_COURANT.purchaseCost,
+          effectiveFrom: `${jour}T07:00:00.000Z`,
+        })),
+      );
+    case "/sales/exchanges": {
+      const echanges = VENTES.filter((v) =>
+        v.lines.some((l) => l.returnedBrandId && l.returnedBrandId !== l.brandId),
+      );
+      const attente = echanges.filter((v) =>
+        v.lines.some((l) => "packagingGapPending" in l && l.packagingGapPending),
+      );
+      const items = url.searchParams.get("pending") === "1" ? attente : echanges;
+      return json({ items, total: items.length, pendingCount: attente.length });
+    }
     case "/catalogue/articles":
       return json(ARTICLES);
     case "/stock":
-      return json(
-        MARQUES.map((m) => ({
-          brandId: m.id,
-          brandName: m.name,
-          formatId: FORMAT.id,
-          formatLabel: FORMAT.label,
-          full: m.full,
-          empty: m.empty,
-          total: m.full + m.empty,
-          threshold: SEUIL_BAS,
-          available: m.full > 0,
-          low: m.full <= SEUIL_BAS,
-        })),
-      );
+      return json(MARQUES.map(ligneStock));
     case "/stock/alerts":
-      return json(
-        MARQUES.filter((m) => m.full <= SEUIL_BAS).map((m) => ({
-          brandId: m.id,
-          brandName: m.name,
-          formatId: FORMAT.id,
-          formatLabel: FORMAT.label,
-          full: m.full,
-          empty: m.empty,
-          total: m.full + m.empty,
-          threshold: SEUIL_BAS,
-          available: m.full > 0,
-          low: true,
-        })),
-      );
+      return json(MARQUES.filter((m) => m.full <= SEUIL_BAS).map(ligneStock));
     case "/customers": {
       const q = (url.searchParams.get("q") ?? "").toLowerCase();
       return json(
@@ -395,7 +763,59 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       );
     }
     case "/sales":
-      return json(VENTES);
+      return json(
+        url.searchParams.get("type") === "exchange"
+          ? VENTES.filter((v) => v.lines.some((l) => l.returnedBrandId && l.returnedBrandId !== l.brandId))
+          : VENTES,
+      );
+    case "/canal/formulas":
+      return json(FORMULES);
+    case "/orders":
+      return json(COMMANDES);
+    case "/orders/drivers":
+      return json(LIVREURS);
+    case "/orders/summary":
+      return json({ pending: 1, toDeliver: 2 });
+    case "/deliveries":
+      return json(TOURNEE);
+    case "/canal/payments":
+      return json(encaissementsCanal(url.searchParams.get("date") ?? jour));
+    case "/money/float":
+      return json(FLOATS);
+    case "/money/commissions":
+      return json({ orange_money: { deposit: 100, withdrawal: 150 }, momo: { deposit: 0, withdrawal: 0 } });
+    case "/money/operations":
+      return json(operationsMoney(url.searchParams.get("date") ?? jour));
+    case "/canal/subscribers":
+      return json(ABONNES);
+    case "/canal/reminders": {
+      const jours = Number(url.searchParams.get("within") ?? 7);
+      const anglais = url.searchParams.get("lang") === "en";
+      return json(
+        ABONNES.filter((a) => a.active && a.daysLeft !== null && a.daysLeft <= jours).map((a) => {
+          const message = anglais
+            ? `Hello ${a.name}, your Canal+ subscription needs renewal.`
+            : `Bonjour ${a.name}, votre abonnement Canal+ est à renouveler.`;
+          return {
+            ...a,
+            message,
+            whatsappUrl: `https://wa.me/${a.phone}?text=${encodeURIComponent(message)}`,
+          };
+        }),
+      );
+    }
+    case "/canal/due": {
+      const jours = Number(url.searchParams.get("within") ?? 7);
+      return json(ABONNES.filter((a) => a.active && a.daysLeft !== null && a.daysLeft <= jours));
+    }
+    case "/auth/users":
+      return json(comptes());
+    case "/stock/thresholds":
+      return json({ default: SEUIL_BAS, overrides: [] });
+    case "/cash/closure-threshold":
+      return json({ threshold: SEUIL_CLOTURE });
+    case "/reports/dashboard":
+      return json(tableauDeBord());
     case "/suppliers":
       return json(FOURNISSEURS);
     case "/receptions":
@@ -420,6 +840,9 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
         totals: { full: 98, empty: 33, total: 131 },
       });
     default:
+      if (route.startsWith("/documents/")) {
+        return new Response("%PDF-1.4 exemple", { headers: { "Content-Type": "application/pdf" } });
+      }
       if (route.startsWith("/reports/export/")) {
         return new Response("﻿N° vente;Total\r\nTK1991;6800", {
           headers: { "Content-Type": "text/csv; charset=utf-8" },

@@ -3,6 +3,8 @@ import {
   type AnyPgColumn,
   boolean,
   customType,
+  date,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -110,6 +112,8 @@ export const articles = pgTable("articles", {
   purchaseCost: integer("purchase_cost").notNull().default(0),
   trackStock: boolean("track_stock").notNull().default(false),
   stockQty: integer("stock_qty").notNull().default(0),
+  category: text("category").notNull().default(""),
+  lowThreshold: integer("low_threshold").notNull().default(0),
   active: boolean("active").notNull().default(true),
   createdBy: uuid("created_by").references(() => users.id),
   createdAt: createdAt(),
@@ -395,3 +399,204 @@ export const receiptFiles = pgTable("receipt_files", {
     .references(() => users.id),
   createdAt: createdAt(),
 });
+
+// ---------- Canal+ ----------
+export const canalFormulas = pgTable("canal_formulas", {
+  id: id(),
+  name: text("name").notNull().unique(),
+  price: integer("price").notNull(),
+  months: integer("months").notNull().default(1),
+  /** Commission par paiement (agent agréé) ; 0 par défaut. */
+  commission: integer("commission").notNull().default(0),
+  active: boolean("active").notNull().default(true),
+  createdAt: createdAt(),
+});
+
+export const canalSubscribers = pgTable(
+  "canal_subscribers",
+  {
+    id: id(),
+    name: text("name").notNull(),
+    searchKey: text("search_key").notNull(),
+    phone: text("phone").notNull(),
+    decoderNumber: text("decoder_number").notNull().unique(),
+    formulaId: uuid("formula_id")
+      .notNull()
+      .references(() => canalFormulas.id),
+    /** Dernier jour couvert par l'abonnement. */
+    expiresOn: date("expires_on", { mode: "string" }),
+    active: boolean("active").notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [index("canal_subscribers_expiry").on(t.expiresOn)],
+);
+
+/** Encaissements Canal+ (ajout seul) : une annulation ajoute une ligne inverse. */
+export const canalPayments = pgTable(
+  "canal_payments",
+  {
+    id: id(),
+    subscriberId: uuid("subscriber_id")
+      .notNull()
+      .references(() => canalSubscribers.id),
+    formulaId: uuid("formula_id")
+      .notNull()
+      .references(() => canalFormulas.id),
+    months: integer("months").notNull(),
+    amount: integer("amount").notNull(),
+    commission: integer("commission").notNull().default(0),
+    paymentMethod: text("payment_method").notNull(),
+    registerId: text("register_id")
+      .notNull()
+      .references(() => cashRegisters.id),
+    cashEntryId: uuid("cash_entry_id")
+      .notNull()
+      .references(() => cashEntries.id),
+    previousExpiry: date("previous_expiry", { mode: "string" }),
+    newExpiry: date("new_expiry", { mode: "string" }).notNull(),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    reversalOf: uuid("reversal_of").references((): AnyPgColumn => canalPayments.id),
+    justification: text("justification"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("canal_payments_subscriber").on(t.subscriberId, t.createdAt),
+    uniqueIndex("canal_payments_one_reversal").on(t.reversalOf).where(sql`${t.reversalOf} is not null`),
+  ],
+);
+
+/** Dépôts et retraits Orange Money et MoMo (ajout seul). */
+export const moneyOperations = pgTable(
+  "money_operations",
+  {
+    id: id(),
+    operator: text("operator").notNull(),
+    kind: text("kind").notNull(),
+    amount: integer("amount").notNull(),
+    commission: integer("commission").notNull().default(0),
+    phone: text("phone").notNull(),
+    customerName: text("customer_name"),
+    reference: text("reference").notNull(),
+    cashEntryId: uuid("cash_entry_id")
+      .notNull()
+      .references(() => cashEntries.id),
+    floatEntryId: uuid("float_entry_id")
+      .notNull()
+      .references(() => cashEntries.id),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    reversalOf: uuid("reversal_of").references((): AnyPgColumn => moneyOperations.id),
+    justification: text("justification"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("money_operations_reference").on(t.operator, t.reference).where(sql`${t.reversalOf} is null`),
+    uniqueIndex("money_operations_one_reversal").on(t.reversalOf).where(sql`${t.reversalOf} is not null`),
+  ],
+);
+
+// ---------- Livraison ----------
+/** Quartiers livrés, saisis par le gérant : le montant retenu est reproposé la fois suivante. */
+export const neighbourhoods = pgTable("neighbourhoods", {
+  id: id(),
+  name: text("name").notNull().unique(),
+  feePerBottle: integer("fee_per_bottle").notNull(),
+  active: boolean("active").notNull().default(true),
+  createdAt: createdAt(),
+});
+
+/** Commandes sans compte (suivi d'état, donc modifiables ; chaque transition est auditée). */
+export const orders = pgTable(
+  "orders",
+  {
+    id: id(),
+    number: text("number").notNull().unique(),
+    /** Identifiant tiré par l'appareil : une commande renvoyée n'est pas dupliquée. */
+    clientRef: uuid("client_ref").notNull().unique(),
+    trackingToken: text("tracking_token").notNull().unique(),
+    source: text("source").notNull(),
+    status: text("status").notNull().default("pending"),
+    mode: text("mode").notNull(),
+    customerName: text("customer_name").notNull(),
+    phone: text("phone").notNull(),
+    neighbourhoodName: text("neighbourhood_name"),
+    landmark: text("landmark"),
+    latitude: doublePrecision("latitude"),
+    longitude: doublePrecision("longitude"),
+    paymentMethod: text("payment_method").notNull(),
+    paymentReference: text("payment_reference"),
+    paymentConfirmedAt: timestamp("payment_confirmed_at", { withTimezone: true }),
+    paymentConfirmedBy: uuid("payment_confirmed_by").references(() => users.id),
+    deliveryFeePerBottle: integer("delivery_fee_per_bottle").notNull().default(0),
+    total: integer("total").notNull(),
+    cancelReason: text("cancel_reason"),
+    assignedTo: uuid("assigned_to").references(() => users.id),
+    problemNote: text("problem_note"),
+    /** Code que le client donne au livreur ; vide pour une commande antérieure. */
+    deliveryCode: text("delivery_code").notNull().default(""),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    saleId: uuid("sale_id").references(() => sales.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("orders_status").on(t.status), index("orders_phone").on(t.phone)],
+);
+
+export const orderLines = pgTable(
+  "order_lines",
+  {
+    id: id(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id),
+    position: integer("position").notNull(),
+    kind: text("kind").notNull(),
+    brandId: uuid("brand_id").references(() => brands.id),
+    formatId: uuid("format_id").references(() => formats.id),
+    returnedBrandId: uuid("returned_brand_id").references(() => brands.id),
+    articleId: uuid("article_id").references(() => articles.id),
+    label: text("label").notNull(),
+    quantity: integer("quantity").notNull(),
+    unitPrice: integer("unit_price").notNull(),
+    deliveryFee: integer("delivery_fee").notNull().default(0),
+    total: integer("total").notNull(),
+  },
+  (t) => [index("order_lines_order").on(t.orderId)],
+);
+
+/** Écarts d'emballage soldés après coup (ajout seul) : les lignes de vente ne se modifient pas. */
+export const packagingSettlements = pgTable("packaging_settlements", {
+  id: id(),
+  saleLineId: uuid("sale_line_id")
+    .notNull()
+    .unique()
+    .references(() => saleLines.id),
+  packagingGap: integer("packaging_gap").notNull(),
+  authorId: uuid("author_id")
+    .notNull()
+    .references(() => users.id),
+  createdAt: createdAt(),
+});
+
+/** Mouvements des articles suivis (ajout seul) : ventes, entrées avec pièce, corrections. */
+export const articleMoves = pgTable(
+  "article_moves",
+  {
+    id: id(),
+    articleId: uuid("article_id")
+      .notNull()
+      .references(() => articles.id),
+    kind: text("kind").notNull(),
+    delta: integer("delta").notNull(),
+    label: text("label").notNull(),
+    receiptId: uuid("receipt_id").references((): AnyPgColumn => receiptFiles.id),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("article_moves_article").on(t.articleId, t.createdAt)],
+);

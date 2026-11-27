@@ -1,7 +1,7 @@
-import type { GasPrice, PaymentMethod, SessionUser } from "@jarvis/shared";
-import type { z } from "zod";
+import * as contrat from "@jarvis/shared";
+import { z } from "zod";
 import type { Profil } from "../nav/volets.js";
-import { API_BASE, ApiError, enTetes, erreurDe, request } from "./client.js";
+import { API_BASE, ApiError, enTetes, erreurDe, newIdempotencyKey, request } from "./client.js";
 import type {
   Alerte,
   Article,
@@ -12,7 +12,6 @@ import type {
   Fournisseur,
   GazStock,
   LigneAudit,
-  Livraison,
   LoginInput,
   Rapport,
   ReceptionResume,
@@ -20,7 +19,6 @@ import type {
   Tableau,
   Validation,
 } from "./contracts.js";
-import * as dto from "./dto.js";
 
 export * from "./client.js";
 export * from "./contracts.js";
@@ -31,7 +29,7 @@ const lire =
   (data: unknown): z.infer<S> =>
     schema.parse(data);
 
-export const toSession = (u: SessionUser): Session => ({
+export const toSession = (u: contrat.SessionUser): Session => ({
   userId: u.id,
   nom: u.displayName,
   profils: u.roles,
@@ -45,7 +43,7 @@ const CAISSES_ESPECES: readonly string[] = ["sales_cash", "canal_cash"];
 
 export const MODES_PAIEMENT = { especes: "cash", om: "orange_money", momo: "momo" } as const satisfies Record<
   string,
-  PaymentMethod
+  contrat.PaymentMethod
 >;
 
 const PAIEMENT_LIBELLE: Record<string, string> = {
@@ -54,21 +52,18 @@ const PAIEMENT_LIBELLE: Record<string, string> = {
   momo: "MoMo",
 };
 
-/** Prix en vigueur d'une marque : l'exception de marque la plus récente, sinon le prix du format. */
-export function prixEnVigueur(historique: readonly GasPrice[], brandId: string): GasPrice | null {
-  const plusRecent = (l: readonly GasPrice[]) =>
-    [...l].sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0] ?? null;
-  return (
-    plusRecent(historique.filter((p) => p.brandId === brandId)) ??
-    plusRecent(historique.filter((p) => p.brandId === null))
-  );
-}
+const LISTES = {
+  marques: z.array(contrat.brand),
+  formats: z.array(contrat.format),
+  articles: z.array(contrat.article),
+  ventes: z.array(contrat.sale),
+};
 
 const get = <S extends z.ZodType>(path: string, schema: S, signal?: AbortSignal) =>
   request(path, { signal, parse: lire(schema) });
 
 async function marquesParId(signal?: AbortSignal): Promise<Map<string, string>> {
-  const brands = await get("/catalogue/brands", dto.brandList, signal);
+  const brands = await get("/catalogue/brands", LISTES.marques, signal);
   return new Map(brands.map((b) => [b.id, b.name]));
 }
 
@@ -96,12 +91,12 @@ export const api = {
       method: "POST",
       body: { username: input.identifiant, password: input.motDePasse },
       idempotencyKey,
-      parse: lire(dto.loginResult),
+      parse: lire(contrat.loginResult),
     });
     return { token: r.token, session: toSession(r.user) };
   },
   me: async (signal?: AbortSignal): Promise<Session> =>
-    toSession(await get("/auth/me", dto.sessionUserSchema, signal)),
+    toSession(await get("/auth/me", contrat.sessionUser, signal)),
   logout: (idempotencyKey: string): Promise<null> =>
     request("/auth/logout", { method: "POST", idempotencyKey, parse: () => null }),
   switchRole: async (role: Profil, idempotencyKey: string): Promise<Session> =>
@@ -110,47 +105,46 @@ export const api = {
         method: "POST",
         body: { role },
         idempotencyKey,
-        parse: lire(dto.sessionUserSchema),
+        parse: lire(contrat.sessionUser),
       }),
     ),
 
   /** Catalogue vendable : gaz (marque × format avec son prix en vigueur) et articles libres. */
   catalogue: async (signal?: AbortSignal): Promise<Article[]> => {
-    const [brands, formats, articles, stock] = await Promise.all([
-      get("/catalogue/brands", dto.brandList, signal),
-      get("/catalogue/formats", dto.formatList, signal),
-      get("/catalogue/articles", dto.articleList, signal),
-      get("/stock", dto.stockRows, signal),
+    const [brands, formats, articles, stock, tarifs] = await Promise.all([
+      get("/catalogue/brands", LISTES.marques, signal),
+      get("/catalogue/formats", LISTES.formats, signal),
+      get("/catalogue/articles", LISTES.articles, signal),
+      get("/stock", contrat.stockRows, signal),
+      // Prix en vigueur de chaque marque et format (exceptions comprises), en une seule lecture.
+      sansDroit(get("/catalogue/prices/current", contrat.currentGasPrices, signal), []),
     ]);
-    const historiques = new Map(
-      await Promise.all(
+    const gaz = brands
+      .filter((b) => b.active)
+      .flatMap((b) =>
         formats
           .filter((f) => f.active)
-          .map(
-            async (f) =>
-              [f.id, await get(`/catalogue/prices/${f.id}/history`, dto.gasPriceList, signal)] as const,
-          ),
-      ),
-    );
-    const gaz: Article[] = [];
-    for (const b of brands.filter((x) => x.active)) {
-      for (const f of formats.filter((x) => x.active)) {
-        const prix = prixEnVigueur(historiques.get(f.id) ?? [], b.id);
-        if (!prix) continue; // pas encore de prix saisi par le PDG : non vendable
-        gaz.push({
-          id: `${b.id}:${f.id}`,
-          nom: `Gaz ${f.label} ${b.name}`,
-          genre: "gaz",
-          marque: b.name,
-          formatLibelle: f.label,
-          prix: prix.amount + prix.transportContribution,
-          stock: stock.find((s) => s.brandId === b.id && s.formatId === f.id)?.full ?? 0,
-          valeurEmballage: b.packagingValue,
-          brandId: b.id,
-          formatId: f.id,
-        });
-      }
-    }
+          .flatMap((f): Article[] => {
+            // Sans prix saisi par le PDG, le gaz n'est pas proposé à la vente.
+            const prix = tarifs.find((p) => p.brandId === b.id && p.formatId === f.id);
+            if (!prix) return [];
+            return [
+              {
+                id: `${b.id}:${f.id}`,
+                nom: `Gaz ${f.label} ${b.name}`,
+                genre: "gaz",
+                marque: b.name,
+                formatLibelle: f.label,
+                prix: prix.amount + prix.transportContribution,
+                stock: stock.find((x) => x.brandId === b.id && x.formatId === f.id)?.full ?? 0,
+                // Valeur non relevée : l'écart d'un échange ne se calcule pas, il sera régularisé par le PDG.
+                valeurEmballage: b.packagingValueKnown === false ? undefined : b.packagingValue,
+                brandId: b.id,
+                formatId: f.id,
+              },
+            ];
+          }),
+      );
     const libres = articles
       .filter((a) => a.active)
       .map(
@@ -166,16 +160,66 @@ export const api = {
     return [...gaz, ...libres];
   },
 
+  /** Vitrine publique (sans compte) : produits, disponibilité, quartiers livrés et coordonnées. */
+  vitrine: (signal?: AbortSignal): Promise<contrat.PublicCatalogue> =>
+    get("/shop/catalogue", contrat.publicCatalogue, signal),
+
+  /** Commande sans compte : `ref` la rend rejouable sans doublon. */
+  commander: (body: contrat.CreateOrderInput, ref: string): Promise<contrat.PlacedOrder> =>
+    request("/shop/orders", { method: "POST", body, idempotencyKey: ref, parse: lire(contrat.placedOrder) }),
+  suivreCommande: (jeton: string, signal?: AbortSignal): Promise<contrat.TrackedOrder> =>
+    get(`/shop/orders/${encodeURIComponent(jeton)}`, contrat.trackedOrder, signal),
+  referencePaiement: (jeton: string, paymentReference: string): Promise<contrat.TrackedOrder> =>
+    request(`/shop/orders/${encodeURIComponent(jeton)}/payment-reference`, {
+      method: "PUT",
+      body: { paymentReference },
+      idempotencyKey: newIdempotencyKey(),
+      parse: lire(contrat.trackedOrder),
+    }),
+
+  /** Écritures de vente d'un jour (annulations comprises). */
+  ventesDuJour: (jour: string, signal?: AbortSignal): Promise<contrat.Sale[]> =>
+    get(`/sales?date=${jour}&limit=500`, LISTES.ventes, signal),
+  /** Noms des marques et des articles, pour décrire les lignes d'une vente. */
+  nomsProduits: async (signal?: AbortSignal): Promise<Record<string, string>> => {
+    const [marques, articles] = await Promise.all([
+      sansDroit(get("/catalogue/brands", LISTES.marques, signal), []),
+      sansDroit(get("/catalogue/articles", LISTES.articles, signal), []),
+    ]);
+    return Object.fromEntries([
+      ...marques.map((m) => [m.id, `Gaz ${m.name}`]),
+      ...articles.map((a) => [a.id, a.name]),
+    ]);
+  },
+  /** Réglages des tarifs : toutes les marques et tous les formats, désactivés compris. */
+  marquesConfig: (signal?: AbortSignal) => get("/catalogue/brands", LISTES.marques, signal),
+  formatsConfig: (signal?: AbortSignal) => get("/catalogue/formats", LISTES.formats, signal),
+  prixEnVigueur: (signal?: AbortSignal): Promise<contrat.CurrentGasPrices> =>
+    get("/catalogue/prices/current", contrat.currentGasPrices, signal),
+
+  mouvementsArticle: (id: string, signal?: AbortSignal): Promise<contrat.ArticleMove[]> =>
+    get(`/catalogue/articles/${id}/moves`, contrat.articleMoves, signal),
+
+  /** Réglages de la boutique et quartiers livrés (côté gestion). */
+  reglagesBoutique: (signal?: AbortSignal): Promise<contrat.ShopSettings> =>
+    get("/delivery/settings", contrat.shopSettings, signal),
+  quartiers: (signal?: AbortSignal): Promise<contrat.Neighbourhood[]> =>
+    get("/delivery/neighbourhoods", contrat.neighbourhoods, signal),
+
+  /** Commande reçue au téléphone, saisie par la boutique. */
+  commandeTelephone: (body: contrat.CreateOrderInput, ref: string): Promise<contrat.PlacedOrder> =>
+    request("/orders", { method: "POST", body, idempotencyKey: ref, parse: lire(contrat.placedOrder) }),
+
   /** Recherche de client dès les premières lettres (le serveur normalise accents et casse). */
   clients: async (q: string, signal?: AbortSignal): Promise<Client[]> =>
-    (await get(`/customers?q=${encodeURIComponent(q)}`, dto.customerRows, signal)).map((c) => ({
+    (await get(`/customers?q=${encodeURIComponent(q)}`, contrat.customerRows, signal)).map((c) => ({
       id: c.id,
       nom: c.name,
       telephone: c.phone ?? undefined,
     })),
 
   gazStock: async (signal?: AbortSignal): Promise<GazStock[]> =>
-    (await get("/stock", dto.stockRows, signal)).map((s) => ({
+    (await get("/stock", contrat.stockRows, signal)).map((s) => ({
       marque: s.brandName,
       brandId: s.brandId,
       formatId: s.formatId,
@@ -185,36 +229,52 @@ export const api = {
       seuil: s.threshold,
     })),
 
-  /** Échanges entre marques, déduits des ventes (une ligne de gaz dont la marque rapportée diffère). */
-  echanges: async (signal?: AbortSignal): Promise<Echange[]> => {
-    const [ventes, noms] = await Promise.all([get("/sales", dto.saleList, signal), marquesParId(signal)]);
-    return ventes.flatMap((v) =>
+  /** Dernières ventes avec échange entre marques ; l'écart est vide tant qu'il reste à régulariser. */
+  /** Les 200 échanges les plus récents (ou seulement ceux à régulariser) et le nombre d'écarts à solder. */
+  pageEchanges: async (
+    attente: boolean,
+    signal?: AbortSignal,
+  ): Promise<{ echanges: Echange[]; aRegulariser: number }> => {
+    const [page, noms] = await Promise.all([
+      get(`/sales/exchanges?limit=200&pending=${attente ? 1 : 0}`, contrat.exchangePage, signal),
+      marquesParId(signal),
+    ]);
+    const echanges = page.items.flatMap((v) =>
       v.lines
         .filter((l) => l.kind === "gas" && l.returnedBrandId && l.returnedBrandId !== l.brandId)
         .map((l, i) => ({
           id: `${v.id}:${i}`,
+          venteId: v.id,
           date: v.createdAt,
           client: v.customerName,
           remise: noms.get(l.brandId ?? "") ?? "?",
           rapportee: noms.get(l.returnedBrandId ?? "") ?? "?",
-          ecart: l.packagingGap,
+          ecart: l.packagingGapPending ? null : l.packagingGap,
         })),
     );
+    return { echanges, aRegulariser: page.pendingCount };
   },
+  solderEcart: (venteId: string, packagingGap?: number) =>
+    request(`/sales/${venteId}/settle-packaging`, {
+      method: "POST",
+      body: packagingGap === undefined ? {} : { packagingGap },
+      idempotencyKey: newIdempotencyKey(),
+      parse: () => null,
+    }),
 
   marques: async (signal?: AbortSignal): Promise<{ id: string; nom: string }[]> =>
-    (await get("/catalogue/brands", dto.brandList, signal))
+    (await get("/catalogue/brands", LISTES.marques, signal))
       .filter((b) => b.active)
       .map((b) => ({ id: b.id, nom: b.name })),
 
   formats: async (signal?: AbortSignal): Promise<{ id: string; libelle: string }[]> =>
-    (await get("/catalogue/formats", dto.formatList, signal))
+    (await get("/catalogue/formats", LISTES.formats, signal))
       .filter((f) => f.active)
       .map((f) => ({ id: f.id, libelle: f.label })),
 
   fournisseurs: async (signal?: AbortSignal): Promise<Fournisseur[]> => {
     const [lignes, noms] = await Promise.all([
-      get("/suppliers", dto.supplierRows, signal),
+      get("/suppliers", contrat.supplierRows, signal),
       marquesParId(signal),
     ]);
     return lignes
@@ -230,8 +290,8 @@ export const api = {
 
   receptions: async (signal?: AbortSignal): Promise<ReceptionResume[]> => {
     const [lignes, fournisseurs] = await Promise.all([
-      get("/receptions", dto.receptionRows, signal),
-      get("/suppliers", dto.supplierRows, signal),
+      get("/receptions", contrat.receptionRows, signal),
+      get("/suppliers", contrat.supplierRows, signal),
     ]);
     return lignes.map((r) => ({
       id: r.id,
@@ -243,24 +303,56 @@ export const api = {
   },
 
   caisses: async (signal?: AbortSignal): Promise<Caisse[]> =>
-    (await get("/cash/registers", dto.registerRows, signal)).map((r) => ({
+    (await get("/cash/registers", contrat.registerRows, signal)).map((r) => ({
       id: r.id,
       nom: r.label,
       solde: r.balance,
+      fond: r.opening,
       actif: r.active,
       especes: CAISSES_ESPECES.includes(r.id),
     })),
 
-  /** Pas de route de tableau de bord côté serveur : composé à partir des rapports (livraisons et échéances : lots suivants). */
+  seuilCloture: async (signal?: AbortSignal): Promise<number> =>
+    (await get("/cash/closure-threshold", contrat.closureThresholdResult, signal)).threshold,
+
+  /** Comptes (PDG). Écritures directes : un mot de passe n'est jamais gardé dans la file d'envoi. */
+  comptes: (signal?: AbortSignal): Promise<contrat.UserAccount[]> =>
+    get("/auth/users", contrat.userAccounts, signal),
+  creerCompte: (body: { username: string; displayName: string; password: string; roles: contrat.Role[] }) =>
+    request("/auth/users", { method: "POST", body, idempotencyKey: newIdempotencyKey(), parse: () => null }),
+  modifierCompte: (id: string, body: contrat.UpdateUserInput): Promise<contrat.UserAccount> =>
+    request(`/auth/users/${id}`, {
+      method: "PATCH",
+      body,
+      idempotencyKey: newIdempotencyKey(),
+      parse: lire(contrat.userAccount),
+    }),
+  seuilStock: async (signal?: AbortSignal): Promise<number> =>
+    (await get("/stock/thresholds", contrat.stockThresholds, signal)).default,
+
+  /** Vue agrégée du PDG pour le jour d'activité. */
   tableau: async (signal?: AbortSignal): Promise<Tableau> => {
-    const stats = await get("/reports/customers", dto.customerStats, signal);
-    return { caJour: stats.totals.total, nbVentes: stats.lines.length, livraisonsEnCours: 0, echeances: 0 };
+    const d = await get("/reports/dashboard", contrat.dashboard, signal);
+    const somme = (l: typeof d.registers) => l.reduce((n, r) => n + r.balance, 0);
+    return {
+      caJour: d.sales.total,
+      nbVentes: d.sales.count,
+      marge: d.sales.margin,
+      margePct: d.sales.marginPercent,
+      totalCaisses: somme(d.registers),
+      especes: somme(d.registers.filter((r) => CAISSES_ESPECES.includes(r.id))),
+      pleines: d.stock.full,
+      vides: d.stock.empty,
+      alertesStock: d.stock.alerts.length,
+      notifications: d.unreadNotifications,
+      echeancesCanal: d.canalDue,
+    };
   },
 
   alertes: async (signal?: AbortSignal): Promise<Alerte[]> => {
     const [bas, notes] = await Promise.all([
-      sansDroit(get("/stock/alerts", dto.stockRows, signal), []),
-      sansDroit(get("/control/notifications?unread=1", dto.notificationRows, signal), []),
+      sansDroit(get("/stock/alerts", contrat.stockRows, signal), []),
+      sansDroit(get("/control/notifications?unread=1", contrat.notificationRows, signal), []),
     ]);
     return [
       ...bas.map(
@@ -279,9 +371,9 @@ export const api = {
   /** Validations en attente : les comptages d'inventaire que le PDG doit valider. */
   validations: async (signal?: AbortSignal): Promise<Validation[]> => {
     const [lignes, noms, formats] = await Promise.all([
-      get("/inventory?pending=1", dto.countRows, signal),
+      get("/inventory?pending=1", contrat.countRows, signal),
       marquesParId(signal),
-      get("/catalogue/formats", dto.formatList, signal),
+      get("/catalogue/formats", LISTES.formats, signal),
     ]);
     return lignes.map((c) => {
       const format = formats.find((f) => f.id === c.formatId)?.label ?? "";
@@ -290,16 +382,17 @@ export const api = {
         id: c.id,
         genre: "inventaire",
         resume: `${genre} : ${noms.get(c.brandId) ?? "?"} ${format}, écart pleines ${signe(c.countedFull - c.theoreticalFull)}, vides ${signe(c.countedEmpty - c.theoreticalEmpty)}`,
-        auteur: "",
+        auteur: c.authorName,
         date: c.createdAt,
       };
     });
   },
 
   audit: async (signal?: AbortSignal): Promise<LigneAudit[]> =>
-    (await get("/control/audit", dto.auditRows, signal)).map((a) => ({
+    (await get("/control/audit", contrat.auditRows, signal)).map((a) => ({
       id: a.id,
       date: a.createdAt,
+      auteur: a.actorName ?? "",
       action: a.action,
       detail: [a.entity, ...Object.entries(a.details ?? {}).map(([k, v]) => `${k} : ${String(v)}`)].join(
         " · ",
@@ -307,24 +400,81 @@ export const api = {
     })),
 
   badges: async (signal?: AbortSignal): Promise<Badges> => {
-    const [bas, attente] = await Promise.all([
-      sansDroit(get("/stock/alerts", dto.stockRows, signal), []),
-      sansDroit(get("/inventory?pending=1", dto.countRows, signal), []),
+    const [bas, attente, echeances, commandes] = await Promise.all([
+      sansDroit(get("/stock/alerts", contrat.stockRows, signal), []),
+      sansDroit(get("/inventory?pending=1", contrat.countRows, signal), []),
+      sansDroit(get("/canal/due?within=7", contrat.canalSubscribers, signal), []),
+      sansDroit(get("/orders/summary", contrat.orderSummary, signal), { pending: 0, toDeliver: 0 }),
     ]);
-    return { commandes: 0, stockBas: bas.length, echeances: 0, validations: attente.length };
+    return {
+      commandes: commandes.pending,
+      stockBas: bas.length,
+      echeances: echeances.length,
+      validations: attente.length,
+    };
   },
 
+  /** Canal+ : formules, abonnés (liste complète, filtrée sur l'appareil) et échéances proches. */
+  formulesCanal: (signal?: AbortSignal): Promise<contrat.CanalFormula[]> =>
+    get("/canal/formulas", contrat.canalFormulas, signal),
+  abonnesCanal: (signal?: AbortSignal): Promise<contrat.CanalSubscriber[]> =>
+    get("/canal/subscribers", contrat.canalSubscribers, signal),
+  encaissementsCanal: (jour: string, signal?: AbortSignal): Promise<contrat.CanalPayment[]> =>
+    get(`/canal/payments?date=${jour}`, contrat.canalPayments, signal),
+  relancesCanal: (
+    jours: number,
+    langue: "fr" | "en",
+    signal?: AbortSignal,
+  ): Promise<contrat.CanalReminder[]> =>
+    get(`/canal/reminders?within=${jours}&lang=${langue}`, contrat.canalReminders, signal),
+  /** Articles hors gaz, actifs ou non. */
+  articlesLibres: (signal?: AbortSignal) => get("/catalogue/articles", LISTES.articles, signal),
+  /** Orange Money et MoMo : float par opérateur, commissions et opérations du jour. */
+  floats: (signal?: AbortSignal): Promise<contrat.FloatState[]> =>
+    get("/money/float", contrat.floatStates, signal),
+  commissions: (signal?: AbortSignal): Promise<contrat.CommissionSettings> =>
+    get("/money/commissions", contrat.commissionSettings, signal),
+  operationsMoney: (jour: string, signal?: AbortSignal): Promise<contrat.MoneyOperation[]> =>
+    get(`/money/operations?date=${jour}`, contrat.moneyOperations, signal),
+  echeancesCanal: (jours: number, signal?: AbortSignal): Promise<contrat.CanalSubscriber[]> =>
+    get(`/canal/due?within=${jours}`, contrat.canalSubscribers, signal),
+
+  /** Commandes de la boutique et livreurs à qui les confier. */
+  commandes: (signal?: AbortSignal): Promise<contrat.Order[]> => get("/orders", contrat.orders, signal),
+  livreurs: (signal?: AbortSignal) =>
+    sansDroit(
+      get("/orders/drivers", z.array(z.object({ id: z.string(), displayName: z.string() })), signal),
+      [],
+    ),
+  agirCommande: (id: string, action: string, body?: unknown): Promise<contrat.Order> =>
+    request(`/orders/${id}/${action}`, {
+      method: "POST",
+      body: body ?? {},
+      idempotencyKey: newIdempotencyKey(),
+      parse: lire(contrat.order),
+    }),
   /** Livraisons du jour : le module de livraison n'a pas encore de contrat côté serveur (lot 3). */
-  livraisons: async (): Promise<Livraison[]> => [],
+  remettre: (id: string, body: contrat.CompleteOrderInput) =>
+    request(`/deliveries/${id}/delivered`, {
+      method: "POST",
+      body,
+      idempotencyKey: newIdempotencyKey(),
+      parse: () => null,
+    }),
+  /** Tournée du livreur connecté. */
+  tournee: (signal?: AbortSignal): Promise<contrat.Delivery[]> =>
+    get("/deliveries", contrat.deliveries, signal),
 
   rapport: async (id: "clients" | "journal" | "x", signal?: AbortSignal): Promise<Rapport> => {
-    if (id === "clients") return rapportClients(await get("/reports/customers", dto.customerStats, signal));
-    if (id === "journal") return rapportJournal(await get("/reports/cash-journal", dto.cashJournal, signal));
-    return rapportX(await get("/reports/x", dto.xReport, signal));
+    if (id === "clients")
+      return rapportClients(await get("/reports/customers", contrat.customerStats, signal));
+    if (id === "journal")
+      return rapportJournal(await get("/reports/cash-journal", contrat.cashJournal, signal));
+    return rapportX(await get("/reports/x", contrat.xReport, signal));
   },
 
   situationGaz: async (signal?: AbortSignal): Promise<Rapport> => {
-    const s = await get("/reports/gas-situation", dto.gasSituation, signal);
+    const s = await get("/reports/gas-situation", contrat.gasSituation, signal);
     return {
       colonnes: ["Marque", "Pleines", "Vides", "Total"],
       lignes: s.rows.map((r) => [r.brand, r.full, r.empty, r.total]),
@@ -332,10 +482,10 @@ export const api = {
     };
   },
 
-  /** Export CSV produit par le serveur (s'ouvre dans Excel). */
-  exportCsv: async (nom: "sales" | "cash" | "stock"): Promise<Blob> => {
-    const r = await fetch(`${API_BASE}/reports/export/${nom}.csv`, { headers: enTetes() });
-    if (!r.ok) throw await erreurDe(r, `export ${nom}`);
+  /** Fichier produit par le serveur (CSV, Excel ou PDF), chemin relatif à l'API. */
+  fichier: async (chemin: string): Promise<Blob> => {
+    const r = await fetch(`${API_BASE}${chemin}`, { headers: enTetes() });
+    if (!r.ok) throw await erreurDe(r, chemin);
     return r.blob();
   },
 };
@@ -345,7 +495,7 @@ const ESPACES = new RegExp(`[${String.fromCharCode(0x202f)}${String.fromCharCode
 export const nombreFr = (n: number) => n.toLocaleString("fr-FR").replace(ESPACES, " ");
 const pourcent = (v: number | null) => (v === null ? "" : nombreFr(v));
 
-export function rapportClients(s: z.infer<typeof dto.customerStats>): Rapport {
+export function rapportClients(s: z.infer<typeof contrat.customerStats>): Rapport {
   return {
     colonnes: [
       "Heure",
@@ -386,7 +536,7 @@ export function rapportClients(s: z.infer<typeof dto.customerStats>): Rapport {
   };
 }
 
-export function rapportJournal(j: z.infer<typeof dto.cashJournal>): Rapport {
+export function rapportJournal(j: z.infer<typeof contrat.cashJournal>): Rapport {
   return {
     colonnes: [
       "Heure",
@@ -416,7 +566,7 @@ export function rapportJournal(j: z.infer<typeof dto.cashJournal>): Rapport {
   };
 }
 
-export function rapportX(x: z.infer<typeof dto.xReport>): Rapport {
+export function rapportX(x: z.infer<typeof contrat.xReport>): Rapport {
   return {
     colonnes: ["Caisse", "Type", "N° pièce", "Libellé", "Montant"],
     lignes: x.registers.flatMap((r) => [

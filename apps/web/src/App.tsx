@@ -8,10 +8,40 @@ import { SyncPage } from "./offline/SyncPage.js";
 import { ErrorBoundary, NotFound } from "./pages/Errors.js";
 import { Garde } from "./pages/Garde.js";
 import { Placeholder } from "./pages/Placeholder.js";
+import { LivreurMode } from "./shell/LivreurMode.js";
 import { Plus } from "./shell/Plus.js";
 import { Shell } from "./shell/Shell.js";
 
 // Écrans chargés à la demande : le premier affichage ne télécharge que la coque et la connexion.
+const Quartiers = lazy(() => import("./commandes/Quartiers.js").then((m) => ({ default: m.Quartiers })));
+const Historique = lazy(() => import("./vente/Historique.js").then((m) => ({ default: m.Historique })));
+const Clients = lazy(() => import("./vente/Clients.js").then((m) => ({ default: m.Clients })));
+const Marques = lazy(() => import("./config/Marques.js").then((m) => ({ default: m.Marques })));
+const Prix = lazy(() => import("./config/Prix.js").then((m) => ({ default: m.Prix })));
+const Utilisateurs = lazy(() =>
+  import("./config/Utilisateurs.js").then((m) => ({ default: m.Utilisateurs })),
+);
+const ConfigCaisses = lazy(() => import("./config/Caisses.js").then((m) => ({ default: m.ConfigCaisses })));
+const ConfigLangue = lazy(() => import("./config/Caisses.js").then((m) => ({ default: m.ConfigLangue })));
+const Articles = lazy(() => import("./market/Articles.js").then((m) => ({ default: m.Articles })));
+const StockArticles = lazy(() => import("./market/Articles.js").then((m) => ({ default: m.StockArticles })));
+const Abonnes = lazy(() => import("./canal/Abonnes.js").then((m) => ({ default: m.Abonnes })));
+const Suivi = lazy(() => import("./boutique/Suivi.js").then((m) => ({ default: m.Suivi })));
+const Boutique = lazy(() => import("./boutique/Boutique.js").then((m) => ({ default: m.Boutique })));
+const Encaissements = lazy(() =>
+  import("./canal/Encaissements.js").then((m) => ({ default: m.Encaissements })),
+);
+const Operations = lazy(() => import("./money/Operations.js").then((m) => ({ default: m.Operations })));
+const Float = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Float })));
+const Commissions = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Commissions })));
+const MouvementsArticles = lazy(() =>
+  import("./market/Mouvements.js").then((m) => ({ default: m.MouvementsArticles })),
+);
+const Commandes = lazy(() => import("./commandes/Commandes.js").then((m) => ({ default: m.Commandes })));
+const HistoriqueCommandes = lazy(() =>
+  import("./commandes/Commandes.js").then((m) => ({ default: m.HistoriqueCommandes })),
+);
+const Echeances = lazy(() => import("./canal/Echeances.js").then((m) => ({ default: m.Echeances })));
 const Cloture = lazy(() => import("./caisse/Cloture.js").then((m) => ({ default: m.Cloture })));
 const Depenses = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Depenses })));
 const Transferts = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Transferts })));
@@ -56,6 +86,23 @@ export function App() {
     <ErrorBoundary>
       <Routes>
         <Route path="connexion" element={<LoginPage />} />
+        {/* Vitrine publique et suivi de commande : sans compte. */}
+        <Route
+          path="boutique/suivi/:jeton"
+          element={
+            <Suspense fallback={<Chargement />}>
+              <Suivi />
+            </Suspense>
+          }
+        />
+        <Route
+          path="boutique"
+          element={
+            <Suspense fallback={<Chargement />}>
+              <Boutique />
+            </Suspense>
+          }
+        />
         <Route element={<RequireAuth />}>
           <Route element={<Shell />}>
             <Route index element={<Accueil />} />
@@ -212,6 +259,182 @@ export function App() {
               element={
                 <Garde volet="rapport">
                   <Exports />
+                </Garde>
+              }
+            />
+            <Route
+              path="canal/abonnes"
+              element={
+                <Garde volet="canal">
+                  <Abonnes />
+                </Garde>
+              }
+            />
+            <Route
+              path="canal/echeances"
+              element={
+                <Garde volet="canal">
+                  <Echeances />
+                </Garde>
+              }
+            />
+            <Route
+              path="canal/encaissements"
+              element={
+                <Garde volet="canal">
+                  <Encaissements />
+                </Garde>
+              }
+            />
+            <Route
+              path="canal/rappels"
+              element={
+                <Garde volet="canal">
+                  <Echeances rappels />
+                </Garde>
+              }
+            />
+            <Route
+              path="money/operations"
+              element={
+                <Garde volet="money">
+                  <Operations />
+                </Garde>
+              }
+            />
+            <Route
+              path="money/float"
+              element={
+                <Garde volet="money">
+                  <Float />
+                </Garde>
+              }
+            />
+            <Route
+              path="money/commissions"
+              element={
+                <Garde volet="money">
+                  <Commissions />
+                </Garde>
+              }
+            />
+            <Route
+              path="market/articles"
+              element={
+                <Garde volet="market">
+                  <Articles />
+                </Garde>
+              }
+            />
+            <Route
+              path="market/stock"
+              element={
+                <Garde volet="market">
+                  <StockArticles />
+                </Garde>
+              }
+            />
+            <Route
+              path="livre/tournee"
+              element={
+                <Garde volet="livre">
+                  <LivreurMode />
+                </Garde>
+              }
+            />
+            <Route
+              path="vente/commandes"
+              element={
+                <Garde volet="vente">
+                  <Commandes />
+                </Garde>
+              }
+            />
+            <Route
+              path="livre/file"
+              element={
+                <Garde volet="livre">
+                  <Commandes />
+                </Garde>
+              }
+            />
+            <Route
+              path="livre/historique"
+              element={
+                <Garde volet="livre">
+                  <HistoriqueCommandes />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/utilisateurs"
+              element={
+                <Garde volet="config">
+                  <Utilisateurs />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/caisses"
+              element={
+                <Garde volet="config">
+                  <ConfigCaisses />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/langue"
+              element={
+                <Garde volet="config">
+                  <ConfigLangue />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/marques"
+              element={
+                <Garde volet="config">
+                  <Marques />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/prix"
+              element={
+                <Garde volet="config">
+                  <Prix />
+                </Garde>
+              }
+            />
+            <Route
+              path="vente/historique"
+              element={
+                <Garde volet="vente">
+                  <Historique />
+                </Garde>
+              }
+            />
+            <Route
+              path="vente/clients"
+              element={
+                <Garde volet="vente">
+                  <Clients />
+                </Garde>
+              }
+            />
+            <Route
+              path="market/mouvements"
+              element={
+                <Garde volet="market">
+                  <MouvementsArticles />
+                </Garde>
+              }
+            />
+            <Route
+              path="livre/quartiers"
+              element={
+                <Garde volet="livre">
+                  <Quartiers />
                 </Garde>
               }
             />

@@ -1,7 +1,9 @@
 import {
+  adjustArticleInput,
   createArticleInput,
   createBrandInput,
   createFormatInput,
+  restockArticleInput,
   setGasPriceInput,
   updateArticleInput,
   updateBrandInput,
@@ -12,6 +14,8 @@ import { z } from "zod";
 import { requireAuth, requirePermission } from "../auth/middleware.js";
 import { type AppEnv, parse, parseJson } from "../http.js";
 import { idempotency } from "../idempotency.js";
+import { requireJustification } from "../sales/cancel.js";
+import { adjustArticle, listArticleMoves, restockArticle } from "./article-stock.js";
 import * as svc from "./service.js";
 
 const uuid = z.uuid();
@@ -24,6 +28,9 @@ export const catalogueRoutes = new Hono<AppEnv>()
   )
   .get("/formats", requirePermission("catalog.gas.read"), async (c) =>
     c.json(await svc.listFormats(c.get("deps"))),
+  )
+  .get("/prices/current", requirePermission("catalog.gas.read"), async (c) =>
+    c.json(await svc.currentPrices(c.get("deps"))),
   )
   .get("/prices/:formatId/current", requirePermission("catalog.gas.read"), async (c) => {
     const brandId = c.req.query("brandId");
@@ -77,6 +84,31 @@ export const catalogueRoutes = new Hono<AppEnv>()
   )
   .get("/articles/:id/prices", requirePermission("sale.read"), async (c) =>
     c.json(await svc.articlePrices(c.get("deps"), parse(uuid, c.req.param("id")))),
+  )
+  .get("/articles/:id/moves", requirePermission("sale.read"), async (c) =>
+    c.json(await listArticleMoves(c.get("deps"), parse(uuid, c.req.param("id")))),
+  )
+  .post("/articles/:id/adjust", requirePermission("catalog.article.write"), async (c) => {
+    const input = await parseJson(c, adjustArticleInput);
+    return c.json(
+      await adjustArticle(
+        c.get("deps"),
+        c.get("user").id,
+        parse(uuid, c.req.param("id")),
+        input,
+        requireJustification(input.justification),
+      ),
+    );
+  })
+  .post("/articles/:id/restock", requirePermission("catalog.article.write"), async (c) =>
+    c.json(
+      await restockArticle(
+        c.get("deps"),
+        c.get("user").id,
+        parse(uuid, c.req.param("id")),
+        await parseJson(c, restockArticleInput),
+      ),
+    ),
   )
   .post("/articles", requirePermission("catalog.article.write"), async (c) =>
     c.json(

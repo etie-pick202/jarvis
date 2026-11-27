@@ -21,7 +21,7 @@ export const lienWhatsapp = (texte: string) => `https://wa.me/?text=${encodeURIC
 export const lienMail = (sujet: string, texte: string) =>
   `mailto:?subject=${encodeURIComponent(sujet)}&body=${encodeURIComponent(texte)}`;
 
-export function telecharger(nom: string, contenu: string, type: string): void {
+export function telecharger(nom: string, contenu: string | Blob, type: string): void {
   const lien = document.createElement("a");
   lien.href = URL.createObjectURL(new Blob([contenu], { type }));
   lien.download = nom;

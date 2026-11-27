@@ -3,6 +3,7 @@ import { useI18n } from "../i18n/index.js";
 import { ecrire } from "../offline/ecrire.js";
 import { Button } from "../ui/Button.js";
 import { Field } from "../ui/Field.js";
+import { useGarde } from "../ui/useEnvoi.js";
 import { formatFcfa } from "../vente/regles.js";
 import { lireMontant, useCaisses } from "./donnees.js";
 
@@ -37,6 +38,7 @@ function ChoixCaisse({
 
 /** Dépense : une sortie d'argent d'une caisse, avec son libellé. */
 export function Depenses() {
+  const garde = useGarde();
   const { t } = useI18n();
   const { actives } = useCaisses();
   const [caisse, setCaisse] = useState("");
@@ -64,7 +66,7 @@ export function Depenses() {
   }
 
   return (
-    <form className="carte page" onSubmit={enregistrer}>
+    <form className="carte page" onSubmit={garde(enregistrer)}>
       <h1>{t("caisse.depenses.titre")}</h1>
       <ChoixCaisse label={t("caisse.depuis")} valeur={caisse} onChange={setCaisse} caisses={actives} />
       <Field
@@ -92,6 +94,7 @@ export function Depenses() {
 
 /** Transfert entre deux caisses : le solde de chacune se met à jour. */
 export function Transferts() {
+  const garde = useGarde();
   const { t } = useI18n();
   const { actives } = useCaisses();
   const [de, setDe] = useState("");
@@ -124,7 +127,7 @@ export function Transferts() {
   }
 
   return (
-    <form className="carte page" onSubmit={enregistrer}>
+    <form className="carte page" onSubmit={garde(enregistrer)}>
       <h1>{t("caisse.transferts.titre")}</h1>
       <ChoixCaisse label={t("caisse.depuis")} valeur={de} onChange={setDe} caisses={actives} />
       <ChoixCaisse

@@ -30,7 +30,7 @@ test("le gérant passe en mode livreur d'un geste", async ({ page }) => {
   await seConnecter(page, "gerant");
   await page.getByRole("button", { name: "Mode livreur" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Livraisons du jour" })).toBeVisible();
-  await expect(page.getByText("Aucune livraison aujourd'hui.")).toBeVisible();
+  await expect(page.getByRole("article", { name: /CMD0101/u })).toBeVisible();
   await page.getByRole("button", { name: "Mode gestion" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Tableau de bord" })).toBeVisible();
 });
