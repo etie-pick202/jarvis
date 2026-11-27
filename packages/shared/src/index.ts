@@ -6,6 +6,7 @@ export * from "./delivery.js";
 export * from "./errors.js";
 export * from "./money.js";
 export * from "./money-ops.js";
+export * from "./notification-settings.js";
 export * from "./orders.js";
 export * from "./phone.js";
 export * from "./pricing.js";
