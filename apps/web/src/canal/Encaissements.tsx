@@ -13,6 +13,7 @@ import { Field } from "../ui/Field.js";
 import { usePagination, VoirPlus } from "../ui/listes.js";
 import { Segmented } from "../ui/Segmented.js";
 import { Table } from "../ui/Table.js";
+import { lienWhatsappPour } from "../ui/telephone.js";
 import { useEnvoi } from "../ui/useEnvoi.js";
 import { formatFcfa } from "../vente/regles.js";
 import { annulables, dateCourte, jourActivite, nouvelleEcheance, totalEncaisse } from "./regles.js";
@@ -179,7 +180,7 @@ function Saisie({
           <output className="bloc">{`${t("canal.encaisse.ok")} ${recu}`}</output>
           <a
             className="btn btn--contour"
-            href={`https://wa.me/${fait.telephone.replace(/\D/gu, "")}?text=${encodeURIComponent(recu)}`}
+            href={lienWhatsappPour(fait.telephone, recu)}
             target="_blank"
             rel="noreferrer"
           >

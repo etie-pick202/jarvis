@@ -1,5 +1,6 @@
 import { useI18n } from "../i18n/index.js";
 import { Button } from "../ui/Button.js";
+import { lienWhatsappPour } from "../ui/telephone.js";
 import { LogoCocosab } from "../visuels/LogoCocosab.js";
 import { recuPdf } from "./pdf.js";
 import { formatFcfa, type Paiement, type Panier, total } from "./regles.js";
@@ -51,8 +52,7 @@ export function Recu({ recu, onNouvelle }: { recu: RecuVente; onNouvelle: () => 
     URL.revokeObjectURL(lien.href);
   }
 
-  const numero = recu.telephone?.replace(/\D/gu, "") ?? "";
-  const whatsapp = `https://wa.me/${numero}?text=${encodeURIComponent(lignes.join("\n"))}`;
+  const whatsapp = lienWhatsappPour(recu.telephone ?? "", lignes.join("\n"));
 
   return (
     <section className="carte" aria-labelledby="titre-recu">
