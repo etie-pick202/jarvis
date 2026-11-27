@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeApi, setFakeUser } from "../api/fake.js";
+import { SessionProvider } from "../auth/SessionProvider.js";
 import { I18nProvider } from "../i18n/index.js";
 import { db } from "../offline/db.js";
 import { Echanges } from "./Echanges.js";
@@ -79,7 +80,11 @@ describe("CoCoGaz", () => {
   });
 
   it("liste les échanges avec le gain ou la perte d'emballage", async () => {
-    ui(<Echanges />);
+    ui(
+      <SessionProvider initial={{ userId: "u", nom: "x", profils: ["gerant"], profilActif: "gerant" }}>
+        <Echanges />
+      </SessionProvider>,
+    );
     expect(await screen.findByText("Perte 2 500 FCFA")).toBeTruthy();
     expect(screen.getByText("Gain 1 600 FCFA")).toBeTruthy();
   });
