@@ -4,6 +4,7 @@ import { api, type Echange } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import { useSession } from "../auth/SessionProvider.js";
 import { useI18n } from "../i18n/index.js";
+import { useAmener } from "../ui/amener.js";
 import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Etat } from "../ui/Etat.js";
@@ -34,13 +35,20 @@ function Solde({ echange, onFait }: Readonly<{ echange: Echange; onFait: () => v
     }
   });
 
+  const bloc = useAmener<HTMLFormElement>();
+
   function soumettre(event: FormEvent) {
     event.preventDefault();
     if (!invalide) void solder();
   }
 
   return (
-    <form className="carte" onSubmit={soumettre} aria-label={`${t("ecarts.solder")} ${echange.client}`}>
+    <form
+      ref={bloc}
+      className="carte"
+      onSubmit={soumettre}
+      aria-label={`${t("ecarts.solder")} ${echange.client}`}
+    >
       <h2>{`${t("ecarts.solder")} : ${echange.client}`}</h2>
       <p>{t("ecarts.aide")}</p>
       <Field label={t("ecarts.montant")} value={saisie} onChange={(e) => setSaisie(e.target.value)} />
@@ -87,6 +95,7 @@ function Liste({ attente, basculer }: Readonly<{ attente: boolean; basculer: (v:
         <Etat {...lecture} vide={echanges.length === 0} messageVide={t("gaz.echanges.vide")}>
           {aRegulariser > 0 && <output className="bloc">{`${t("ecarts.nombre")} : ${aRegulariser}`}</output>}
           <Table
+            cartes
             caption={t("gaz.echanges.titre")}
             colonnes={[t("gaz.heure"), t("gaz.client"), t("gaz.remise"), t("gaz.rapportee"), t("gaz.ecart")]}
           >

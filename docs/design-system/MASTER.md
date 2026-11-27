@@ -61,8 +61,8 @@ droite dans les tableaux.
   (contour rouge). Hauteur 44 px au moins ; pleine largeur seulement pour l'action principale sur téléphone.
 - **Listes et tableaux** : tableau compact au bureau (ligne de 44 px, en-tête collant) ; sous 640 px, une carte par
   ligne, sans défilement horizontal, actions visibles.
-- **Formulaires de création** : derrière un bouton « Nouveau » (feuille en bas sur téléphone, panneau à droite au
-  bureau), pour que la liste reste en premier.
+- **Formulaires de création** : la liste reste en premier ; la fiche est à droite au bureau et sous la liste sur
+  téléphone, où un bouton à côté du titre y conduit. Elle reste affichée (les parcours de bout en bout s'y fient).
 - **Champs** : libellé au-dessus, aide et erreur dessous ; clavier adapté (`inputmode`) ; sélection de fichier avec
   un bouton traduit.
 - **États** : squelette à la forme du contenu pendant le chargement ; vide avec une action proposée ; erreur avec

@@ -8,6 +8,7 @@ import { useI18n } from "../i18n/index.js";
 import { db } from "../offline/db.js";
 import { ecrire } from "../offline/ecrire.js";
 import { Button } from "../ui/Button.js";
+import { ChampFichier } from "../ui/ChampFichier.js";
 import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
 import { usePagination, VoirPlus } from "../ui/listes.js";
@@ -124,14 +125,12 @@ function Reappro({ article, onFait }: Readonly<{ article: Article; onFait: (quan
         value={cout}
         onChange={(e) => setCout(e.target.value)}
       />
-      <Field
-        // La remise à zéro du champ fichier passe par un nouveau champ.
-        key={ok ? "envoye" : "saisie"}
+      <ChampFichier
         label={t("gaz.reception.piece")}
-        type="file"
         accept="image/*,application/pdf"
-        onChange={(e) => {
-          setPiece(e.target.files?.[0] ?? null);
+        fichier={piece}
+        onChoisir={(f) => {
+          setPiece(f);
           setOk(false);
         }}
       />
@@ -155,6 +154,7 @@ function Journal({ article }: Readonly<{ article: Article }>) {
       <h2>{t("market.journal")}</h2>
       <Etat {...lecture} vide={lecture.data.length === 0} messageVide={t("market.aucun.mouvement")}>
         <Table
+          cartes
           caption={t("market.journal")}
           colonnes={[
             t("pilot.quand"),
@@ -215,10 +215,10 @@ export function MouvementsArticles() {
               </select>
             </div>
             {gere && (
-              <>
+              <div className="paire">
                 <Reappro key={`r-${article.id}`} article={article} onFait={(n) => varier(article.id, n)} />
                 <Ajustement key={`a-${article.id}`} article={article} onFait={(n) => varier(article.id, n)} />
-              </>
+              </div>
             )}
             <Journal key={`j-${article.id}`} article={article} />
           </>
