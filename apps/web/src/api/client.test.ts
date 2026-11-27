@@ -146,7 +146,6 @@ describe("adaptateurs de réponses", () => {
     expect((await api.validations())[0]?.resume).toContain("écart pleines -1");
     expect((await api.audit())[0]?.detail).toContain("sale");
     expect(await api.badges()).toMatchObject({ stockBas: 1, validations: 1 });
-    expect(await api.livraisons()).toEqual([]);
   });
 
   it("met les rapports du serveur sous forme de tableaux", async () => {

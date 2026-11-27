@@ -431,6 +431,43 @@ const operationsMoney = (date: string) => [
   },
 ];
 
+/** Tournée d'exemple : un paiement en espèces à partir, un paiement mobile non confirmé en route. */
+const livraison = (n: number, plus: Record<string, unknown>) => ({
+  id: uuid(1800 + n),
+  number: `CMD010${n}`,
+  status: "validated",
+  customerName: `Client Essai ${n}`,
+  phone: `23769000002${n}`,
+  neighbourhoodName: "Quartier Essai Nord",
+  landmark: "Près du carrefour d'exemple",
+  latitude: null,
+  longitude: null,
+  paymentMethod: "cash",
+  paymentConfirmed: false,
+  total: 7200,
+  lines: [
+    {
+      kind: "gas",
+      brandId: uuid(101),
+      formatId: uuid(201),
+      returnedBrandId: null,
+      articleId: null,
+      label: "Recharge gaz OLA 12,5 kg",
+      quantity: 1,
+      unitPrice: 6800,
+      deliveryFee: 400,
+      total: 7200,
+    },
+  ],
+  problemNote: null,
+  ...plus,
+});
+
+const TOURNEE = [
+  livraison(1, { latitude: 4.05, longitude: 9.7 }),
+  livraison(2, { status: "out_for_delivery", paymentMethod: "momo" }),
+];
+
 const CLE_FAUX = "jarvis.fake-user";
 
 /** L'utilisateur « connecté » survit au rechargement, comme le ferait un jeton de session. */
@@ -537,6 +574,8 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       );
     case "/canal/formulas":
       return json(FORMULES);
+    case "/deliveries":
+      return json(TOURNEE);
     case "/canal/payments":
       return json(encaissementsCanal(url.searchParams.get("date") ?? jour));
     case "/money/float":
