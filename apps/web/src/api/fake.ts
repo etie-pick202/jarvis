@@ -385,6 +385,29 @@ const ABONNES = [
   abonne(4, "Owona Marc", 0, "DEC-0004", null),
 ];
 
+const vitrine = () => ({
+  gas: MARQUES.map((m) => ({
+    brandId: m.id,
+    brandName: m.name,
+    formatId: FORMAT.id,
+    formatLabel: FORMAT.label,
+    price: 6800,
+    available: m.full > 0,
+  })),
+  articles: ARTICLES.map((a) => ({ id: a.id, name: a.name, price: a.price, available: true })),
+  neighbourhoods: [
+    { id: uuid(1701), name: "Quartier Essai Nord", feePerBottle: 400 },
+    { id: uuid(1702), name: "Quartier Essai Sud", feePerBottle: 600 },
+  ],
+  shop: {
+    openingHours: "Lundi au samedi, 7 h à 20 h",
+    orderHours: "Commandes prises jusqu'à 18 h.",
+    phone: "+237690000000",
+    address: "Boutique d'exemple, Douala",
+    minimumOrder: 2000,
+    deliveryFeePerBottle: 400,
+  },
+});
 /** Deux encaissements d'exemple pour la date demandée. */
 const encaissementsCanal = (date: string) =>
   ABONNES.slice(1, 3).map((a, i) => ({
@@ -457,6 +480,9 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   const url = new URL(path, "http://fake");
   const route = url.pathname;
   const ecriture = Boolean(init?.method && init.method !== "GET");
+
+  // Vitrine publique : aucune session requise.
+  if (route === "/shop/catalogue") return json(vitrine());
 
   if (route === "/auth/login") {
     const body = JSON.parse(String(init?.body ?? "{}")) as { username?: string; password?: string };

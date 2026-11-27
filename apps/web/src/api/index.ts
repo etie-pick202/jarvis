@@ -163,6 +163,10 @@ export const api = {
     return [...gaz, ...libres];
   },
 
+  /** Vitrine publique (sans compte) : produits, disponibilité, quartiers livrés et coordonnées. */
+  vitrine: (signal?: AbortSignal): Promise<contrat.PublicCatalogue> =>
+    get("/shop/catalogue", contrat.publicCatalogue, signal),
+
   /** Recherche de client dès les premières lettres (le serveur normalise accents et casse). */
   clients: async (q: string, signal?: AbortSignal): Promise<Client[]> =>
     (await get(`/customers?q=${encodeURIComponent(q)}`, contrat.customerRows, signal)).map((c) => ({
@@ -339,6 +343,8 @@ export const api = {
     get("/canal/subscribers", contrat.canalSubscribers, signal),
   encaissementsCanal: (jour: string, signal?: AbortSignal): Promise<contrat.CanalPayment[]> =>
     get(`/canal/payments?date=${jour}`, contrat.canalPayments, signal),
+  /** Articles hors gaz, actifs ou non. */
+  articlesLibres: (signal?: AbortSignal) => get("/catalogue/articles", LISTES.articles, signal),
   /** Orange Money et MoMo : float par opérateur, commissions et opérations du jour. */
   floats: (signal?: AbortSignal): Promise<contrat.FloatState[]> =>
     get("/money/float", contrat.floatStates, signal),
