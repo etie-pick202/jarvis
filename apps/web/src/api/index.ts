@@ -287,6 +287,7 @@ export const api = {
       vides: d.stock.empty,
       alertesStock: d.stock.alerts.length,
       notifications: d.unreadNotifications,
+      echeancesCanal: d.canalDue,
     };
   },
 
@@ -356,6 +357,12 @@ export const api = {
     get("/canal/subscribers", contrat.canalSubscribers, signal),
   encaissementsCanal: (jour: string, signal?: AbortSignal): Promise<contrat.CanalPayment[]> =>
     get(`/canal/payments?date=${jour}`, contrat.canalPayments, signal),
+  relancesCanal: (
+    jours: number,
+    langue: "fr" | "en",
+    signal?: AbortSignal,
+  ): Promise<contrat.CanalReminder[]> =>
+    get(`/canal/reminders?within=${jours}&lang=${langue}`, contrat.canalReminders, signal),
   /** Articles hors gaz, actifs ou non. */
   articlesLibres: (signal?: AbortSignal) => get("/catalogue/articles", LISTES.articles, signal),
   /** Orange Money et MoMo : float par opérateur, commissions et opérations du jour. */

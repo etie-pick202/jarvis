@@ -40,6 +40,9 @@ export function TableauDeBord() {
     [t("pilot.stock"), `${tab.pleines} / ${tab.vides}`],
     [t("pilot.stock.alertes"), String(tab.alertesStock)],
     [t("pilot.notifications"), String(tab.notifications)],
+    ...(tab.echeancesCanal === undefined
+      ? []
+      : ([[t("pilot.canal"), String(tab.echeancesCanal)]] as [string, string][])),
   ];
   return (
     <div className="page">

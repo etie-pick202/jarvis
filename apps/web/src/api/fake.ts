@@ -351,6 +351,7 @@ function tableauDeBord() {
       alerts: MARQUES.filter((m) => m.full <= SEUIL_BAS).map(ligneStock),
     },
     unreadNotifications: 1,
+    canalDue: ABONNES.filter((a) => a.daysLeft !== null && a.daysLeft <= 7).length,
   };
 }
 
@@ -609,6 +610,22 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       return json(operationsMoney(url.searchParams.get("date") ?? jour));
     case "/canal/subscribers":
       return json(ABONNES);
+    case "/canal/reminders": {
+      const jours = Number(url.searchParams.get("within") ?? 7);
+      const anglais = url.searchParams.get("lang") === "en";
+      return json(
+        ABONNES.filter((a) => a.active && a.daysLeft !== null && a.daysLeft <= jours).map((a) => {
+          const message = anglais
+            ? `Hello ${a.name}, your Canal+ subscription needs renewal.`
+            : `Bonjour ${a.name}, votre abonnement Canal+ est à renouveler.`;
+          return {
+            ...a,
+            message,
+            whatsappUrl: `https://wa.me/${a.phone}?text=${encodeURIComponent(message)}`,
+          };
+        }),
+      );
+    }
     case "/canal/due": {
       const jours = Number(url.searchParams.get("within") ?? 7);
       return json(ABONNES.filter((a) => a.active && a.daysLeft !== null && a.daysLeft <= jours));

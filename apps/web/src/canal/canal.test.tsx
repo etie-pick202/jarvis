@@ -9,7 +9,7 @@ import { I18nProvider } from "../i18n/index.js";
 import { db } from "../offline/db.js";
 import { Abonnes } from "./Abonnes.js";
 import { Echeances } from "./Echeances.js";
-import { dateCourte, etatEcheance, filtrerAbonnes, lienRappel } from "./regles.js";
+import { dateCourte, etatEcheance, filtrerAbonnes } from "./regles.js";
 
 const ui = (node: React.ReactNode, profil: "gerant" | "caissier" = "gerant") =>
   render(
@@ -67,7 +67,10 @@ describe("CanalSab", () => {
     const enregistrer = fiche.getByRole("button", { name: "Enregistrer l'abonné" }) as HTMLButtonElement;
     expect(enregistrer.disabled).toBe(true);
     await userEvent.type(fiche.getByLabelText("Nom"), "Biloa Paul");
-    await userEvent.type(fiche.getByLabelText("Téléphone"), "237690000099");
+    await userEvent.type(fiche.getByLabelText("Téléphone"), "69000");
+    expect(fiche.getByRole("alert").textContent).toContain("Numéro incomplet");
+    await userEvent.clear(fiche.getByLabelText("Téléphone"));
+    await userEvent.type(fiche.getByLabelText("Téléphone"), "690 00 00 99");
     await userEvent.type(fiche.getByLabelText("Numéro de décodeur"), "DEC-0099");
     await userEvent.selectOptions(fiche.getByLabelText("Formule"), "00000000-0000-4000-8000-000000001301");
     await userEvent.click(enregistrer);
@@ -132,14 +135,12 @@ describe("CanalSab", () => {
     expect(await screen.findByText("Manga Sylvie")).toBeTruthy();
   });
 
-  it("prépare un rappel WhatsApp avec le nom, la formule et la date", async () => {
+  it("ouvre WhatsApp avec le lien préparé par le serveur", async () => {
     ui(<Echeances rappels />);
     const lien = await screen.findByRole("link", { name: "Envoyer par WhatsApp Atangana Rose" });
     const href = decodeURIComponent(lien.getAttribute("href") ?? "");
     expect(href).toContain("https://wa.me/237690000001?text=");
     expect(href).toContain("Bonjour Atangana Rose,");
-    expect(href).toContain("a expiré");
-    expect(href).toContain("Évasion, 10 500 FCFA");
   });
 
   it("signale l'absence d'échéance, ou le mode hors ligne sans copie", async () => {
@@ -168,6 +169,5 @@ describe("CanalSab", () => {
     expect(etatEcheance({ daysLeft: 8 })).toBe("a-jour");
     expect(filtrerAbonnes([], "x")).toEqual([]);
     expect(dateCourte("2026-12-01", "fr")).toContain("01");
-    expect(lienRappel({ phone: "+237 6 90 00" }, "a b")).toBe("https://wa.me/23769000?text=a%20b");
   });
 });

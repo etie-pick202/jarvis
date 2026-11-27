@@ -6,15 +6,18 @@ import { Etat } from "../ui/Etat.js";
 import { usePagination, VoirPlus } from "../ui/listes.js";
 import { Segmented } from "../ui/Segmented.js";
 import { Table } from "../ui/Table.js";
-import { formatFcfa } from "../vente/regles.js";
 import { EtatChip } from "./EtatChip.js";
-import { dateCourte, lienRappel } from "./regles.js";
 
 type Fenetre = "7" | "15" | "30";
 
-function useEcheances(jours: Fenetre) {
-  const charger = useCallback((signal: AbortSignal) => api.echeancesCanal(Number(jours), signal), [jours]);
-  return useCached(`canal-echeances-${jours}`, charger, []);
+/** Les relances viennent du serveur, message et lien WhatsApp compris (indicatif ajouté). */
+function useEcheances(jours: Fenetre, rappels: boolean, langue: "fr" | "en") {
+  const charger = useCallback(
+    (signal: AbortSignal): Promise<(CanalSubscriber & { whatsappUrl?: string })[]> =>
+      rappels ? api.relancesCanal(Number(jours), langue, signal) : api.echeancesCanal(Number(jours), signal),
+    [jours, rappels, langue],
+  );
+  return useCached(rappels ? `canal-relances-${langue}-${jours}` : `canal-echeances-${jours}`, charger, []);
 }
 
 /**
@@ -24,7 +27,8 @@ function useEcheances(jours: Fenetre) {
 export function Echeances({ rappels = false }: { rappels?: boolean }) {
   const [jours, setJours] = useState<Fenetre>("7");
   // La clé repart d'un état neuf à chaque fenêtre (sinon on verrait un instant les données de la précédente).
-  return <Liste key={jours} jours={jours} setJours={setJours} rappels={rappels} />;
+  const { lang } = useI18n();
+  return <Liste key={`${jours}-${rappels}-${lang}`} jours={jours} setJours={setJours} rappels={rappels} />;
 }
 
 function Liste({
@@ -37,20 +41,10 @@ function Liste({
   rappels: boolean;
 }>) {
   const { t, lang } = useI18n();
-  const lecture = useEcheances(jours);
+  const lecture = useEcheances(jours, rappels, lang);
   const { data } = lecture;
   const { visibles, restants, plus } = usePagination(data);
   const titre = rappels ? t("rub.canal.rappels") : t("rub.canal.echeances");
-
-  const message = (a: CanalSubscriber) =>
-    [
-      t("canal.rappel.bonjour"),
-      `${a.name},`,
-      a.daysLeft !== null && a.daysLeft < 0 ? t("canal.rappel.expire") : t("canal.rappel.expirera"),
-      `(${a.formulaName}, ${formatFcfa(a.formulaPrice)})`,
-      a.expiresOn ? `: ${dateCourte(a.expiresOn, lang)}.` : ".",
-      t("canal.rappel.boutique"),
-    ].join(" ");
 
   return (
     <section className="carte page">
@@ -86,7 +80,7 @@ function Liste({
                 {rappels ? (
                   <a
                     className="btn btn--contour"
-                    href={lienRappel(a, message(a))}
+                    href={a.whatsappUrl}
                     target="_blank"
                     rel="noreferrer"
                     aria-label={`${t("vente.whatsapp")} ${a.name}`}
