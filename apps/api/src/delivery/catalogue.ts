@@ -36,7 +36,7 @@ export async function publicCatalogue(deps: Deps): Promise<PublicCatalogue> {
       });
     }
   }
-  const { deliveryFeeCeiling: _ceiling, ...shop } = shopSettings;
+  const { deliveryFeeCeiling: _ceiling, eveningCountTime: _evening, ...shop } = shopSettings;
   return {
     gas,
     articles: await Promise.all(

@@ -26,6 +26,9 @@ export const stockRoutes = new Hono<AppEnv>()
   .get("/stock/alerts", requirePermission("stock.write"), async (c) =>
     c.json(await svc.stockAlerts(c.get("deps"))),
   )
+  .get("/stock/thresholds", requirePermission("stock.read"), async (c) =>
+    c.json(await svc.listThresholds(c.get("deps"))),
+  )
   .put("/stock/thresholds", requirePermission("inventory.validate"), async (c) =>
     c.json(await svc.setThreshold(c.get("deps"), c.get("user").id, await parseJson(c, setThresholdInput))),
   )
