@@ -11,6 +11,7 @@ import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
 import { usePagination, VoirPlus } from "../ui/listes.js";
 import { Table } from "../ui/Table.js";
+import { useGarde } from "../ui/useEnvoi.js";
 import { compresserPiece } from "./piece.js";
 
 interface Ligne {
@@ -24,6 +25,7 @@ const nombre = (v: string) => (v.trim() === "" ? 0 : Number(v));
 
 /** Réception fournisseur à sa date réelle ; la pièce justificative est obligatoire. */
 export function Receptions() {
+  const garde = useGarde();
   const { t, lang } = useI18n();
   const lectureFournisseurs = useCached("fournisseurs", api.fournisseurs, []);
   const fournisseurs = lectureFournisseurs.data;
@@ -98,7 +100,7 @@ export function Receptions() {
 
   return (
     <div className="page">
-      <form className="carte" onSubmit={enregistrer}>
+      <form className="carte" onSubmit={garde(enregistrer)}>
         <h1>{t("gaz.reception.titre")}</h1>
         <Etat {...lectureFournisseurs}>
           <div className="champ">

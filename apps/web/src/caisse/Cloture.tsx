@@ -8,13 +8,15 @@ import { Chip } from "../ui/Chip.js";
 import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
 import { Table } from "../ui/Table.js";
+import { useGarde } from "../ui/useEnvoi.js";
 import { formatFcfa } from "../vente/regles.js";
 import { useCaisses } from "./donnees.js";
 
-const lire = (v: string): number | null => (/^\d+$/u.test(v.trim()) ? Number(v) : null);
+const lire = (v: string): number | null => (/^\d{1,9}$/u.test(v.trim()) ? Number(v) : null);
 
 /** Clôture du jour : comptage physique par caisse, écart affiché, justification demandée au-delà du seuil réglé par le PDG. */
 export function Cloture() {
+  const garde = useGarde();
   const { t } = useI18n();
   const { actives, lecture } = useCaisses();
   const { data: seuil } = useCached("seuil-cloture", api.seuilCloture, 0);
@@ -53,7 +55,7 @@ export function Cloture() {
   }
 
   return (
-    <form className="carte page" onSubmit={cloturer}>
+    <form className="carte page" onSubmit={garde(cloturer)}>
       <h1>{t("caisse.cloture.titre")}</h1>
       <p>
         {seuil === 0 ? t("caisse.cloture.aide") : `${t("caisse.cloture.aide.seuil")} ${formatFcfa(seuil)}.`}

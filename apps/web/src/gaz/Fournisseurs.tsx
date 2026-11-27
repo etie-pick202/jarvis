@@ -7,10 +7,12 @@ import { Button } from "../ui/Button.js";
 import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
 import { Table } from "../ui/Table.js";
+import { useGarde } from "../ui/useEnvoi.js";
 import { MarqueGaz } from "../visuels/MarqueGaz.js";
 
 /** Fiches fournisseurs : nom, téléphone, marques fournies. Une réception est toujours liée à un fournisseur. */
 export function Fournisseurs() {
+  const garde = useGarde();
   const { t } = useI18n();
   const lecture = useCached("fournisseurs", api.fournisseurs, []);
   const { data, modifier } = lecture;
@@ -68,7 +70,7 @@ export function Fournisseurs() {
           </Table>
         </Etat>
       </section>
-      <form className="carte" onSubmit={ajouter}>
+      <form className="carte" onSubmit={garde(ajouter)}>
         <h2>{t("gaz.fournisseur.nouveau")}</h2>
         <Field label={t("gaz.nom")} value={nom} onChange={(e) => setNom(e.target.value)} />
         <Field
