@@ -8,6 +8,7 @@ import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
+import { Suite } from "../ui/Suite.js";
 import { Table } from "../ui/Table.js";
 import { useGarde } from "../ui/useEnvoi.js";
 import { MarqueGaz } from "../visuels/MarqueGaz.js";
@@ -87,7 +88,13 @@ export function Comptage({ kind }: { kind: "weekly" | "evening" }) {
     <form className="carte" onSubmit={garde(envoyer)}>
       {kind === "weekly" ? <h1>{titre}</h1> : <h2>{titre}</h2>}
       <p>{kind === "weekly" ? t("gaz.inventaire.aide") : t("gaz.soir.aide")}</p>
-      <Etat {...lecture} vide={stock.length === 0} messageVide={t("gaz.stock.vide")}>
+      <Etat
+        {...lecture}
+        vide={stock.length === 0}
+        messageVide={t("gaz.stock.vide")}
+        texteVide={t("vide.stock")}
+        actionVide={<Suite vers="/config/marques" libelle={t("vide.vers.marques")} />}
+      >
         <Table
           caption={titre}
           colonnes={[t("gaz.marque"), t("gaz.pleines"), t("gaz.vides"), t("gaz.ecart.stock")]}

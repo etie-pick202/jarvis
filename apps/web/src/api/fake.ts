@@ -692,6 +692,54 @@ function json(body: unknown, status = 200): Response {
 }
 const erreur = (status: number, code: string, message: string) => json({ error: { code, message } }, status);
 
+/** Réponses d'une base qui vient d'être initialisée ; `undefined` : la réponse habituelle convient. */
+function baseNeuve(route: string): unknown {
+  const registres = REGISTRES.map((r) => ({ ...r, opening: 0, balance: 0 }));
+  const listes = [
+    "/catalogue/brands",
+    "/catalogue/formats",
+    "/catalogue/articles",
+    "/catalogue/prices/current",
+    "/stock",
+    "/stock/alerts",
+    "/sales",
+    "/orders",
+    "/orders/drivers",
+    "/deliveries",
+    "/suppliers",
+    "/receptions",
+    "/inventory",
+    "/canal/subscribers",
+    "/canal/reminders",
+    "/canal/due",
+    "/delivery/neighbourhoods",
+    "/control/audit",
+    "/control/notifications",
+  ];
+  if (listes.includes(route)) return [];
+  if (route === "/orders/summary") return { pending: 0, toDeliver: 0 };
+  if (route === "/auth/users") return comptes().filter((c) => c.roles.includes("pdg"));
+  if (route === "/cash/registers") return registres;
+  if (route === "/reports/dashboard") {
+    return {
+      ...tableauDeBord(),
+      sales: { count: 0, quantity: 0, total: 0, margin: 0, marginPercent: null },
+      registers: registres.map(({ id, label, active, opening, balance }) => ({
+        id,
+        label,
+        active,
+        opening,
+        balance,
+      })),
+      stock: { full: 0, empty: 0, alerts: [] },
+      unreadNotifications: 0,
+      canalDue: 0,
+    };
+  }
+  if (route === "/shop/catalogue") return { ...vitrine(), gas: [], articles: [], neighbourhoods: [] };
+  return undefined;
+}
+
 /** Répond comme le backend. `path` est relatif à /api/v1 (avec sa chaîne de requête). */
 export async function fakeApi(path: string, init?: RequestInit): Promise<Response> {
   const url = new URL(path, "http://fake");
@@ -699,7 +747,9 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   const ecriture = Boolean(init?.method && init.method !== "GET");
 
   // Vitrine publique : aucune session requise.
-  if (route === "/shop/catalogue") return json(vitrine());
+  if (route === "/shop/catalogue") {
+    return json(localStorage.getItem("jarvis.fake-vide") === "1" ? baseNeuve(route) : vitrine());
+  }
   if (route.startsWith("/shop/orders")) return commandePublique(route, init);
 
   if (route === "/auth/login") {
@@ -762,8 +812,14 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   }
 
   if (route === "/delivery/settings") return json(reglagesBoutique());
-  if (route === "/delivery/neighbourhoods") {
+  if (route === "/delivery/neighbourhoods" && localStorage.getItem("jarvis.fake-vide") !== "1") {
     return json(vitrine().neighbourhoods.map((q) => ({ ...q, active: true })));
+  }
+
+  // Base neuve, à la demande : un seul compte, six caisses à zéro, aucune donnée saisie.
+  if (localStorage.getItem("jarvis.fake-vide") === "1") {
+    const neuf = baseNeuve(route);
+    if (neuf !== undefined) return json(neuf);
   }
 
   switch (route) {

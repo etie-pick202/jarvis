@@ -53,7 +53,7 @@ export function Clients() {
       )}
       {resultats?.length === 0 && <output className="bloc">{t("clients.aucun")}</output>}
       {resultats && resultats.length > 0 && (
-        <Table caption={t("rub.vente.clients")} colonnes={[t("gaz.client"), t("gaz.telephone"), ""]}>
+        <Table cartes caption={t("rub.vente.clients")} colonnes={[t("gaz.client"), t("gaz.telephone"), ""]}>
           {resultats.map((c) => (
             <tr key={c.id}>
               <th scope="row">{c.nom}</th>

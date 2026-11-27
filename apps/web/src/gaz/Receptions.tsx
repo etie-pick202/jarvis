@@ -10,6 +10,7 @@ import { Chip } from "../ui/Chip.js";
 import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
 import { usePagination, VoirPlus } from "../ui/listes.js";
+import { Suite } from "../ui/Suite.js";
 import { Table } from "../ui/Table.js";
 import { useGarde } from "../ui/useEnvoi.js";
 import { compresserPiece } from "./piece.js";
@@ -102,7 +103,19 @@ export function Receptions() {
     <div className="page">
       <form className="carte" onSubmit={garde(enregistrer)}>
         <h1>{t("gaz.reception.titre")}</h1>
-        <Etat {...lectureFournisseurs}>
+        <Etat
+          {...lectureFournisseurs}
+          vide={fournisseurs.length === 0}
+          messageVide={t("gaz.fournisseurs.vide")}
+          texteVide={t("vide.reception")}
+          actionVide={
+            <Suite
+              vers="/gaz/fournisseurs"
+              libelle={t("vide.vers.fournisseurs")}
+              profils={["pdg", "gerant"]}
+            />
+          }
+        >
           <div className="champ">
             <label className="champ__label" htmlFor={idFournisseur}>
               {t("gaz.reception.fournisseur")}

@@ -22,6 +22,7 @@ test("connexion, navigation par volets et changement de langue", async ({ page, 
     await expect(page.getByRole("link", { name: "Alertes" })).toBeVisible();
   }
 
+  await page.getByRole("button", { name: "Menu" }).click();
   await page.getByText("EN", { exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 });
