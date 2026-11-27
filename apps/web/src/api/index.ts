@@ -341,6 +341,13 @@ export const api = {
     get(`/canal/payments?date=${jour}`, contrat.canalPayments, signal),
   /** Articles hors gaz, actifs ou non. */
   articlesLibres: (signal?: AbortSignal) => get("/catalogue/articles", LISTES.articles, signal),
+  /** Orange Money et MoMo : float par opérateur, commissions et opérations du jour. */
+  floats: (signal?: AbortSignal): Promise<contrat.FloatState[]> =>
+    get("/money/float", contrat.floatStates, signal),
+  commissions: (signal?: AbortSignal): Promise<contrat.CommissionSettings> =>
+    get("/money/commissions", contrat.commissionSettings, signal),
+  operationsMoney: (jour: string, signal?: AbortSignal): Promise<contrat.MoneyOperation[]> =>
+    get(`/money/operations?date=${jour}`, contrat.moneyOperations, signal),
   echeancesCanal: (jours: number, signal?: AbortSignal): Promise<contrat.CanalSubscriber[]> =>
     get(`/canal/due?within=${jours}`, contrat.canalSubscribers, signal),
 
