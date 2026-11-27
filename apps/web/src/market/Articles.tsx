@@ -77,7 +77,9 @@ function Fiche({
           {t("market.montant.invalide")}
         </p>
       ) : null}
-      {vente !== null && achat !== null && vente < achat && <p role="status">{t("market.perte")}</p>}
+      {vente !== null && achat !== null && vente < achat && (
+        <output className="bloc">{t("market.perte")}</output>
+      )}
       {/* Le suivi du stock se choisit à la création : le serveur ne permet pas de le changer ensuite. */}
       {!article && (
         <label className="vente__bascule">
@@ -95,7 +97,7 @@ function Fiche({
           </Button>
         )}
       </div>
-      {ok && <p role="status">{t("market.ajoute")}</p>}
+      {ok && <output className="bloc">{t("market.ajoute")}</output>}
     </form>
   );
 }
