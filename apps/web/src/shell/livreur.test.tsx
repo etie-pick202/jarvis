@@ -115,4 +115,37 @@ describe("mode livreur", () => {
     ui();
     expect(await screen.findByText("Aucune livraison aujourd'hui.")).toBeTruthy();
   });
+
+  it("note la marque du vide rapporté quand elle diffère de la commande, même hors ligne", async () => {
+    ui();
+    await screen.findByRole("article", { name: /CMD0102/u });
+    const c = carte(/CMD0102/u);
+    await userEvent.click(bouton(c, "Livré"));
+    const choix = (await c.findByLabelText(/^Marque du vide rapporté/u)) as HTMLSelectElement;
+    const attendue = choix.value;
+    const autre = [...choix.options].find((o) => o.value !== attendue)?.value ?? "";
+    await userEvent.selectOptions(choix, autre);
+    await userEvent.click(c.getByRole("checkbox", { name: "J'ai encaissé le montant" }));
+    await userEvent.click(c.getByRole("checkbox", { name: "Bouteilles vides récupérées" }));
+    await userEvent.type(c.getByLabelText(/^Code donné/u), "4321");
+    await userEvent.click(bouton(c, "Confirmer la remise"));
+    await waitFor(async () => expect(await operations()).toHaveLength(1));
+    expect((await operations())[0]?.body).toMatchObject({
+      returnedEmpties: [{ line: 0, returnedBrandId: autre }],
+    });
+  });
+
+  it("sans liste des marques, la remise reste possible", async () => {
+    vi.stubGlobal("fetch", async (url: string) =>
+      url.includes("/catalogue/brands")
+        ? new Response(JSON.stringify({ error: { code: "forbidden", message: "Refus" } }), { status: 403 })
+        : fakeApi(url.replace("/api/v1", ""), undefined),
+    );
+    ui();
+    await screen.findByRole("article", { name: /CMD0102/u });
+    const c = carte(/CMD0102/u);
+    await userEvent.click(bouton(c, "Livré"));
+    expect(c.queryByLabelText(/^Marque du vide/u)).toBeNull();
+    expect(c.getByRole("checkbox", { name: "Bouteilles vides récupérées" })).toBeTruthy();
+  });
 });

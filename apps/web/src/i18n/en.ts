@@ -574,6 +574,7 @@ export const en: Record<MessageKey, string> = {
   "tarifs.prix.enregistrer": "Save the price",
   "tarifs.prix.ok": "Price saved.",
   "tarifs.aucun.prix": "No price set.",
+  "mode.vide.marque": "Brand of the returned empty",
   "page.bientot": "This screen is coming soon.",
   "page.introuvable": "Page not found",
   "page.retour": "Back to home",

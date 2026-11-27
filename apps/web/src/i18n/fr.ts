@@ -573,6 +573,7 @@ export const fr = {
   "tarifs.prix.enregistrer": "Enregistrer le prix",
   "tarifs.prix.ok": "Prix enregistré.",
   "tarifs.aucun.prix": "Aucun prix saisi.",
+  "mode.vide.marque": "Marque du vide rapporté",
   "page.bientot": "Cet écran arrive bientôt.",
   "page.introuvable": "Page introuvable",
   "page.retour": "Retour à l'accueil",
