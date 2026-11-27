@@ -179,6 +179,10 @@ export const api = {
       parse: lire(contrat.trackedOrder),
     }),
 
+  /** Commande reçue au téléphone, saisie par la boutique. */
+  commandeTelephone: (body: contrat.CreateOrderInput, ref: string): Promise<contrat.PlacedOrder> =>
+    request("/orders", { method: "POST", body, idempotencyKey: ref, parse: lire(contrat.placedOrder) }),
+
   /** Recherche de client dès les premières lettres (le serveur normalise accents et casse). */
   clients: async (q: string, signal?: AbortSignal): Promise<Client[]> =>
     (await get(`/customers?q=${encodeURIComponent(q)}`, contrat.customerRows, signal)).map((c) => ({

@@ -14,6 +14,7 @@ import { Segmented } from "../ui/Segmented.js";
 import { useEnvoi } from "../ui/useEnvoi.js";
 import { formatFcfa } from "../vente/regles.js";
 import { type Action, actionsPossibles, FILTRES, type Filtre, refus } from "./regles.js";
+import { CommandeTelephone } from "./Telephone.js";
 
 const LIBELLES: Record<PaymentMethod, "paiement.especes" | "paiement.om" | "paiement.momo"> = {
   cash: "paiement.especes",
@@ -217,6 +218,7 @@ export function Commandes({ historique = false }: Readonly<{ historique?: boolea
   return (
     <div className="page">
       <h1>{titre}</h1>
+      {!historique && gere && <CommandeTelephone onRecue={lecture.recharger} />}
       {!historique && (
         <Segmented<Filtre>
           legend={t("commandes.filtre")}

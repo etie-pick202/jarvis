@@ -671,6 +671,7 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   }
   if (route === "/receipts" && ecriture)
     return json({ id: uuid(1201), contentType: "application/pdf", size: 1 }, 201);
+  if (ecriture && route === "/orders") return commandePublique("/shop/orders", init);
   if (ecriture && route.startsWith("/orders/")) return agirSurCommande(route, init);
   if (ecriture && route.startsWith("/auth/users")) return ecrireCompte(route, init);
   if (ecriture) return json({ ok: true }, 201);
