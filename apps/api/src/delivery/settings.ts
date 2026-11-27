@@ -23,6 +23,9 @@ const KEYS = {
   minimumOrder: "shop_minimum_order",
   deliveryFeePerBottle: "delivery_fee_default",
   deliveryFeeCeiling: "delivery_fee_ceiling",
+  omNumber: "shop_om_number",
+  momoNumber: "shop_momo_number",
+  eveningCountTime: "evening_count_time",
 } as const satisfies Record<keyof ShopSettings, string>;
 
 const DUPLICATE = "Ce quartier existe déjà";
@@ -40,6 +43,9 @@ export async function readSettings(db: Deps["db"]): Promise<ShopSettings> {
     orderHours: value("orderHours") ?? "",
     phone: value("phone") ?? "",
     address: value("address") ?? "",
+    omNumber: value("omNumber") ?? "",
+    momoNumber: value("momoNumber") ?? "",
+    eveningCountTime: value("eveningCountTime") ?? "",
     minimumOrder: amount("minimumOrder", 0),
     deliveryFeePerBottle: amount("deliveryFeePerBottle", DEFAULT_DELIVERY_FEE_PER_BOTTLE),
     deliveryFeeCeiling: ceiling === undefined ? null : Number(ceiling),
