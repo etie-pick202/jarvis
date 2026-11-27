@@ -28,7 +28,7 @@ describe("tournée du livreur et remise (API)", () => {
       await json("/shop/orders", {
         clientRef: ref(),
         customerName: "Awa",
-        phone: `6900000${n}`,
+        phone: `69${String(n).padStart(7, "0")}`,
         mode: "delivery",
         neighbourhoodName: "Akwa",
         paymentMethod: "cash",

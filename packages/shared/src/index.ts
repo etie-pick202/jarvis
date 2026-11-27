@@ -7,6 +7,7 @@ export * from "./errors.js";
 export * from "./money.js";
 export * from "./money-ops.js";
 export * from "./orders.js";
+export * from "./phone.js";
 export * from "./pricing.js";
 export * from "./responses.js";
 export * from "./roles.js";

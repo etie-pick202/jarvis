@@ -4,9 +4,11 @@ import { and, eq, isNull } from "drizzle-orm";
 import { auditAndNotifyPdg } from "../audit/service.js";
 import { formatNumber, nextSequence } from "../cash/ledger.js";
 import { appendCheckedEntry } from "../cash/service.js";
+import { moveArticleStock } from "../catalogue/article-stock.js";
 import { AppError, type Deps } from "../http.js";
 import { appendStockMove, lockStock, stockOf } from "../stock/ledger.js";
 import { toSale } from "./service.js";
+import { withSettlements } from "./settlements.js";
 
 const { sales, saleLines, stockMoves, cashEntries, articles } = schema;
 
@@ -81,7 +83,11 @@ export async function cancelSale(
       })
       .returning();
     if (!reversal) throw new Error("Annulation non enregistrée");
-    const lines = await tx.select().from(saleLines).where(eq(saleLines.saleId, saleId));
+    // L'annulation reprend aussi un écart soldé après la vente.
+    const lines = await withSettlements(
+      tx,
+      await tx.select().from(saleLines).where(eq(saleLines.saleId, saleId)),
+    );
     const copies = await tx
       .insert(saleLines)
       .values(lines.map(({ id: _id, ...l }) => ({ ...l, saleId: reversal.id })))
@@ -105,10 +111,14 @@ export async function cancelSale(
       if (l.kind === "article" && l.articleId) {
         const [art] = await tx.select().from(articles).where(eq(articles.id, l.articleId));
         if (art?.trackStock) {
-          await tx
-            .update(articles)
-            .set({ stockQty: art.stockQty + l.quantity })
-            .where(eq(articles.id, art.id));
+          await moveArticleStock(tx, {
+            articleId: art.id,
+            kind: "sale",
+            delta: l.quantity,
+            label: `Annulation vente ${original.number}`,
+            authorId: actor.id,
+            createdAt: now,
+          });
         }
       }
     }
