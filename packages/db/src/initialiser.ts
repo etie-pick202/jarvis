@@ -51,7 +51,7 @@ if (process.argv[1]?.replaceAll("\\", "/").endsWith("initialiser.ts")) {
   });
   console.log(
     pdgCree
-      ? `Base initialisée : six caisses et compte PDG « ${username} ».`
+      ? "Base initialisée : six caisses et compte PDG."
       : "Base déjà initialisée : caisses vérifiées, aucun compte ajouté.",
   );
 }
