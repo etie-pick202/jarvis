@@ -253,6 +253,7 @@ function Journee({ jour, setJour }: Readonly<{ jour: string; setJour: (j: string
             <strong>{`${t("canal.total")} : ${formatFcfa(totalEncaisse(lecture.data))}`}</strong>
           </p>
           <Table
+            cartes
             caption={t("canal.journal")}
             colonnes={[t("gaz.heure"), t("canal.abonne"), t("canal.formule"), t("canal.montant"), ""]}
           >

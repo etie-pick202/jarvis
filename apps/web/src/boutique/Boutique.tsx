@@ -1,10 +1,11 @@
 import type { PublicCatalogue } from "@jarvis/shared";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { api } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import { useI18n } from "../i18n/index.js";
 import { LanguageSwitch } from "../i18n/LanguageSwitch.js";
+import { allerA } from "../ui/amener.js";
 import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Etat } from "../ui/Etat.js";
@@ -106,6 +107,7 @@ export function Boutique() {
   const idQuartier = useId();
   const naviguer = useNavigate();
   const suivi = dernierSuivi();
+  const blocPanier = useRef<HTMLElement>(null);
   useEffect(() => garderPanier(panier), [panier]);
 
   const liste = produits(lecture.data);
@@ -124,7 +126,7 @@ export function Boutique() {
           {t("boutique.equipe")}
         </Link>
       </header>
-      <main className="page">
+      <main className="page boutique__page">
         <h1>{t("boutique.titre")}</h1>
         {suivi && <Link to={`/boutique/suivi/${suivi}`}>{t("commande.derniere")}</Link>}
         <Etat
@@ -154,7 +156,7 @@ export function Boutique() {
             panier={panier}
             onChanger={modifier}
           />
-          <section className="carte" aria-labelledby="titre-panier">
+          <section ref={blocPanier} className="carte boutique__panier" aria-labelledby="titre-panier">
             <h2 id="titre-panier">{t("boutique.panier")}</h2>
             {total.perdus.length > 0 && (
               <div className="bandeau" role="alert">
@@ -239,6 +241,11 @@ export function Boutique() {
               </>
             )}
           </section>
+          {total.lignes.length > 0 && (
+            <Button block className="boutique__barre" onClick={() => allerA(blocPanier.current, false)}>
+              {`${t("boutique.voir.panier")} · ${formatFcfa(total.total)}`}
+            </Button>
+          )}
         </Etat>
       </main>
     </div>

@@ -700,6 +700,7 @@ export const en: Record<MessageKey, string> = {
   "bord.perte": "At a loss",
   "fichier.choisir": "Choose a file",
   "fichier.aucun": "No file chosen",
+  "boutique.voir.panier": "View basket",
   "page.bientot": "This screen is coming soon.",
   "page.introuvable": "Page not found",
   "page.retour": "Back to home",

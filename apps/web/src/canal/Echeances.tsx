@@ -61,6 +61,7 @@ function Liste({
       />
       <Etat {...lecture} vide={data.length === 0} messageVide={t("canal.aucune.echeance")}>
         <Table
+          cartes
           caption={titre}
           colonnes={[
             t("canal.nom"),

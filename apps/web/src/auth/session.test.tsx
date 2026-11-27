@@ -63,5 +63,21 @@ describe("session", () => {
       await vi.advanceTimersByTimeAsync(10);
     });
     expect(screen.getByText("déconnecté")).toBeTruthy();
+    expect(sessionStorage.getItem("jarvis.expiree")).toBe("1");
+  });
+
+  it("n'annonce pas d'expiration à qui n'était pas connecté", async () => {
+    sessionStorage.clear();
+    setFakeUser(null);
+    render(
+      <SessionProvider>
+        <Etat />
+      </SessionProvider>,
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
+    });
+    expect(screen.getByText("déconnecté")).toBeTruthy();
+    expect(sessionStorage.getItem("jarvis.expiree")).toBeNull();
   });
 });
