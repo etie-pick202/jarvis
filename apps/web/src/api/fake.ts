@@ -669,6 +669,17 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       return json([FORMAT]);
     case `/catalogue/prices/${FORMAT.id}/current`:
       return json(PRIX_COURANT);
+    case "/catalogue/prices/current":
+      return json(
+        MARQUES.map((m) => ({
+          formatId: FORMAT.id,
+          brandId: m.id,
+          amount: PRIX_COURANT.amount,
+          transportContribution: PRIX_COURANT.transportContribution,
+          purchaseCost: PRIX_COURANT.purchaseCost,
+          effectiveFrom: `${jour}T07:00:00.000Z`,
+        })),
+      );
     case "/catalogue/articles":
       return json(ARTICLES);
     case "/stock":

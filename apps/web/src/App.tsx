@@ -28,6 +28,8 @@ const Commandes = lazy(() => import("./commandes/Commandes.js").then((m) => ({ d
 const HistoriqueCommandes = lazy(() =>
   import("./commandes/Commandes.js").then((m) => ({ default: m.HistoriqueCommandes })),
 );
+const Marques = lazy(() => import("./config/Marques.js").then((m) => ({ default: m.Marques })));
+const Prix = lazy(() => import("./config/Prix.js").then((m) => ({ default: m.Prix })));
 const Echeances = lazy(() => import("./canal/Echeances.js").then((m) => ({ default: m.Echeances })));
 const Cloture = lazy(() => import("./caisse/Cloture.js").then((m) => ({ default: m.Cloture })));
 const Depenses = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Depenses })));
@@ -350,6 +352,22 @@ export function App() {
               element={
                 <Garde volet="livre">
                   <HistoriqueCommandes />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/marques"
+              element={
+                <Garde volet="config">
+                  <Marques />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/prix"
+              element={
+                <Garde volet="config">
+                  <Prix />
                 </Garde>
               }
             />
