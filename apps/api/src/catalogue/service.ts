@@ -162,6 +162,33 @@ export async function currentPrice(deps: Deps, formatId: string, brandId: string
   return price;
 }
 
+/** Prix en vigueur de chaque marque et format actifs, en une seule lecture. */
+export async function currentPrices(deps: Deps) {
+  const [activeBrands, activeFormats, rows] = await Promise.all([
+    deps.db.select().from(brands).where(eq(brands.active, true)).orderBy(brands.name),
+    deps.db.select().from(formats).where(eq(formats.active, true)).orderBy(formats.weightGrams),
+    deps.db.select().from(gasPrices),
+  ]);
+  const now = deps.now();
+  return activeFormats.flatMap((format) =>
+    activeBrands.flatMap((brand) => {
+      const price = resolveGasPrice(rows, format.id, brand.id, now);
+      if (!price) return [];
+      const { amount, transportContribution, purchaseCost, effectiveFrom } = price;
+      return [
+        {
+          formatId: format.id,
+          brandId: brand.id,
+          amount,
+          transportContribution,
+          purchaseCost,
+          effectiveFrom,
+        },
+      ];
+    }),
+  );
+}
+
 export const gasPriceHistory = (deps: Deps, formatId: string) =>
   deps.db
     .select()

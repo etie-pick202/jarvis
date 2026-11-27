@@ -561,3 +561,17 @@ export const orderLines = pgTable(
   },
   (t) => [index("order_lines_order").on(t.orderId)],
 );
+
+/** Écarts d'emballage soldés après coup (ajout seul) : les lignes de vente ne se modifient pas. */
+export const packagingSettlements = pgTable("packaging_settlements", {
+  id: id(),
+  saleLineId: uuid("sale_line_id")
+    .notNull()
+    .unique()
+    .references(() => saleLines.id),
+  packagingGap: integer("packaging_gap").notNull(),
+  authorId: uuid("author_id")
+    .notNull()
+    .references(() => users.id),
+  createdAt: createdAt(),
+});

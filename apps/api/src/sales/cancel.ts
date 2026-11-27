@@ -7,6 +7,7 @@ import { appendCheckedEntry } from "../cash/service.js";
 import { AppError, type Deps } from "../http.js";
 import { appendStockMove, lockStock, stockOf } from "../stock/ledger.js";
 import { toSale } from "./service.js";
+import { withSettlements } from "./settlements.js";
 
 const { sales, saleLines, stockMoves, cashEntries, articles } = schema;
 
@@ -81,7 +82,11 @@ export async function cancelSale(
       })
       .returning();
     if (!reversal) throw new Error("Annulation non enregistrée");
-    const lines = await tx.select().from(saleLines).where(eq(saleLines.saleId, saleId));
+    // L'annulation reprend aussi un écart soldé après la vente.
+    const lines = await withSettlements(
+      tx,
+      await tx.select().from(saleLines).where(eq(saleLines.saleId, saleId)),
+    );
     const copies = await tx
       .insert(saleLines)
       .values(lines.map(({ id: _id, ...l }) => ({ ...l, saleId: reversal.id })))
