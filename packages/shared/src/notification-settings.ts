@@ -22,3 +22,18 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   reports: ["pdg"],
   reportEmails: [],
 };
+
+/** Envoi des rapports d'un jour par e-mail, aux adresses réglées (jamais à une adresse libre). */
+export const emailReportsInput = z.object({
+  reports: z.array(z.enum(["sales", "cash", "stock", "x"])).min(1),
+  format: z.enum(["pdf", "csv", "xlsx"]).default("pdf"),
+  date: z.iso.date().optional(),
+});
+export type EmailReportsInput = z.infer<typeof emailReportsInput>;
+
+export const emailReportsStatus = z.object({
+  /** Faux tant que le serveur d'envoi n'est pas configuré. */
+  configured: z.boolean(),
+  recipients: z.array(z.string()),
+});
+export type EmailReportsStatus = z.infer<typeof emailReportsStatus>;

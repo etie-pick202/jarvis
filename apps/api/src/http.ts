@@ -4,6 +4,7 @@ import { type ApiError, type ErrorCode, errorBody } from "@jarvis/shared";
 import type { Context, MiddlewareHandler } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { z } from "zod";
+import type { Mailer } from "./notifications/mailer.js";
 
 /** Dépendances injectées : une vraie base en production, PGlite en mémoire dans les tests. */
 export interface Deps {
@@ -11,6 +12,8 @@ export interface Deps {
   now: () => Date;
   /** Durée d'inactivité avant déconnexion automatique, en minutes. */
   sessionIdleMinutes: number;
+  /** Absent : l'envoi par e-mail est inactif. */
+  mailer?: Mailer | undefined;
 }
 
 export type AppEnv = {
