@@ -840,6 +840,9 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
         totals: { full: 98, empty: 33, total: 131 },
       });
     default:
+      if (route.startsWith("/documents/")) {
+        return new Response("%PDF-1.4 exemple", { headers: { "Content-Type": "application/pdf" } });
+      }
       if (route.startsWith("/reports/export/")) {
         return new Response("﻿N° vente;Total\r\nTK1991;6800", {
           headers: { "Content-Type": "text/csv; charset=utf-8" },

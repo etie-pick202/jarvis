@@ -482,10 +482,10 @@ export const api = {
     };
   },
 
-  /** Export CSV produit par le serveur (s'ouvre dans Excel). */
-  exportCsv: async (nom: "sales" | "cash" | "stock"): Promise<Blob> => {
-    const r = await fetch(`${API_BASE}/reports/export/${nom}.csv`, { headers: enTetes() });
-    if (!r.ok) throw await erreurDe(r, `export ${nom}`);
+  /** Fichier produit par le serveur (CSV, Excel ou PDF), chemin relatif à l'API. */
+  fichier: async (chemin: string): Promise<Blob> => {
+    const r = await fetch(`${API_BASE}${chemin}`, { headers: enTetes() });
+    if (!r.ok) throw await erreurDe(r, chemin);
     return r.blob();
   },
 };
