@@ -1,7 +1,7 @@
 import * as contrat from "@jarvis/shared";
 import { z } from "zod";
 import type { Profil } from "../nav/volets.js";
-import { API_BASE, ApiError, enTetes, erreurDe, request } from "./client.js";
+import { API_BASE, ApiError, enTetes, erreurDe, newIdempotencyKey, request } from "./client.js";
 import type {
   Alerte,
   Article,
@@ -166,6 +166,19 @@ export const api = {
   /** Vitrine publique (sans compte) : produits, disponibilité, quartiers livrés et coordonnées. */
   vitrine: (signal?: AbortSignal): Promise<contrat.PublicCatalogue> =>
     get("/shop/catalogue", contrat.publicCatalogue, signal),
+
+  /** Commande sans compte : `ref` la rend rejouable sans doublon. */
+  commander: (body: contrat.CreateOrderInput, ref: string): Promise<contrat.PlacedOrder> =>
+    request("/shop/orders", { method: "POST", body, idempotencyKey: ref, parse: lire(contrat.placedOrder) }),
+  suivreCommande: (jeton: string, signal?: AbortSignal): Promise<contrat.TrackedOrder> =>
+    get(`/shop/orders/${encodeURIComponent(jeton)}`, contrat.trackedOrder, signal),
+  referencePaiement: (jeton: string, paymentReference: string): Promise<contrat.TrackedOrder> =>
+    request(`/shop/orders/${encodeURIComponent(jeton)}/payment-reference`, {
+      method: "PUT",
+      body: { paymentReference },
+      idempotencyKey: newIdempotencyKey(),
+      parse: lire(contrat.trackedOrder),
+    }),
 
   /** Recherche de client dès les premières lettres (le serveur normalise accents et casse). */
   clients: async (q: string, signal?: AbortSignal): Promise<Client[]> =>
