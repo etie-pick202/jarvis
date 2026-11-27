@@ -14,6 +14,8 @@ async function seConnecter(page: Page, identifiant: string, motDePasse = MOT_DE_
   await page.getByLabel("Identifiant").fill(identifiant);
   await page.getByLabel("Mot de passe").fill(motDePasse);
   await page.getByRole("button", { name: "Se connecter" }).click();
+  // La page de connexion a déjà un titre : attendre d'en être sortie (jeton reçu et gardé).
+  await expect(page).not.toHaveURL(/connexion/u, { timeout: 15_000 });
   await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
 }
 
