@@ -9,6 +9,7 @@ import { Chip } from "../ui/Chip.js";
 import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
 import { Table } from "../ui/Table.js";
+import { useGarde } from "../ui/useEnvoi.js";
 import { MarqueGaz } from "../visuels/MarqueGaz.js";
 
 interface Saisie {
@@ -26,6 +27,7 @@ const lireEntier = (v: string): number | null => (/^\d+$/u.test(v.trim()) ? Numb
  * une justification est obligatoire dès qu'un écart apparaît.
  */
 export function Comptage({ kind }: { kind: "weekly" | "evening" }) {
+  const garde = useGarde();
   const { t } = useI18n();
   const lecture = useCached("gaz-stock", api.gazStock, []);
   const stock = lecture.data;
@@ -82,7 +84,7 @@ export function Comptage({ kind }: { kind: "weekly" | "evening" }) {
   }
 
   return (
-    <form className="carte" onSubmit={envoyer}>
+    <form className="carte" onSubmit={garde(envoyer)}>
       {kind === "weekly" ? <h1>{titre}</h1> : <h2>{titre}</h2>}
       <p>{kind === "weekly" ? t("gaz.inventaire.aide") : t("gaz.soir.aide")}</p>
       <Etat {...lecture} vide={stock.length === 0} messageVide={t("gaz.stock.vide")}>

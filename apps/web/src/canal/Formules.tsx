@@ -7,6 +7,7 @@ import { ecrire } from "../offline/ecrire.js";
 import { Button } from "../ui/Button.js";
 import { Field } from "../ui/Field.js";
 import { Table } from "../ui/Table.js";
+import { useGarde } from "../ui/useEnvoi.js";
 import { formatFcfa } from "../vente/regles.js";
 
 /** Formules Canal+ : prix, durée couverte et commission éventuelle. Réservé au PDG et au gérant. */
@@ -17,6 +18,7 @@ export function Formules({
   formules: readonly CanalFormula[];
   modifier: (f: (l: CanalFormula[]) => CanalFormula[]) => void;
 }) {
+  const garde = useGarde();
   const { t } = useI18n();
   const [nom, setNom] = useState("");
   const [prix, setPrix] = useState("");
@@ -58,7 +60,7 @@ export function Formules({
   }
 
   return (
-    <form className="carte" onSubmit={ajouter} aria-label={t("canal.formules")}>
+    <form className="carte" onSubmit={garde(ajouter)} aria-label={t("canal.formules")}>
       <h2>{t("canal.formules")}</h2>
       <Table
         caption={t("canal.formules")}

@@ -8,7 +8,8 @@ const VIDE: Caisse[] = [];
 
 /** Montants en FCFA : des entiers, jamais de décimales. */
 export function lireMontant(saisie: string): number | null {
-  return /^\d+$/u.test(saisie.trim()) && Number(saisie) > 0 ? Number(saisie) : null;
+  const n = Number(saisie.trim());
+  return /^\d{1,9}$/u.test(saisie.trim()) && n > 0 ? n : null;
 }
 
 /** Effet sur les soldes des dépenses et transferts encore en attente d'envoi. */
