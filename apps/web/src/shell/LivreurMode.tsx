@@ -1,5 +1,6 @@
 import type { CompleteOrderInput, Delivery, OrderStatus, PaymentMethod } from "@jarvis/shared";
 import { type FormEvent, useState } from "react";
+import { ApiError } from "../api/client.js";
 import { api } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import { useI18n } from "../i18n/index.js";
@@ -35,7 +36,8 @@ function Remise({
   onAnnuler,
 }: Readonly<{
   livraison: Delivery;
-  onValider: (corps: CompleteOrderInput) => Promise<void>;
+  /** Renvoie le refus du serveur à afficher, ou null si la remise est acceptée ou mise en file. */
+  onValider: (corps: CompleteOrderInput) => Promise<string | null>;
   onAnnuler: () => void;
 }>) {
   const { t } = useI18n();
@@ -43,10 +45,16 @@ function Remise({
   const [moyen, setMoyen] = useState<PaymentMethod>(moyens[0] ?? "cash");
   const [encaisse, setEncaisse] = useState(false);
   const [vides, setVides] = useState(false);
+  const [code, setCode] = useState("");
+  const [refus, setRefus] = useState<string | null>(null);
+  const codeLu = /^\d{4}$/u.test(code.trim());
   const dejaPaye = moyen !== "cash";
   const aDuGaz = livraison.lines.some((l) => l.kind === "gas");
-  const pret = (dejaPaye || encaisse) && (!aDuGaz || vides);
-  const [valider, occupe] = useEnvoi(() => onValider({ paymentMethod: moyen }));
+  const pret = codeLu && (dejaPaye || encaisse) && (!aDuGaz || vides);
+  const [valider, occupe] = useEnvoi(async () => {
+    setRefus(null);
+    setRefus(await onValider({ paymentMethod: moyen, code: code.trim() }));
+  });
 
   function envoyer(event: FormEvent) {
     event.preventDefault();
@@ -80,6 +88,22 @@ function Remise({
           <input type="checkbox" checked={vides} onChange={(e) => setVides(e.target.checked)} />
           {t("mode.vides")}
         </label>
+      )}
+      <Field
+        label={t("mode.code")}
+        inputMode="numeric"
+        autoComplete="off"
+        maxLength={4}
+        value={code}
+        onChange={(e) => {
+          setCode(e.target.value);
+          setRefus(null);
+        }}
+      />
+      {refus && (
+        <p role="alert" className="connexion__erreur">
+          {refus}
+        </p>
       )}
       <div className="vente__actions">
         <Button type="submit" disabled={!pret || occupe}>
@@ -150,6 +174,24 @@ function Carte({
     setPanneau(null);
   }
 
+  /**
+   * Avec du réseau, la remise part tout de suite : un code faux se corrige devant le client. Sans réseau, elle
+   * attend dans la file (un code refusé restera signalé dans la synchronisation).
+   */
+  async function remettre(corps: CompleteOrderInput): Promise<string | null> {
+    const suivante: Delivery = { ...l, status: "delivered" };
+    try {
+      await api.remettre(l.id, corps);
+    } catch (e) {
+      if (e instanceof ApiError && e.status < 500) return e.message;
+      await agir("delivered", corps, suivante);
+      return null;
+    }
+    onChange(suivante);
+    setPanneau(null);
+    return null;
+  }
+
   const [partir, depart] = useEnvoi(() => agir("depart", undefined, { ...l, status: "out_for_delivery" }));
   const aPartir = l.status === "validated" || l.status === "problem";
   const enRoute = l.status === "out_for_delivery";
@@ -204,11 +246,7 @@ function Carte({
         </div>
       )}
       {panneau === "remise" && (
-        <Remise
-          livraison={l}
-          onValider={(corps) => agir("delivered", corps, { ...l, status: "delivered" })}
-          onAnnuler={() => setPanneau(null)}
-        />
+        <Remise livraison={l} onValider={remettre} onAnnuler={() => setPanneau(null)} />
       )}
       {panneau === "probleme" && (
         <Probleme

@@ -437,6 +437,8 @@ export const en: Record<MessageKey, string> = {
   "mode.probleme.note": "What happened?",
   "mode.signaler": "Report",
   "saisie.telephone": "Incomplete number: 9 digits, or the country code (+33…).",
+  "mode.code": "Code given by the customer (4 digits)",
+  "commande.code": "Code to give the driver:",
   "page.bientot": "This screen is coming soon.",
   "page.introuvable": "Page not found",
   "page.retour": "Back to home",

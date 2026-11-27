@@ -436,6 +436,8 @@ export const fr = {
   "mode.probleme.note": "Que s'est-il passé ?",
   "mode.signaler": "Signaler",
   "saisie.telephone": "Numéro incomplet : 9 chiffres, ou l'indicatif du pays (+33…).",
+  "mode.code": "Code donné par le client (4 chiffres)",
+  "commande.code": "Code à donner au livreur :",
   "page.bientot": "Cet écran arrive bientôt.",
   "page.introuvable": "Page introuvable",
   "page.retour": "Retour à l'accueil",

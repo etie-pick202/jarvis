@@ -375,6 +375,13 @@ export const api = {
     get(`/canal/due?within=${jours}`, contrat.canalSubscribers, signal),
 
   /** Livraisons du jour : le module de livraison n'a pas encore de contrat côté serveur (lot 3). */
+  remettre: (id: string, body: contrat.CompleteOrderInput) =>
+    request(`/deliveries/${id}/delivered`, {
+      method: "POST",
+      body,
+      idempotencyKey: newIdempotencyKey(),
+      parse: () => null,
+    }),
   /** Tournée du livreur connecté. */
   tournee: (signal?: AbortSignal): Promise<contrat.Delivery[]> =>
     get("/deliveries", contrat.deliveries, signal),

@@ -56,11 +56,14 @@ describe("mode livreur", () => {
     await userEvent.click(c.getByRole("checkbox", { name: "J'ai encaissé le montant" }));
     expect(confirmer().disabled).toBe(true);
     await userEvent.click(c.getByRole("checkbox", { name: "Bouteilles vides récupérées" }));
+    expect(confirmer().disabled).toBe(true);
+    await userEvent.type(c.getByLabelText(/^Code donné/u), "4321");
+    // Sans réseau : la remise attend dans la file avec le code.
     await userEvent.click(confirmer());
     await waitFor(async () => expect(await operations()).toHaveLength(2));
     const ops = await operations();
     expect(ops.map((o) => o.path.split("/").at(-1))).toEqual(["depart", "delivered"]);
-    expect(ops[1]?.body).toEqual({ paymentMethod: "cash" });
+    expect(ops[1]?.body).toEqual({ paymentMethod: "cash", code: "4321" });
     expect(c.getByText("Livré", { selector: ".chip, span" })).toBeTruthy();
   });
 
@@ -79,6 +82,32 @@ describe("mode livreur", () => {
     expect(await c.findByText("Client absent")).toBeTruthy();
     expect((await operations())[0]?.body).toEqual({ note: "Client absent" });
     expect(bouton(c, "Parti").disabled).toBe(false);
+  });
+
+  it("avec du réseau, un code faux s'affiche aussitôt et rien n'est mis en file", async () => {
+    let bon = false;
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+      if (init?.method !== "POST") return fakeApi(url.replace("/api/v1", ""), init);
+      return bon
+        ? new Response("{}")
+        : new Response(
+            JSON.stringify({ error: { code: "invalid_request", message: "Code de livraison incorrect" } }),
+            { status: 422 },
+          );
+    });
+    ui();
+    await screen.findByRole("article", { name: /CMD0102/u });
+    const c = carte(/CMD0102/u);
+    await userEvent.click(bouton(c, "Livré"));
+    await userEvent.click(c.getByRole("checkbox", { name: "J'ai encaissé le montant" }));
+    await userEvent.click(c.getByRole("checkbox", { name: "Bouteilles vides récupérées" }));
+    await userEvent.type(c.getByLabelText(/^Code donné/u), "0000");
+    await userEvent.click(bouton(c, "Confirmer la remise"));
+    expect((await c.findByRole("alert")).textContent).toBe("Code de livraison incorrect");
+    bon = true;
+    await userEvent.click(bouton(c, "Confirmer la remise"));
+    await waitFor(() => expect(c.queryByRole("button", { name: "Confirmer la remise" })).toBeNull());
+    expect(await operations()).toEqual([]);
   });
 
   it("sans livraison, le dit", async () => {

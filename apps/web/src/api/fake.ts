@@ -450,6 +450,7 @@ function commandePublique(route: string, init?: RequestInit): Response {
     }));
     const commande = {
       number: "CMD0001",
+      deliveryCode: "4321",
       status: "pending",
       mode: corpsRecu.mode ?? "delivery",
       paymentMethod: corpsRecu.paymentMethod ?? "cash",
