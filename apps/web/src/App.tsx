@@ -12,18 +12,21 @@ import { Plus } from "./shell/Plus.js";
 import { Shell } from "./shell/Shell.js";
 
 // Écrans chargés à la demande : le premier affichage ne télécharge que la coque et la connexion.
+const Utilisateurs = lazy(() =>
+  import("./config/Utilisateurs.js").then((m) => ({ default: m.Utilisateurs })),
+);
+const ConfigCaisses = lazy(() => import("./config/Caisses.js").then((m) => ({ default: m.ConfigCaisses })));
+const ConfigLangue = lazy(() => import("./config/Caisses.js").then((m) => ({ default: m.ConfigLangue })));
+const Articles = lazy(() => import("./market/Articles.js").then((m) => ({ default: m.Articles })));
+const StockArticles = lazy(() => import("./market/Articles.js").then((m) => ({ default: m.StockArticles })));
 const Abonnes = lazy(() => import("./canal/Abonnes.js").then((m) => ({ default: m.Abonnes })));
+const Boutique = lazy(() => import("./boutique/Boutique.js").then((m) => ({ default: m.Boutique })));
 const Encaissements = lazy(() =>
   import("./canal/Encaissements.js").then((m) => ({ default: m.Encaissements })),
 );
 const Operations = lazy(() => import("./money/Operations.js").then((m) => ({ default: m.Operations })));
 const Float = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Float })));
 const Commissions = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Commissions })));
-const Utilisateurs = lazy(() =>
-  import("./config/Utilisateurs.js").then((m) => ({ default: m.Utilisateurs })),
-);
-const ConfigCaisses = lazy(() => import("./config/Caisses.js").then((m) => ({ default: m.ConfigCaisses })));
-const ConfigLangue = lazy(() => import("./config/Caisses.js").then((m) => ({ default: m.ConfigLangue })));
 const Echeances = lazy(() => import("./canal/Echeances.js").then((m) => ({ default: m.Echeances })));
 const Cloture = lazy(() => import("./caisse/Cloture.js").then((m) => ({ default: m.Cloture })));
 const Depenses = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Depenses })));
@@ -69,6 +72,15 @@ export function App() {
     <ErrorBoundary>
       <Routes>
         <Route path="connexion" element={<LoginPage />} />
+        {/* Vitrine publique : sans compte. */}
+        <Route
+          path="boutique"
+          element={
+            <Suspense fallback={<Chargement />}>
+              <Boutique />
+            </Suspense>
+          }
+        />
         <Route element={<RequireAuth />}>
           <Route element={<Shell />}>
             <Route index element={<Accueil />} />
@@ -281,6 +293,22 @@ export function App() {
               element={
                 <Garde volet="money">
                   <Commissions />
+                </Garde>
+              }
+            />
+            <Route
+              path="market/articles"
+              element={
+                <Garde volet="market">
+                  <Articles />
+                </Garde>
+              }
+            />
+            <Route
+              path="market/stock"
+              element={
+                <Garde volet="market">
+                  <StockArticles />
                 </Garde>
               }
             />
