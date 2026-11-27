@@ -7,6 +7,7 @@ import { cashRoutes } from "./cash/routes.js";
 import { catalogueRoutes } from "./catalogue/routes.js";
 import { controlRoutes } from "./control/routes.js";
 import { customerRoutes } from "./customers/routes.js";
+import { driverRoutes } from "./delivery/driver-routes.js";
 import { orderRoutes, publicOrderRoutes } from "./delivery/order-routes.js";
 import { deliveryRoutes, shopRoutes } from "./delivery/routes.js";
 import { type AppEnv, type Deps, errorResponse, withDeps } from "./http.js";
@@ -45,6 +46,7 @@ export function createApp(deps: Deps) {
   api.route("/control", controlRoutes);
   api.route("/customers", customerRoutes);
   api.route("/delivery", deliveryRoutes);
+  api.route("/deliveries", driverRoutes);
   api.route("/shop", shopRoutes);
   api.route("/shop/orders", publicOrderRoutes);
   api.route("/orders", orderRoutes);
