@@ -12,7 +12,11 @@ import { Plus } from "./shell/Plus.js";
 import { Shell } from "./shell/Shell.js";
 
 // Écrans chargés à la demande : le premier affichage ne télécharge que la coque et la connexion.
+const Articles = lazy(() => import("./market/Articles.js").then((m) => ({ default: m.Articles })));
+const StockArticles = lazy(() => import("./market/Articles.js").then((m) => ({ default: m.StockArticles })));
 const Abonnes = lazy(() => import("./canal/Abonnes.js").then((m) => ({ default: m.Abonnes })));
+const Suivi = lazy(() => import("./boutique/Suivi.js").then((m) => ({ default: m.Suivi })));
+const Boutique = lazy(() => import("./boutique/Boutique.js").then((m) => ({ default: m.Boutique })));
 const Encaissements = lazy(() =>
   import("./canal/Encaissements.js").then((m) => ({ default: m.Encaissements })),
 );
@@ -64,6 +68,23 @@ export function App() {
     <ErrorBoundary>
       <Routes>
         <Route path="connexion" element={<LoginPage />} />
+        {/* Vitrine publique et suivi de commande : sans compte. */}
+        <Route
+          path="boutique/suivi/:jeton"
+          element={
+            <Suspense fallback={<Chargement />}>
+              <Suivi />
+            </Suspense>
+          }
+        />
+        <Route
+          path="boutique"
+          element={
+            <Suspense fallback={<Chargement />}>
+              <Boutique />
+            </Suspense>
+          }
+        />
         <Route element={<RequireAuth />}>
           <Route element={<Shell />}>
             <Route index element={<Accueil />} />
@@ -276,6 +297,22 @@ export function App() {
               element={
                 <Garde volet="money">
                   <Commissions />
+                </Garde>
+              }
+            />
+            <Route
+              path="market/articles"
+              element={
+                <Garde volet="market">
+                  <Articles />
+                </Garde>
+              }
+            />
+            <Route
+              path="market/stock"
+              element={
+                <Garde volet="market">
+                  <StockArticles />
                 </Garde>
               }
             />

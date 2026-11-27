@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from "react";
-import { Navigate } from "react-router";
+import { Link, Navigate } from "react-router";
 import { ApiError } from "../api/index.js";
 import { useI18n } from "../i18n/index.js";
 import { LanguageSwitch } from "../i18n/LanguageSwitch.js";
@@ -74,6 +74,7 @@ export function LoginPage() {
           {t("login.valider")}
         </Button>
         <LanguageSwitch />
+        <Link to="/boutique">{t("boutique.titre")}</Link>
       </form>
     </main>
   );
