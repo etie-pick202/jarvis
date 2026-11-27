@@ -40,7 +40,7 @@ describe("tournée du livreur et remise (API)", () => {
     const id = list.find((o) => o.number === placed.number)?.id ?? "";
     expect((await api(`/orders/${id}/validate`, {})).status).toBe(200);
     if (extra.mode !== "pickup") await api(`/orders/${id}/assign`, { driverId });
-    return { id, token: placed.trackingToken, total: placed.total };
+    return { id, token: placed.trackingToken, total: placed.total, code: placed.deliveryCode ?? "" };
   }
   const balance = async () => {
     const rows = (await json("/cash/registers")) as { id: string; balance: number }[];
@@ -83,9 +83,13 @@ describe("tournée du livreur et remise (API)", () => {
     const status = await (await t.app.request(`/api/v1/shop/orders/${cmd.token}`)).json();
     expect(trackedOrder.parse(status).status).toBe("out_for_delivery");
 
-    const onArticle = { returnedEmpties: [{ line: 1, returnedBrandId: g.boreal.id }] };
+    expect(cmd.code).toMatch(/^\d{4}$/);
+    const wrong = cmd.code === "0000" ? "1111" : "0000";
+    expect((await api(`/deliveries/${cmd.id}/delivered`, {}, livreur)).status).toBe(422);
+    expect((await api(`/deliveries/${cmd.id}/delivered`, { code: wrong }, livreur)).status).toBe(422);
+    const onArticle = { code: cmd.code, returnedEmpties: [{ line: 1, returnedBrandId: g.boreal.id }] };
     expect((await api(`/deliveries/${cmd.id}/delivered`, onArticle, livreur)).status).toBe(422);
-    const body = { returnedEmpties: [{ line: 0, returnedBrandId: g.boreal.id }] };
+    const body = { code: cmd.code, returnedEmpties: [{ line: 0, returnedBrandId: g.boreal.id }] };
     const done = delivery.parse(await json(`/deliveries/${cmd.id}/delivered`, body, livreur));
     expect(done.status).toBe("delivered");
     expect(await balance()).toBe(cmd.total);
@@ -108,11 +112,11 @@ describe("tournée du livreur et remise (API)", () => {
     expect(failed).toMatchObject({ status: "problem", problemNote: "Client absent" });
     expect((await api(`/deliveries/${cmd.id}/depart`, {}, livreur)).status).toBe(200);
     const before = await balance();
-    expect((await api(`/deliveries/${cmd.id}/delivered`, {}, livreur)).status).toBe(409);
+    const code = { code: cmd.code };
+    expect((await api(`/deliveries/${cmd.id}/delivered`, code, livreur)).status).toBe(409);
     expect(order.parse(await json(`/orders/${cmd.id}`)).status).toBe("out_for_delivery");
-    expect((await api(`/deliveries/${cmd.id}/delivered`, { paymentMethod: "cash" }, livreur)).status).toBe(
-      200,
-    );
+    const inCash = { ...code, paymentMethod: "cash" };
+    expect((await api(`/deliveries/${cmd.id}/delivered`, inCash, livreur)).status).toBe(200);
     expect(await balance()).toBe(before + cmd.total);
   });
 
