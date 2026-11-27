@@ -1,4 +1,5 @@
 import type { MobileOperator, MoneyOperation, MoneyOperationInput, MoneyOperationKind } from "@jarvis/shared";
+import { toE164 } from "@jarvis/shared";
 import { type FormEvent, useCallback, useState } from "react";
 import { api } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
@@ -52,7 +53,7 @@ function Saisie({ journal }: Readonly<{ journal: readonly MoneyOperation[] }>) {
     !tropGrand &&
     !insuffisant &&
     !doublon &&
-    telephone.trim().length >= 6 &&
+    toE164(telephone) !== null &&
     reference.trim().length >= 3;
 
   const [enregistrer, occupe] = useEnvoi(async () => {
@@ -60,7 +61,7 @@ function Saisie({ journal }: Readonly<{ journal: readonly MoneyOperation[] }>) {
       operator: operateur,
       kind: sens,
       amount: somme,
-      phone: telephone.trim(),
+      phone: toE164(telephone) ?? telephone.trim(),
       ...(client.trim() ? { customerName: client.trim() } : {}),
       reference: reference.trim(),
     };
@@ -125,6 +126,11 @@ function Saisie({ journal }: Readonly<{ journal: readonly MoneyOperation[] }>) {
         </p>
       )}
       <Field label={t("money.telephone")} type="tel" value={telephone} onChange={saisir(setTelephone)} />
+      {telephone.trim() !== "" && toE164(telephone) === null && (
+        <p role="alert" className="connexion__erreur">
+          {t("saisie.telephone")}
+        </p>
+      )}
       <Field label={t("money.client")} value={client} onChange={saisir(setClient)} />
       <Field label={t("money.reference")} value={reference} onChange={saisir(setReference)} />
       {doublon && (

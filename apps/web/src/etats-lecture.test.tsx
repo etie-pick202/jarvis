@@ -85,10 +85,11 @@ describe("états d'une lecture", () => {
     afficher(charger);
     expect(await screen.findByText("Vous êtes hors ligne")).toBeTruthy();
     hors = false;
-    act(() => {
+    // L'écoute du retour réseau s'installe juste après l'affichage : on insiste jusqu'à ce qu'elle réponde.
+    await waitFor(() => {
       window.dispatchEvent(new Event("online"));
+      expect(screen.getByText("BOCOM")).toBeTruthy();
     });
-    expect(await screen.findByText("BOCOM")).toBeTruthy();
   });
 
   it("signale la session expirée sur un 401, sauf à la connexion et à la déconnexion", async () => {

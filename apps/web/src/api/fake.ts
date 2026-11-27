@@ -351,6 +351,7 @@ function tableauDeBord() {
       alerts: MARQUES.filter((m) => m.full <= SEUIL_BAS).map(ligneStock),
     },
     unreadNotifications: 1,
+    canalDue: ABONNES.filter((a) => a.daysLeft !== null && a.daysLeft <= 7).length,
   };
 }
 
@@ -431,6 +432,41 @@ const encaissementsCanal = (date: string) =>
     cancelled: false,
   }));
 
+const CLE_COMMANDE = "jarvis.fake-commande";
+const JETON_ESSAI = "jeton-essai-0001";
+
+/** Commande sans compte : la dernière est gardée pour que le suivi la retrouve. */
+function commandePublique(route: string, init?: RequestInit): Response {
+  const corpsRecu = JSON.parse(String(init?.body ?? "{}")) as {
+    mode?: "pickup" | "delivery";
+    paymentMethod?: string;
+    lines?: { quantity: number }[];
+  };
+  if (init?.method === "POST") {
+    const lignes = (corpsRecu.lines ?? []).map((l, i) => ({
+      label: `Produit d'essai ${i + 1}`,
+      quantity: l.quantity,
+      total: 7200 * l.quantity,
+    }));
+    const commande = {
+      number: "CMD0001",
+      status: "pending",
+      mode: corpsRecu.mode ?? "delivery",
+      paymentMethod: corpsRecu.paymentMethod ?? "cash",
+      paymentConfirmed: false,
+      total: lignes.reduce((n, l) => n + l.total, 0),
+      lines: lignes,
+      createdAt: `${jour}T10:00:00.000Z`,
+    };
+    localStorage.setItem(CLE_COMMANDE, JSON.stringify(commande));
+    return json({ ...commande, trackingToken: JETON_ESSAI }, 201);
+  }
+  const gardee = localStorage.getItem(CLE_COMMANDE);
+  if (!gardee || !route.startsWith(`/shop/orders/${JETON_ESSAI}`)) {
+    return erreur(404, "not_found", "Commande introuvable");
+  }
+  return json(JSON.parse(gardee));
+}
 const FLOATS = [
   { operator: "orange_money" as const, active: true, float: 250000 },
   { operator: "momo" as const, active: false, float: 0 },
@@ -503,6 +539,7 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
 
   // Vitrine publique : aucune session requise.
   if (route === "/shop/catalogue") return json(vitrine());
+  if (route.startsWith("/shop/orders")) return commandePublique(route, init);
 
   if (route === "/auth/login") {
     const body = JSON.parse(String(init?.body ?? "{}")) as { username?: string; password?: string };
@@ -594,6 +631,22 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       return json(operationsMoney(url.searchParams.get("date") ?? jour));
     case "/canal/subscribers":
       return json(ABONNES);
+    case "/canal/reminders": {
+      const jours = Number(url.searchParams.get("within") ?? 7);
+      const anglais = url.searchParams.get("lang") === "en";
+      return json(
+        ABONNES.filter((a) => a.active && a.daysLeft !== null && a.daysLeft <= jours).map((a) => {
+          const message = anglais
+            ? `Hello ${a.name}, your Canal+ subscription needs renewal.`
+            : `Bonjour ${a.name}, votre abonnement Canal+ est à renouveler.`;
+          return {
+            ...a,
+            message,
+            whatsappUrl: `https://wa.me/${a.phone}?text=${encodeURIComponent(message)}`,
+          };
+        }),
+      );
+    }
     case "/canal/due": {
       const jours = Number(url.searchParams.get("within") ?? 7);
       return json(ABONNES.filter((a) => a.active && a.daysLeft !== null && a.daysLeft <= jours));

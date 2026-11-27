@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomInt } from "node:crypto";
 import { schema } from "@jarvis/db";
 import type {
   CreateOrderInput,
@@ -66,6 +66,9 @@ export const toOrder = (o: OrderRow, lines: LineRow[]): Order => ({
   assignedTo: o.assignedTo,
   problemNote: o.problemNote,
   saleId: o.saleId,
+  deliveryCode: o.deliveryCode,
+  startedAt: o.startedAt?.toISOString() ?? null,
+  deliveredAt: o.deliveredAt?.toISOString() ?? null,
 });
 
 export async function selectOrders(db: Deps["db"] | Tx, where?: SQL): Promise<Order[]> {
@@ -115,6 +118,10 @@ const tracked = (o: Order): TrackedOrder => ({
   total: o.total,
   lines: o.lines.map((l) => ({ label: l.label, quantity: l.quantity, total: l.total })),
   createdAt: o.createdAt,
+  paymentConfirmedAt: o.paymentConfirmedAt,
+  startedAt: o.startedAt ?? null,
+  deliveredAt: o.deliveredAt ?? null,
+  ...(o.mode === "delivery" ? { deliveryCode: o.deliveryCode ?? "" } : {}),
 });
 
 const placed = async (db: Deps["db"], row: OrderRow): Promise<PlacedOrder> => ({
@@ -183,6 +190,7 @@ export async function placeOrder(
           number,
           clientRef: input.clientRef,
           trackingToken: randomBytes(18).toString("base64url"),
+          deliveryCode: String(randomInt(0, 10_000)).padStart(4, "0"),
           source,
           mode: input.mode,
           customerName: input.customerName,
