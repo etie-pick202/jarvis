@@ -585,6 +585,13 @@ function agirSurCommande(route: string, init?: RequestInit): Response {
   return json({ ...o, ...effets[action] });
 }
 
+const reglagesBoutique = () => ({
+  ...vitrine().shop,
+  omNumber: "+237690000100",
+  momoNumber: "+237670000100",
+  eveningCountTime: "18:30",
+  deliveryFeeCeiling: 700,
+});
 /** Comptes d'exemple, d'après les utilisateurs du faux serveur. */
 const comptes = () =>
   Object.entries(USERS).map(([username, u]) => ({
@@ -695,6 +702,11 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   if (ecriture) return json({ ok: true }, 201);
 
   if (route.startsWith("/catalogue/articles/") && route.endsWith("/moves")) return json(mouvementsArticle());
+
+  if (route === "/delivery/settings") return json(reglagesBoutique());
+  if (route === "/delivery/neighbourhoods") {
+    return json(vitrine().neighbourhoods.map((q) => ({ ...q, active: true })));
+  }
 
   switch (route) {
     case "/catalogue/brands":
