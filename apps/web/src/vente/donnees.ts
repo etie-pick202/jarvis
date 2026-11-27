@@ -19,10 +19,13 @@ function lire<T>(cle: string): T | null {
 export function useCatalogue(): {
   articles: Article[];
   pret: boolean;
+  /** Le catalogue n'a pas pu être lu : la copie de l'appareil sert. */
+  hors: boolean;
   consommer: (articleId: string, quantite: number) => void;
 } {
   const [articles, setArticles] = useState<Article[]>(() => lire<Article[]>(CLE_CATALOGUE) ?? []);
   const [pret, setPret] = useState(articles.length > 0);
+  const [hors, setHors] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -39,14 +42,14 @@ export function useCatalogue(): {
         localStorage.setItem(CLE_CATALOGUE, JSON.stringify(fusion));
         setArticles(fusion);
       })
-      .catch(() => undefined) // hors ligne : on garde la copie locale
+      .catch(() => setHors(true)) // hors ligne : on garde la copie locale
       .finally(() => setPret(true));
     return () => controller.abort();
   }, []);
 
   const consommer = (articleId: string, quantite: number) => setArticles(consommerStock(articleId, quantite));
 
-  return { articles, pret, consommer };
+  return { articles, pret, hors, consommer };
 }
 
 /** Retire du stock local ce qui vient d'être vendu, pour refuser la vente suivante à stock nul même hors ligne. */

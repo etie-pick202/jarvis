@@ -212,7 +212,12 @@ export function Marques() {
       <section className="carte">
         <h1>{t("rub.config.marques")}</h1>
         {!pdg && <p>{t("tarifs.reserve")}</p>}
-        <Etat {...marques} vide={marques.data.length === 0} messageVide={t("tarifs.aucune.marque")}>
+        <Etat
+          {...marques}
+          vide={marques.data.length === 0}
+          messageVide={t("tarifs.aucune.marque")}
+          texteVide={t(pdg ? "vide.marques" : "vide.pdg")}
+        >
           <Table caption={t("rub.config.marques")} colonnes={[t("gaz.marque"), t("tarifs.emballage"), ""]}>
             {marques.data.map((m) => (
               <tr key={m.id}>
@@ -267,7 +272,12 @@ export function Marques() {
       )}
       <section className="carte">
         <h2>{t("tarifs.formats")}</h2>
-        <Etat {...formats} vide={formats.data.length === 0} messageVide={t("tarifs.aucun.format")}>
+        <Etat
+          {...formats}
+          vide={formats.data.length === 0}
+          messageVide={t("tarifs.aucun.format")}
+          texteVide={t(pdg ? "vide.formats" : "vide.pdg")}
+        >
           <Table caption={t("tarifs.formats")} colonnes={[t("tarifs.format.nom"), t("tarifs.plafond"), ""]}>
             {formats.data.map((f) => (
               <tr key={f.id}>

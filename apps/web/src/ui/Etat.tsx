@@ -3,6 +3,7 @@ import type { Probleme } from "../api/problemes.js";
 import { useI18n } from "../i18n/index.js";
 import { EtatVide, type GenreIllustration } from "../visuels/Illustration.js";
 import { Button } from "./Button.js";
+import { Squelette } from "./Squelette.js";
 
 const DESSINS: Record<Probleme["genre"], GenreIllustration> = {
   "hors-ligne": "hors-ligne",
@@ -21,6 +22,9 @@ interface Props {
   /** La liste lue est vide. */
   vide?: boolean;
   messageVide?: string;
+  /** Pourquoi c'est vide, et ce qui le remplira. */
+  texteVide?: string;
+  actionVide?: ReactNode;
   children: ReactNode;
 }
 
@@ -35,6 +39,8 @@ export function Etat({
   recharger,
   vide = false,
   messageVide,
+  texteVide,
+  actionVide,
   children,
 }: Readonly<Props>) {
   const { t } = useI18n();
@@ -53,7 +59,7 @@ export function Etat({
       </EtatVide>
     );
   }
-  if (!pret && !charge) return <output className="bloc">{t("page.chargement")}</output>;
+  if (!pret && !charge) return <Squelette />;
 
   return (
     <>
@@ -65,7 +71,13 @@ export function Etat({
           </Button>
         </output>
       )}
-      {vide && messageVide ? <EtatVide genre="vide" titre={messageVide} /> : children}
+      {vide && messageVide ? (
+        <EtatVide genre="vide" titre={messageVide} texte={texteVide}>
+          {actionVide}
+        </EtatVide>
+      ) : (
+        children
+      )}
     </>
   );
 }

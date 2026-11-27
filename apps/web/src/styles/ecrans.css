@@ -18,13 +18,13 @@
   text-align: left;
   padding: 11px 12px;
   border-bottom: 1px solid var(--ligne);
-  font-size: 14px;
+  font-size: var(--taille-texte);
   vertical-align: middle;
 }
 .tableau thead th {
   background: var(--tableau-entete);
   color: var(--texte-doux);
-  font-size: 12px;
+  font-size: var(--taille-meta);
   font-weight: 700;
 }
 .tableau tbody th {
@@ -67,7 +67,7 @@
 }
 .champ__aide {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--taille-meta);
   color: var(--texte-doux);
 }
 .caisses {
@@ -88,7 +88,7 @@
   gap: var(--espace-2);
 }
 .caisses__carte h2 {
-  font-size: 14px;
+  font-size: var(--taille-texte);
   color: var(--texte-2);
 }
 .caisses__carte--veille {
@@ -104,8 +104,49 @@
 .caisses__fond,
 .caisses__total {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--taille-meta);
   color: var(--texte-doux);
+}
+/* Premier démarrage */
+.route__liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.route__etape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-3);
+  padding: var(--espace-3) 0;
+  border-top: 1px solid var(--ligne);
+}
+.route__rang {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--puce-fond);
+  font-weight: 700;
+}
+.route__rang--faite {
+  background: var(--ok-fond);
+  color: var(--ok-texte);
+}
+.route__texte {
+  flex: 1;
+  min-width: 16ch;
+  display: flex;
+  flex-direction: column;
+}
+.route__texte small {
+  font-size: var(--taille-meta);
+  color: var(--texte-doux);
+}
+/* Base neuve : les tuiles à zéro s'effacent quand la mise en route est affichée. */
+.route ~ .chiffres--neuf {
+  display: none;
 }
 .chiffres {
   margin: 0;
@@ -120,7 +161,7 @@
   padding: var(--espace-4);
 }
 .chiffres__carte dt {
-  font-size: 13px;
+  font-size: var(--taille-meta);
   color: var(--texte-doux);
 }
 .chiffres__carte dd {
@@ -152,4 +193,13 @@
 .tableau td.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+/* Téléphone : cellules resserrées pour que les colonnes restent à l'écran. */
+@media (max-width: 559px) {
+  .tableau th,
+  .tableau td {
+    padding: 10px 6px;
+    font-size: var(--taille-meta);
+  }
 }

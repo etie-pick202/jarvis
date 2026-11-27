@@ -53,8 +53,8 @@ droite dans les tableaux.
 
 ## Composants
 
-- **Barre d'application** : une seule ligne de 56 px (marque, volet, état du réseau, menu). Langue, mode livreur et
-  déconnexion vont dans le menu.
+- **Barre d'application** : une seule ligne de 56 px (marque, état du réseau, menu). La langue et la
+  déconnexion vont dans le menu ; la bascule vers le mode livreur reste dans la barre (un seul geste).
 - **Rubriques** : onglets défilants de 44 px, rubrique active visible au chargement.
 - **Page** : un titre (pas de répétition entre barre, page et carte) ; pas de carte dans une carte.
 - **Boutons** : principal (jaune), secondaire (filet), discret (texte ou icône avec libellé accessible), danger

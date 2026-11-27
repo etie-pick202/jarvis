@@ -196,7 +196,12 @@ export function Articles() {
           value={recherche}
           onChange={(e) => setRecherche(e.target.value)}
         />
-        <Etat {...lecture} vide={trouves.length === 0} messageVide={t("market.aucun")}>
+        <Etat
+          {...lecture}
+          vide={trouves.length === 0}
+          messageVide={t("market.aucun")}
+          texteVide={t("vide.articles")}
+        >
           <Table
             caption={t("rub.market.articles")}
             colonnes={[t("market.nom"), t("canal.prix"), t("market.cout"), t("rub.market.stock"), ""]}

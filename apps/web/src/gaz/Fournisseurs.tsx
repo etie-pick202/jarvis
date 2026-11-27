@@ -51,7 +51,12 @@ export function Fournisseurs() {
     <div className="page">
       <section className="carte">
         <h1>{t("gaz.fournisseurs.titre")}</h1>
-        <Etat {...lecture} vide={data.length === 0} messageVide={t("gaz.fournisseurs.vide")}>
+        <Etat
+          {...lecture}
+          vide={data.length === 0}
+          messageVide={t("gaz.fournisseurs.vide")}
+          texteVide={t("vide.fournisseurs")}
+        >
           <Table
             caption={t("gaz.fournisseurs.titre")}
             colonnes={[t("gaz.nom"), t("gaz.telephone"), t("gaz.marques")]}

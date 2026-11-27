@@ -127,7 +127,12 @@ export function Boutique() {
       <main className="page">
         <h1>{t("boutique.titre")}</h1>
         {suivi && <Link to={`/boutique/suivi/${suivi}`}>{t("commande.derniere")}</Link>}
-        <Etat {...lecture} vide={liste.length === 0} messageVide={t("boutique.vide")}>
+        <Etat
+          {...lecture}
+          vide={liste.length === 0}
+          messageVide={t("boutique.vide")}
+          texteVide={t("vide.boutique")}
+        >
           <p>
             {[shop.openingHours, shop.address].filter(Boolean).join(" · ")}
             {shop.phone && (

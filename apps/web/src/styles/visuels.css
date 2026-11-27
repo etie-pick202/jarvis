@@ -30,7 +30,7 @@
   border-radius: var(--rayon-s);
 }
 .logo-cocosab--sm {
-  font-size: 15px;
+  font-size: var(--taille-texte);
   padding: 6px 10px;
 }
 .logo-cocosab--lg {
@@ -81,14 +81,14 @@
   min-height: 28px;
   padding: 4px 10px;
   border-radius: var(--rayon-pastille);
-  font-size: 13px;
+  font-size: var(--taille-meta);
   font-weight: 700;
   white-space: nowrap;
 }
 .marque-gaz--compacte {
   min-height: 24px;
   padding: 2px 8px;
-  font-size: 12px;
+  font-size: var(--taille-meta);
 }
 .marque-gaz--officiel {
   background: var(--blanc);
@@ -103,7 +103,7 @@
   align-items: flex-end;
   gap: 6px;
   margin-left: 8px;
-  font-size: 12px;
+  font-size: var(--taille-meta);
   font-weight: 600;
   color: var(--texte-doux);
 }
@@ -158,7 +158,7 @@
   color: var(--alerte-texte);
   border-radius: var(--rayon-m);
   padding: var(--espace-3);
-  font-size: 14px;
+  font-size: var(--taille-texte);
   font-weight: 600;
 }
 .bandeau .btn {
