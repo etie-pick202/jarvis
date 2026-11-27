@@ -24,6 +24,7 @@ export const PERMISSIONS = {
   "cash.close": ["pdg", "gerant"],
   "cash.manage": ["pdg"],
   "audit.read": ["pdg", "gerant"],
+  "notification.settings.read": ["pdg", "gerant", "caissier"],
   "report.read": ["pdg", "gerant"],
   "canal.read": ["pdg", "gerant", "caissier"],
   "canal.write": ["pdg", "gerant", "caissier"],
