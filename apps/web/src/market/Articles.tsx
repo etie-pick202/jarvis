@@ -13,7 +13,7 @@ import { usePagination, VoirPlus } from "../ui/listes.js";
 import { Table } from "../ui/Table.js";
 import { useEnvoi } from "../ui/useEnvoi.js";
 import { formatFcfa } from "../vente/regles.js";
-import { filtrerArticles, lirePrix, nomDejaPris } from "./regles.js";
+import { categories, filtrerArticles, lirePrix, lireQuantite, nomDejaPris } from "./regles.js";
 
 function Fiche({
   article,
@@ -32,21 +32,40 @@ function Fiche({
   const [prix, setPrix] = useState(article ? String(article.price) : "");
   const [cout, setCout] = useState(article ? String(article.purchaseCost) : "");
   const [suivi, setSuivi] = useState(article?.trackStock ?? false);
+  const [categorie, setCategorie] = useState(article?.category ?? "");
+  const [seuil, setSeuil] = useState(article?.lowThreshold ? String(article.lowThreshold) : "");
+  const [depart, setDepart] = useState("");
   const [ok, setOk] = useState(false);
   const vente = lirePrix(prix);
   const achat = cout.trim() === "" ? 0 : lirePrix(cout);
   const pris = nomDejaPris(nom, existants, article?.id);
-  const valide = nom.trim() !== "" && vente !== null && achat !== null && !pris;
+  // Seuil et stock de départ n'ont de sens que pour un article suivi.
+  const bas = suivi ? lireQuantite(seuil) : 0;
+  const initial = suivi && !article ? lireQuantite(depart) : 0;
+  const quantitesJustes = bas !== null && initial !== null;
+  const valide = nom.trim() !== "" && vente !== null && achat !== null && quantitesJustes && !pris;
   const titre = article ? `${t("canal.modifier")} ${article.name}` : t("market.nouveau");
 
   const [enregistrer, occupe] = useEnvoi(async () => {
-    if (vente === null || achat === null) return;
-    await onValider({ name: nom.trim(), price: vente, purchaseCost: achat, trackStock: suivi });
+    if (vente === null || achat === null || bas === null || initial === null) return;
+    await onValider({
+      name: nom.trim(),
+      price: vente,
+      purchaseCost: achat,
+      trackStock: suivi,
+      // À la modification, une catégorie vidée doit être envoyée pour être effacée.
+      ...(article || categorie.trim() ? { category: categorie.trim() } : {}),
+      ...(suivi && (article || bas > 0) ? { lowThreshold: bas } : {}),
+      ...(initial > 0 ? { initialQty: initial } : {}),
+    });
     if (!article) {
       setNom("");
       setPrix("");
       setCout("");
       setSuivi(false);
+      setCategorie("");
+      setSeuil("");
+      setDepart("");
       setOk(true);
     }
   });
@@ -70,6 +89,18 @@ function Fiche({
           {t("market.nom.pris")}
         </p>
       )}
+      <Field
+        label={t("market.categorie")}
+        maxLength={60}
+        list="market-categories"
+        value={categorie}
+        onChange={saisir(setCategorie)}
+      />
+      <datalist id="market-categories">
+        {categories(existants).map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
       <Field label={t("canal.prix")} inputMode="numeric" value={prix} onChange={saisir(setPrix)} />
       <Field label={t("market.cout")} inputMode="numeric" value={cout} onChange={saisir(setCout)} />
       {(prix !== "" && vente === null) || achat === null ? (
@@ -86,6 +117,24 @@ function Fiche({
           <input type="checkbox" checked={suivi} onChange={(e) => setSuivi(e.target.checked)} />
           {t("market.suivre")}
         </label>
+      )}
+      {suivi && (
+        <>
+          <Field label={t("market.seuil")} inputMode="numeric" value={seuil} onChange={saisir(setSeuil)} />
+          {!article && (
+            <Field
+              label={t("market.depart")}
+              inputMode="numeric"
+              value={depart}
+              onChange={saisir(setDepart)}
+            />
+          )}
+          {!quantitesJustes && (
+            <p role="alert" className="connexion__erreur">
+              {t("market.quantite.invalide")}
+            </p>
+          )}
+        </>
       )}
       <div className="vente__actions">
         <Button type="submit" disabled={!valide || occupe}>
@@ -122,7 +171,8 @@ export function Articles() {
       label: `${t("market.nouveau")} : ${body.name}`,
       body,
     });
-    modifier((l) => [...l, { ...body, id: crypto.randomUUID(), stockQty: 0, active: true }]);
+    const { initialQty = 0, ...saisie } = body;
+    modifier((l) => [...l, { ...saisie, id: crypto.randomUUID(), stockQty: initialQty, active: true }]);
   }
 
   async function changer(article: Article, body: UpdateArticleInput) {
@@ -155,6 +205,12 @@ export function Articles() {
               <tr key={a.id}>
                 <th scope="row">
                   {a.name} {!a.active && <Chip>{t("canal.inactif")}</Chip>}
+                  {a.category && (
+                    <>
+                      <br />
+                      <small>{a.category}</small>
+                    </>
+                  )}
                 </th>
                 <td>{formatFcfa(a.price)}</td>
                 <td>{formatFcfa(a.purchaseCost)}</td>
@@ -192,7 +248,13 @@ export function Articles() {
           existants={data}
           onValider={(s) =>
             choisi
-              ? changer(choisi, { name: s.name, price: s.price, purchaseCost: s.purchaseCost })
+              ? changer(choisi, {
+                  name: s.name,
+                  price: s.price,
+                  purchaseCost: s.purchaseCost,
+                  category: s.category,
+                  lowThreshold: s.lowThreshold,
+                })
               : ajouter(s)
           }
           onAnnuler={() => setEdition(null)}
