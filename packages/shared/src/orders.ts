@@ -104,6 +104,11 @@ export const order = z.object({
   total: fcfa,
   lines: z.array(orderLine),
   createdAt: isoDateTime,
+  /** Livreur à qui la commande est confiée. */
+  assignedTo: id.nullable().optional(),
+  problemNote: z.string().nullable().optional(),
+  /** Vente créée à la remise. */
+  saleId: id.nullable().optional(),
 });
 export type Order = z.infer<typeof order>;
 export const orders = z.array(order);
@@ -111,3 +116,36 @@ export const orders = z.array(order);
 /** Pastilles : commandes à traiter et à livrer. */
 export const orderSummary = z.object({ pending: z.number().int(), toDeliver: z.number().int() });
 export type OrderSummary = z.infer<typeof orderSummary>;
+
+export const assignOrderInput = z.object({ driverId: id });
+
+/** Remise au client : encaissement confirmé et vides récupérés. */
+export const completeOrderInput = z.object({
+  /** Moyen réellement encaissé ; absent = celui de la commande. */
+  paymentMethod: paymentMethod.optional(),
+  /** Marque du vide rapporté, par ligne de gaz (`line` = rang dans la commande) ; absent = même marque. */
+  returnedEmpties: z.array(z.object({ line: z.number().int().min(0), returnedBrandId: id })).optional(),
+});
+export type CompleteOrderInput = z.infer<typeof completeOrderInput>;
+
+export const deliveryProblemInput = z.object({ note: z.string().trim().min(3).max(300) });
+
+/** Une livraison de la tournée, telle que le mode livreur l'affiche. */
+export const delivery = z.object({
+  id,
+  number: z.string(),
+  status: orderStatus,
+  customerName: z.string(),
+  phone: z.string(),
+  neighbourhoodName: z.string().nullable(),
+  landmark: z.string().nullable(),
+  latitude: z.number().nullable(),
+  longitude: z.number().nullable(),
+  paymentMethod,
+  paymentConfirmed: z.boolean(),
+  total: fcfa,
+  lines: z.array(orderLine),
+  problemNote: z.string().nullable(),
+});
+export type Delivery = z.infer<typeof delivery>;
+export const deliveries = z.array(delivery);

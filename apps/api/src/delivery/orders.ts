@@ -63,6 +63,9 @@ export const toOrder = (o: OrderRow, lines: LineRow[]): Order => ({
   total: o.total,
   lines: lines.map(toLine),
   createdAt: o.createdAt.toISOString(),
+  assignedTo: o.assignedTo,
+  problemNote: o.problemNote,
+  saleId: o.saleId,
 });
 
 export async function selectOrders(db: Deps["db"] | Tx, where?: SQL): Promise<Order[]> {
