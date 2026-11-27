@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useI18n } from "../i18n/index.js";
+import { useAmener } from "./amener.js";
 import { Button } from "./Button.js";
 import { Field } from "./Field.js";
 import { useEnvoi } from "./useEnvoi.js";
@@ -19,8 +20,9 @@ export function Annulation({
   const [motif, setMotif] = useState("");
   const [confirmer, occupe] = useEnvoi(() => onConfirmer(motif.trim()));
   const libelle = t("canal.motif");
+  const bloc = useAmener<HTMLDivElement>();
   return (
-    <div className="validation__refus">
+    <div ref={bloc} className="validation__refus">
       <Field label={`${libelle} (${objet})`} value={motif} onChange={(e) => setMotif(e.target.value)} />
       <Button disabled={motif.trim().length < 5 || occupe} onClick={() => void confirmer()}>
         {t("canal.confirmer.annulation")}

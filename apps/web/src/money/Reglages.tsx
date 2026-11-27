@@ -173,7 +173,7 @@ export function Commissions() {
   // Tenu ici : la grille repart de zéro quand les taux changent.
   const [ok, setOk] = useState(false);
   return (
-    <div className="page">
+    <div className="page page--etroite">
       <section className="carte">
         <h1>{t("rub.money.commissions")}</h1>
         <p>{t("money.taux.aide")}</p>

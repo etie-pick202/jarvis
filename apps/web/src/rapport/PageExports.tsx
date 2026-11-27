@@ -6,7 +6,7 @@ import { Exports } from "./Exports.js";
 export function PageExports() {
   const { profilsActifs } = useSession();
   return (
-    <div className="page">
+    <div className="page page--deux">
       <Exports />
       <EnvoiMail />
       {profilsActifs.includes("pdg") && <ComptesSage />}
