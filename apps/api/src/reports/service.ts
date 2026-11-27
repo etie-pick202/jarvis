@@ -6,6 +6,7 @@ import { dayRange } from "../cash/rules.js";
 import { listRegisters } from "../cash/service.js";
 import type { Deps } from "../http.js";
 import { lineMargin } from "../sales/compute.js";
+import { withSettlements } from "../sales/settlements.js";
 import { stockLevels } from "../stock/service.js";
 import {
   CASH_REGISTERS_IN_CASH,
@@ -32,9 +33,14 @@ export async function customerStats(deps: Deps, day: string) {
     .where(and(gte(sales.createdAt, from), lt(sales.createdAt, to)))
     .orderBy(asc(sales.createdAt), asc(sql`right(${sales.number}, 6)`), asc(saleLines.id));
   const allBrands = await deps.db.select().from(brands);
+  const effective = await withSettlements(
+    deps.db,
+    rows.map((r) => r.line),
+  );
   const brandName = (id: string | null) => allBrands.find((b) => b.id === id)?.name ?? null;
 
-  const lines = rows.map(({ sale, line, brand, format, article }) => {
+  const lines = rows.map(({ sale, brand, format, article }, i) => {
+    const line = effective[i] as (typeof effective)[number];
     const reversal = sale.reversalOf !== null;
     const revenue = signed(line.total, reversal);
     const margin = signed(lineMargin(line, line.quantity), reversal);

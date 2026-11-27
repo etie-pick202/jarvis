@@ -67,3 +67,10 @@ export const setThresholdInput = z.object({
   threshold: z.number().int().min(0),
 });
 export type SetThresholdInput = z.infer<typeof setThresholdInput>;
+
+/** GET /stock/thresholds : seuil par défaut et exceptions par marque et format. */
+export const stockThresholds = z.object({
+  default: z.number().int(),
+  overrides: z.array(z.object({ brandId: id, formatId: id, threshold: z.number().int() })),
+});
+export type StockThresholds = z.infer<typeof stockThresholds>;

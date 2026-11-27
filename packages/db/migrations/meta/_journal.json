@@ -92,6 +92,20 @@
       "when": 1795736078566,
       "tag": "0012_tournee",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795737982435,
+      "tag": "0013_ecarts_soldes",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795738603060,
+      "tag": "0014_mouvements_articles",
+      "breakpoints": true
     }
   ]
 }
