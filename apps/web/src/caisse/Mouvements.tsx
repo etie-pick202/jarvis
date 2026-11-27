@@ -66,7 +66,7 @@ export function Depenses() {
   }
 
   return (
-    <form className="carte page" onSubmit={garde(enregistrer)}>
+    <form className="carte page page--etroite" onSubmit={garde(enregistrer)}>
       <h1>{t("caisse.depenses.titre")}</h1>
       <ChoixCaisse label={t("caisse.depuis")} valeur={caisse} onChange={setCaisse} caisses={actives} />
       <Field
@@ -127,7 +127,7 @@ export function Transferts() {
   }
 
   return (
-    <form className="carte page" onSubmit={garde(enregistrer)}>
+    <form className="carte page page--etroite" onSubmit={garde(enregistrer)}>
       <h1>{t("caisse.transferts.titre")}</h1>
       <ChoixCaisse label={t("caisse.depuis")} valeur={de} onChange={setDe} caisses={actives} />
       <ChoixCaisse

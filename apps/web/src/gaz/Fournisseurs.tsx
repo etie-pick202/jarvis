@@ -1,8 +1,9 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { api, type Fournisseur } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import { useI18n } from "../i18n/index.js";
 import { ecrire } from "../offline/ecrire.js";
+import { allerA } from "../ui/amener.js";
 import { Button } from "../ui/Button.js";
 import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
@@ -21,6 +22,7 @@ export function Fournisseurs() {
   const { data: marquesDispo } = useCached("marques", api.marques, []);
   const [choisies, setChoisies] = useState<string[]>([]);
   const valide = nom.trim() !== "" && choisies.length > 0;
+  const fiche = useRef<HTMLFormElement>(null);
 
   async function ajouter(event: FormEvent) {
     event.preventDefault();
@@ -48,9 +50,14 @@ export function Fournisseurs() {
   }
 
   return (
-    <div className="page">
+    <div className="page page--panneau">
       <section className="carte">
-        <h1>{t("gaz.fournisseurs.titre")}</h1>
+        <div className="titre-ligne">
+          <h1>{t("gaz.fournisseurs.titre")}</h1>
+          <Button variant="contour" className="vers-fiche" onClick={() => allerA(fiche.current)}>
+            {t("gaz.fournisseur.nouveau")}
+          </Button>
+        </div>
         <Etat
           {...lecture}
           vide={data.length === 0}
@@ -58,13 +65,14 @@ export function Fournisseurs() {
           texteVide={t("vide.fournisseurs")}
         >
           <Table
+            cartes
             caption={t("gaz.fournisseurs.titre")}
             colonnes={[t("gaz.nom"), t("gaz.telephone"), t("gaz.marques")]}
           >
             {data.map((f) => (
               <tr key={f.id}>
                 <th scope="row">{f.nom}</th>
-                <td>{f.telephone}</td>
+                <td>{f.telephone ? <a href={`tel:${f.telephone}`}>{f.telephone}</a> : "—"}</td>
                 <td className="marques-liste">
                   {f.marques.map((m) => (
                     <MarqueGaz key={m} nom={m} compacte />
@@ -75,7 +83,7 @@ export function Fournisseurs() {
           </Table>
         </Etat>
       </section>
-      <form className="carte" onSubmit={garde(ajouter)}>
+      <form ref={fiche} className="carte" onSubmit={garde(ajouter)}>
         <h2>{t("gaz.fournisseur.nouveau")}</h2>
         <Field label={t("gaz.nom")} value={nom} onChange={(e) => setNom(e.target.value)} />
         <Field

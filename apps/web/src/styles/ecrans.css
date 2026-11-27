@@ -325,3 +325,91 @@
     display: none;
   }
 }
+
+/* Liste d'abord, fiche à côté au bureau ; sur téléphone un bouton y conduit. */
+.page--etroite {
+  max-width: 640px;
+}
+.titre-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-3);
+}
+.paire {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  align-items: start;
+  gap: var(--espace-4);
+}
+@media (min-width: 1100px) {
+  .page--panneau {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    align-items: start;
+    max-width: 1280px;
+  }
+  .titre-ligne .vers-fiche {
+    display: none;
+  }
+}
+a[href^="tel:"]:not(.btn) {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+}
+.tableau .champ__saisie {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Choix de fichier : le champ natif, transparent, recouvre le bouton traduit. */
+.fichier {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-3);
+}
+.fichier__zone {
+  position: relative;
+  display: inline-flex;
+}
+.fichier__saisie {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+.fichier__zone:focus-within .btn {
+  outline: 3px solid var(--noir);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--jaune);
+}
+
+/* Cartes à saisie : le nom, puis les champs côte à côte. */
+@media (max-width: 559px) {
+  .tableau--cartes td.cartes__nu::before,
+  .tableau--cartes td.cartes__saisie::before {
+    content: none;
+  }
+  .tableau--cartes tr:has(.cartes__saisie) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--espace-3);
+  }
+  .tableau--cartes tr:has(.cartes__saisie) > * {
+    grid-column: 1 / -1;
+  }
+  .tableau--cartes tr:has(.cartes__saisie ~ .cartes__saisie) > .cartes__saisie {
+    grid-column: auto;
+  }
+  .tableau--cartes tbody td.cartes__saisie {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    justify-content: flex-end;
+  }
+}

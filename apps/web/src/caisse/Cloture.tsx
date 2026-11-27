@@ -62,6 +62,7 @@ export function Cloture() {
       </p>
       <Etat {...lecture} vide={actives.length === 0} messageVide={t("caisse.vide")}>
         <Table
+          cartes
           caption={t("caisse.cloture.titre")}
           colonnes={[t("caisse.caisse"), t("caisse.theorique"), t("caisse.compte"), t("caisse.ecart")]}
         >
@@ -69,7 +70,7 @@ export function Cloture() {
             <tr key={j.caisse.id}>
               <th scope="row">{j.caisse.nom}</th>
               <td>{formatFcfa(j.caisse.solde)}</td>
-              <td>
+              <td className="cartes__saisie">
                 <Field
                   label={`${j.caisse.nom} : ${t("caisse.compte")}`}
                   inputMode="numeric"
