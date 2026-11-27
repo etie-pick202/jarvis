@@ -88,3 +88,17 @@ export const saleReceipt = z.object({
   whatsappUrl: z.url(),
 });
 export type SaleReceipt = z.infer<typeof saleReceipt>;
+
+/** Solder un écart « à régulariser » : sans montant, il est calculé avec les valeurs désormais connues. */
+export const settlePackagingInput = z.object({ packagingGap: signedInt.optional() });
+export type SettlePackagingInput = z.infer<typeof settlePackagingInput>;
+
+/** GET /sales/exchanges : page d'échanges entre marques. */
+export const exchangePage = z.object({
+  items: z.array(sale),
+  /** Nombre total de ventes correspondant au filtre, toutes pages confondues. */
+  total: z.number().int(),
+  /** Ventes dont un écart d'emballage reste à solder. */
+  pendingCount: z.number().int(),
+});
+export type ExchangePage = z.infer<typeof exchangePage>;
