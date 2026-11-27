@@ -688,8 +688,6 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       );
     case "/catalogue/formats":
       return json([FORMAT]);
-    case `/catalogue/prices/${FORMAT.id}/current`:
-      return json(PRIX_COURANT);
     case "/catalogue/prices/current":
       return json(
         MARQUES.map((m) => ({
@@ -701,6 +699,16 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
           effectiveFrom: `${jour}T07:00:00.000Z`,
         })),
       );
+    case "/sales/exchanges": {
+      const echanges = VENTES.filter((v) =>
+        v.lines.some((l) => l.returnedBrandId && l.returnedBrandId !== l.brandId),
+      );
+      const attente = echanges.filter((v) =>
+        v.lines.some((l) => "packagingGapPending" in l && l.packagingGapPending),
+      );
+      const items = url.searchParams.get("pending") === "1" ? attente : echanges;
+      return json({ items, total: items.length, pendingCount: attente.length });
+    }
     case "/catalogue/articles":
       return json(ARTICLES);
     case "/stock":
