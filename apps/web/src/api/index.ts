@@ -1,7 +1,7 @@
 import * as contrat from "@jarvis/shared";
 import { z } from "zod";
 import type { Profil } from "../nav/volets.js";
-import { API_BASE, ApiError, enTetes, erreurDe, request } from "./client.js";
+import { API_BASE, ApiError, enTetes, erreurDe, newIdempotencyKey, request } from "./client.js";
 import type {
   Alerte,
   Article,
@@ -323,12 +323,18 @@ export const api = {
     })),
 
   badges: async (signal?: AbortSignal): Promise<Badges> => {
-    const [bas, attente, echeances] = await Promise.all([
+    const [bas, attente, echeances, commandes] = await Promise.all([
       sansDroit(get("/stock/alerts", contrat.stockRows, signal), []),
       sansDroit(get("/inventory?pending=1", contrat.countRows, signal), []),
       sansDroit(get("/canal/due?within=7", contrat.canalSubscribers, signal), []),
+      sansDroit(get("/orders/summary", contrat.orderSummary, signal), { pending: 0, toDeliver: 0 }),
     ]);
-    return { commandes: 0, stockBas: bas.length, echeances: echeances.length, validations: attente.length };
+    return {
+      commandes: commandes.pending,
+      stockBas: bas.length,
+      echeances: echeances.length,
+      validations: attente.length,
+    };
   },
 
   /** Canal+ : formules, abonnés (liste complète, filtrée sur l'appareil) et échéances proches. */
@@ -349,6 +355,20 @@ export const api = {
     get(`/canal/due?within=${jours}`, contrat.canalSubscribers, signal),
 
   /** Livraisons du jour : le module de livraison n'a pas encore de contrat côté serveur (lot 3). */
+  /** Commandes de la boutique et livreurs à qui les confier. */
+  commandes: (signal?: AbortSignal): Promise<contrat.Order[]> => get("/orders", contrat.orders, signal),
+  livreurs: (signal?: AbortSignal) =>
+    sansDroit(
+      get("/orders/drivers", z.array(z.object({ id: z.string(), displayName: z.string() })), signal),
+      [],
+    ),
+  agirCommande: (id: string, action: string, body?: unknown): Promise<contrat.Order> =>
+    request(`/orders/${id}/${action}`, {
+      method: "POST",
+      body: body ?? {},
+      idempotencyKey: newIdempotencyKey(),
+      parse: lire(contrat.order),
+    }),
   /** Tournée du livreur connecté. */
   tournee: (signal?: AbortSignal): Promise<contrat.Delivery[]> =>
     get("/deliveries", contrat.deliveries, signal),
