@@ -23,15 +23,6 @@ export interface Badges {
 
 export type { CanalFormula, CanalSubscriber } from "@jarvis/shared";
 
-export interface Livraison {
-  id: string;
-  client: string;
-  quartier: string;
-  article: string;
-  montant: number;
-  etat: "a_livrer" | "parti" | "livre" | "probleme";
-}
-
 /** Un article vendable : une bouteille de gaz (marque × format) ou un article libre. */
 export interface Article {
   id: string;
@@ -69,6 +60,7 @@ export interface GazStock {
 
 export interface Echange {
   id: string;
+  venteId: string;
   date: string;
   client: string;
   remise: string;

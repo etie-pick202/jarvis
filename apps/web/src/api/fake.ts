@@ -450,6 +450,7 @@ function commandePublique(route: string, init?: RequestInit): Response {
     }));
     const commande = {
       number: "CMD0001",
+      deliveryCode: "4321",
       status: "pending",
       mode: corpsRecu.mode ?? "delivery",
       paymentMethod: corpsRecu.paymentMethod ?? "cash",
@@ -489,6 +490,120 @@ const operationsMoney = (date: string) => [
     cancelled: false,
   },
 ];
+
+/** Tournée d'exemple : un paiement en espèces à partir, un paiement mobile non confirmé en route. */
+const livraison = (n: number, plus: Record<string, unknown>) => ({
+  id: uuid(1800 + n),
+  number: `CMD010${n}`,
+  status: "validated",
+  customerName: `Client Essai ${n}`,
+  phone: `23769000002${n}`,
+  neighbourhoodName: "Quartier Essai Nord",
+  landmark: "Près du carrefour d'exemple",
+  latitude: null,
+  longitude: null,
+  paymentMethod: "cash",
+  paymentConfirmed: false,
+  total: 7200,
+  lines: [
+    {
+      kind: "gas",
+      brandId: uuid(101),
+      formatId: uuid(201),
+      returnedBrandId: null,
+      articleId: null,
+      label: "Recharge gaz OLA 12,5 kg",
+      quantity: 1,
+      unitPrice: 6800,
+      deliveryFee: 400,
+      total: 7200,
+    },
+  ],
+  problemNote: null,
+  ...plus,
+});
+
+const TOURNEE = [
+  livraison(1, { latitude: 4.05, longitude: 9.7 }),
+  livraison(2, { status: "out_for_delivery", paymentMethod: "momo" }),
+];
+
+/** Commandes d'exemple : à valider (paiement mobile), à livrer, à retirer, terminée. */
+const commande = (n: number, plus: Record<string, unknown>) => ({
+  id: uuid(1900 + n),
+  number: `CMD020${n}`,
+  source: "online",
+  status: "pending",
+  mode: "delivery",
+  customerName: `Acheteur Essai ${n}`,
+  phone: `23769000003${n}`,
+  neighbourhoodName: "Quartier Essai Sud",
+  landmark: null,
+  latitude: null,
+  longitude: null,
+  paymentMethod: "cash",
+  paymentReference: null,
+  paymentConfirmedAt: null,
+  deliveryFeePerBottle: 400,
+  total: 7200,
+  lines: livraison(1, {}).lines,
+  createdAt: `${jour}T08:0${n}:00.000Z`,
+  assignedTo: null,
+  problemNote: null,
+  saleId: null,
+  ...plus,
+});
+
+const LIVREURS = [{ id: uuid(4), displayName: "Livreur démo" }];
+
+const COMMANDES = [
+  commande(1, { paymentMethod: "momo", paymentReference: "MOMO-0001" }),
+  commande(2, { status: "validated", source: "phone" }),
+  commande(3, { status: "validated", mode: "pickup", neighbourhoodName: null, deliveryFeePerBottle: 0 }),
+  commande(4, { status: "delivered" }),
+];
+
+/** Rejoue la transition demandée sur la commande d'exemple. */
+function agirSurCommande(route: string, init?: RequestInit): Response {
+  const [, , id = "", action = ""] = route.split("/");
+  const o = COMMANDES.find((x) => x.id === id);
+  if (!o) return erreur(404, "not_found", "Commande introuvable");
+  const corps = JSON.parse(String(init?.body ?? "{}")) as {
+    driverId?: string;
+    deliveryFeePerBottle?: number;
+  };
+  const effets: Record<string, Record<string, unknown>> = {
+    validate: {
+      status: "validated",
+      deliveryFeePerBottle: corps.deliveryFeePerBottle ?? o.deliveryFeePerBottle,
+    },
+    "confirm-payment": { paymentConfirmedAt: `${jour}T09:00:00.000Z` },
+    assign: { assignedTo: corps.driverId },
+    collect: { status: "delivered" },
+    cancel: { status: "cancelled" },
+  };
+  return json({ ...o, ...effets[action] });
+}
+
+/** Comptes d'exemple, d'après les utilisateurs du faux serveur. */
+const comptes = () =>
+  Object.entries(USERS).map(([username, u]) => ({
+    id: u.id,
+    username,
+    displayName: u.displayName,
+    roles: u.roles,
+    active: true,
+  }));
+
+/** Rejoue la création ou la modification d'un compte. */
+function ecrireCompte(route: string, init?: RequestInit): Response {
+  const corps = JSON.parse(String(init?.body ?? "{}")) as { active?: boolean; roles?: Role[] };
+  const id = route.split("/")[3];
+  if (!id) return json({ ok: true }, 201);
+  const c = comptes().find((x) => x.id === id);
+  if (!c) return erreur(404, "not_found", "Compte introuvable");
+  return json({ ...c, active: corps.active ?? c.active, roles: corps.roles ?? c.roles });
+}
 
 const mouvementsArticle = () => [
   {
@@ -575,6 +690,8 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   }
   if (route === "/receipts" && ecriture)
     return json({ id: uuid(1201), contentType: "application/pdf", size: 1 }, 201);
+  if (ecriture && route.startsWith("/orders/")) return agirSurCommande(route, init);
+  if (ecriture && route.startsWith("/auth/users")) return ecrireCompte(route, init);
   if (ecriture) return json({ ok: true }, 201);
 
   if (route.startsWith("/catalogue/articles/") && route.endsWith("/moves")) return json(mouvementsArticle());
@@ -592,8 +709,27 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       );
     case "/catalogue/formats":
       return json([FORMAT]);
-    case `/catalogue/prices/${FORMAT.id}/current`:
-      return json(PRIX_COURANT);
+    case "/catalogue/prices/current":
+      return json(
+        MARQUES.map((m) => ({
+          formatId: FORMAT.id,
+          brandId: m.id,
+          amount: PRIX_COURANT.amount,
+          transportContribution: PRIX_COURANT.transportContribution,
+          purchaseCost: PRIX_COURANT.purchaseCost,
+          effectiveFrom: `${jour}T07:00:00.000Z`,
+        })),
+      );
+    case "/sales/exchanges": {
+      const echanges = VENTES.filter((v) =>
+        v.lines.some((l) => l.returnedBrandId && l.returnedBrandId !== l.brandId),
+      );
+      const attente = echanges.filter((v) =>
+        v.lines.some((l) => "packagingGapPending" in l && l.packagingGapPending),
+      );
+      const items = url.searchParams.get("pending") === "1" ? attente : echanges;
+      return json({ items, total: items.length, pendingCount: attente.length });
+    }
     case "/catalogue/articles":
       return json(ARTICLES);
     case "/stock":
@@ -621,6 +757,14 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       );
     case "/canal/formulas":
       return json(FORMULES);
+    case "/orders":
+      return json(COMMANDES);
+    case "/orders/drivers":
+      return json(LIVREURS);
+    case "/orders/summary":
+      return json({ pending: 1, toDeliver: 2 });
+    case "/deliveries":
+      return json(TOURNEE);
     case "/canal/payments":
       return json(encaissementsCanal(url.searchParams.get("date") ?? jour));
     case "/money/float":
@@ -651,6 +795,10 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       const jours = Number(url.searchParams.get("within") ?? 7);
       return json(ABONNES.filter((a) => a.active && a.daysLeft !== null && a.daysLeft <= jours));
     }
+    case "/auth/users":
+      return json(comptes());
+    case "/stock/thresholds":
+      return json({ default: SEUIL_BAS, overrides: [] });
     case "/cash/closure-threshold":
       return json({ threshold: SEUIL_CLOTURE });
     case "/reports/dashboard":

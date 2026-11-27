@@ -107,7 +107,7 @@ describe("adaptateurs de réponses", () => {
   });
 
   it("déduit les échanges des ventes et lit le stock, les caisses et les fournisseurs", async () => {
-    expect((await api.echanges()).map((e) => [e.remise, e.rapportee, e.ecart])).toEqual([
+    expect((await api.pageEchanges(false)).echanges.map((e) => [e.remise, e.rapportee, e.ecart])).toEqual([
       ["STARGAS", "TOTAL", -2500],
       ["OLA", "TOTAL", 1600],
       ["OLA", "BOCOM", null],
@@ -146,7 +146,6 @@ describe("adaptateurs de réponses", () => {
     expect((await api.validations())[0]?.resume).toContain("écart pleines -1");
     expect((await api.audit())[0]?.detail).toContain("sale");
     expect(await api.badges()).toMatchObject({ stockBas: 1, validations: 1 });
-    expect(await api.livraisons()).toEqual([]);
   });
 
   it("met les rapports du serveur sous forme de tableaux", async () => {

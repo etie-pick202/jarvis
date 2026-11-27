@@ -12,7 +12,6 @@ import type {
   Fournisseur,
   GazStock,
   LigneAudit,
-  Livraison,
   LoginInput,
   Rapport,
   ReceptionResume,
@@ -112,42 +111,40 @@ export const api = {
 
   /** Catalogue vendable : gaz (marque × format avec son prix en vigueur) et articles libres. */
   catalogue: async (signal?: AbortSignal): Promise<Article[]> => {
-    const [brands, formats, articles, stock] = await Promise.all([
+    const [brands, formats, articles, stock, tarifs] = await Promise.all([
       get("/catalogue/brands", LISTES.marques, signal),
       get("/catalogue/formats", LISTES.formats, signal),
       get("/catalogue/articles", LISTES.articles, signal),
       get("/stock", contrat.stockRows, signal),
+      // Prix en vigueur de chaque marque et format (exceptions comprises), en une seule lecture.
+      sansDroit(get("/catalogue/prices/current", contrat.currentGasPrices, signal), []),
     ]);
-    const combinaisons = brands
+    const gaz = brands
       .filter((b) => b.active)
-      .flatMap((b) => formats.filter((f) => f.active).map((f) => ({ b, f })));
-    const gaz = (
-      await Promise.all(
-        combinaisons.map(async ({ b, f }): Promise<Article[]> => {
-          // Prix en vigueur (exception de marque comprise) ; 404 = le PDG n'a pas encore saisi de prix.
-          const prix = await sansDroit<contrat.GasPrice | null>(
-            get(`/catalogue/prices/${f.id}/current?brandId=${b.id}`, contrat.gasPrice, signal),
-            null,
-          );
-          if (!prix) return [];
-          return [
-            {
-              id: `${b.id}:${f.id}`,
-              nom: `Gaz ${f.label} ${b.name}`,
-              genre: "gaz",
-              marque: b.name,
-              formatLibelle: f.label,
-              prix: prix.amount + prix.transportContribution,
-              stock: stock.find((s) => s.brandId === b.id && s.formatId === f.id)?.full ?? 0,
-              // Valeur non relevée : l'écart d'un échange ne se calcule pas, il sera régularisé par le PDG.
-              valeurEmballage: b.packagingValueKnown === false ? undefined : b.packagingValue,
-              brandId: b.id,
-              formatId: f.id,
-            },
-          ];
-        }),
-      )
-    ).flat();
+      .flatMap((b) =>
+        formats
+          .filter((f) => f.active)
+          .flatMap((f): Article[] => {
+            // Sans prix saisi par le PDG, le gaz n'est pas proposé à la vente.
+            const prix = tarifs.find((p) => p.brandId === b.id && p.formatId === f.id);
+            if (!prix) return [];
+            return [
+              {
+                id: `${b.id}:${f.id}`,
+                nom: `Gaz ${f.label} ${b.name}`,
+                genre: "gaz",
+                marque: b.name,
+                formatLibelle: f.label,
+                prix: prix.amount + prix.transportContribution,
+                stock: stock.find((x) => x.brandId === b.id && x.formatId === f.id)?.full ?? 0,
+                // Valeur non relevée : l'écart d'un échange ne se calcule pas, il sera régularisé par le PDG.
+                valeurEmballage: b.packagingValueKnown === false ? undefined : b.packagingValue,
+                brandId: b.id,
+                formatId: f.id,
+              },
+            ];
+          }),
+      );
     const libres = articles
       .filter((a) => a.active)
       .map(
@@ -180,6 +177,26 @@ export const api = {
       parse: lire(contrat.trackedOrder),
     }),
 
+  /** Écritures de vente d'un jour (annulations comprises). */
+  ventesDuJour: (jour: string, signal?: AbortSignal): Promise<contrat.Sale[]> =>
+    get(`/sales?date=${jour}&limit=500`, LISTES.ventes, signal),
+  /** Noms des marques et des articles, pour décrire les lignes d'une vente. */
+  nomsProduits: async (signal?: AbortSignal): Promise<Record<string, string>> => {
+    const [marques, articles] = await Promise.all([
+      sansDroit(get("/catalogue/brands", LISTES.marques, signal), []),
+      sansDroit(get("/catalogue/articles", LISTES.articles, signal), []),
+    ]);
+    return Object.fromEntries([
+      ...marques.map((m) => [m.id, `Gaz ${m.name}`]),
+      ...articles.map((a) => [a.id, a.name]),
+    ]);
+  },
+  /** Réglages des tarifs : toutes les marques et tous les formats, désactivés compris. */
+  marquesConfig: (signal?: AbortSignal) => get("/catalogue/brands", LISTES.marques, signal),
+  formatsConfig: (signal?: AbortSignal) => get("/catalogue/formats", LISTES.formats, signal),
+  prixEnVigueur: (signal?: AbortSignal): Promise<contrat.CurrentGasPrices> =>
+    get("/catalogue/prices/current", contrat.currentGasPrices, signal),
+
   mouvementsArticle: (id: string, signal?: AbortSignal): Promise<contrat.ArticleMove[]> =>
     get(`/catalogue/articles/${id}/moves`, contrat.articleMoves, signal),
 
@@ -203,16 +220,21 @@ export const api = {
     })),
 
   /** Dernières ventes avec échange entre marques ; l'écart est vide tant qu'il reste à régulariser. */
-  echanges: async (signal?: AbortSignal): Promise<Echange[]> => {
-    const [ventes, noms] = await Promise.all([
-      get("/sales?type=exchange", LISTES.ventes, signal),
+  /** Les 200 échanges les plus récents (ou seulement ceux à régulariser) et le nombre d'écarts à solder. */
+  pageEchanges: async (
+    attente: boolean,
+    signal?: AbortSignal,
+  ): Promise<{ echanges: Echange[]; aRegulariser: number }> => {
+    const [page, noms] = await Promise.all([
+      get(`/sales/exchanges?limit=200&pending=${attente ? 1 : 0}`, contrat.exchangePage, signal),
       marquesParId(signal),
     ]);
-    return ventes.flatMap((v) =>
+    const echanges = page.items.flatMap((v) =>
       v.lines
         .filter((l) => l.kind === "gas" && l.returnedBrandId && l.returnedBrandId !== l.brandId)
         .map((l, i) => ({
           id: `${v.id}:${i}`,
+          venteId: v.id,
           date: v.createdAt,
           client: v.customerName,
           remise: noms.get(l.brandId ?? "") ?? "?",
@@ -220,7 +242,15 @@ export const api = {
           ecart: l.packagingGapPending ? null : l.packagingGap,
         })),
     );
+    return { echanges, aRegulariser: page.pendingCount };
   },
+  solderEcart: (venteId: string, packagingGap?: number) =>
+    request(`/sales/${venteId}/settle-packaging`, {
+      method: "POST",
+      body: packagingGap === undefined ? {} : { packagingGap },
+      idempotencyKey: newIdempotencyKey(),
+      parse: () => null,
+    }),
 
   marques: async (signal?: AbortSignal): Promise<{ id: string; nom: string }[]> =>
     (await get("/catalogue/brands", LISTES.marques, signal))
@@ -274,6 +304,21 @@ export const api = {
 
   seuilCloture: async (signal?: AbortSignal): Promise<number> =>
     (await get("/cash/closure-threshold", contrat.closureThresholdResult, signal)).threshold,
+
+  /** Comptes (PDG). Écritures directes : un mot de passe n'est jamais gardé dans la file d'envoi. */
+  comptes: (signal?: AbortSignal): Promise<contrat.UserAccount[]> =>
+    get("/auth/users", contrat.userAccounts, signal),
+  creerCompte: (body: { username: string; displayName: string; password: string; roles: contrat.Role[] }) =>
+    request("/auth/users", { method: "POST", body, idempotencyKey: newIdempotencyKey(), parse: () => null }),
+  modifierCompte: (id: string, body: contrat.UpdateUserInput): Promise<contrat.UserAccount> =>
+    request(`/auth/users/${id}`, {
+      method: "PATCH",
+      body,
+      idempotencyKey: newIdempotencyKey(),
+      parse: lire(contrat.userAccount),
+    }),
+  seuilStock: async (signal?: AbortSignal): Promise<number> =>
+    (await get("/stock/thresholds", contrat.stockThresholds, signal)).default,
 
   /** Vue agrégée du PDG pour le jour d'activité. */
   tableau: async (signal?: AbortSignal): Promise<Tableau> => {
@@ -345,12 +390,18 @@ export const api = {
     })),
 
   badges: async (signal?: AbortSignal): Promise<Badges> => {
-    const [bas, attente, echeances] = await Promise.all([
+    const [bas, attente, echeances, commandes] = await Promise.all([
       sansDroit(get("/stock/alerts", contrat.stockRows, signal), []),
       sansDroit(get("/inventory?pending=1", contrat.countRows, signal), []),
       sansDroit(get("/canal/due?within=7", contrat.canalSubscribers, signal), []),
+      sansDroit(get("/orders/summary", contrat.orderSummary, signal), { pending: 0, toDeliver: 0 }),
     ]);
-    return { commandes: 0, stockBas: bas.length, echeances: echeances.length, validations: attente.length };
+    return {
+      commandes: commandes.pending,
+      stockBas: bas.length,
+      echeances: echeances.length,
+      validations: attente.length,
+    };
   },
 
   /** Canal+ : formules, abonnés (liste complète, filtrée sur l'appareil) et échéances proches. */
@@ -378,8 +429,31 @@ export const api = {
   echeancesCanal: (jours: number, signal?: AbortSignal): Promise<contrat.CanalSubscriber[]> =>
     get(`/canal/due?within=${jours}`, contrat.canalSubscribers, signal),
 
+  /** Commandes de la boutique et livreurs à qui les confier. */
+  commandes: (signal?: AbortSignal): Promise<contrat.Order[]> => get("/orders", contrat.orders, signal),
+  livreurs: (signal?: AbortSignal) =>
+    sansDroit(
+      get("/orders/drivers", z.array(z.object({ id: z.string(), displayName: z.string() })), signal),
+      [],
+    ),
+  agirCommande: (id: string, action: string, body?: unknown): Promise<contrat.Order> =>
+    request(`/orders/${id}/${action}`, {
+      method: "POST",
+      body: body ?? {},
+      idempotencyKey: newIdempotencyKey(),
+      parse: lire(contrat.order),
+    }),
   /** Livraisons du jour : le module de livraison n'a pas encore de contrat côté serveur (lot 3). */
-  livraisons: async (): Promise<Livraison[]> => [],
+  remettre: (id: string, body: contrat.CompleteOrderInput) =>
+    request(`/deliveries/${id}/delivered`, {
+      method: "POST",
+      body,
+      idempotencyKey: newIdempotencyKey(),
+      parse: () => null,
+    }),
+  /** Tournée du livreur connecté. */
+  tournee: (signal?: AbortSignal): Promise<contrat.Delivery[]> =>
+    get("/deliveries", contrat.deliveries, signal),
 
   rapport: async (id: "clients" | "journal" | "x", signal?: AbortSignal): Promise<Rapport> => {
     if (id === "clients")
