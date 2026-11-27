@@ -698,6 +698,8 @@ export const en: Record<MessageKey, string> = {
   "bord.a.valider": "To approve",
   "bord.voir.validations": "Handle all",
   "bord.perte": "At a loss",
+  "fichier.choisir": "Choose a file",
+  "fichier.aucun": "No file chosen",
   "page.bientot": "This screen is coming soon.",
   "page.introuvable": "Page not found",
   "page.retour": "Back to home",

@@ -96,6 +96,7 @@ export function Comptage({ kind }: { kind: "weekly" | "evening" }) {
         actionVide={<Suite vers="/config/marques" libelle={t("vide.vers.marques")} />}
       >
         <Table
+          cartes
           caption={titre}
           colonnes={[t("gaz.marque"), t("gaz.pleines"), t("gaz.vides"), t("gaz.ecart.stock")]}
         >
@@ -104,7 +105,7 @@ export function Comptage({ kind }: { kind: "weekly" | "evening" }) {
               <th scope="row">
                 <MarqueGaz nom={l.marque} />
               </th>
-              <td>
+              <td className="cartes__saisie">
                 <Field
                   label={`${l.marque} : ${t("gaz.pleines")} (${l.pleines})`}
                   inputMode="numeric"
@@ -112,7 +113,7 @@ export function Comptage({ kind }: { kind: "weekly" | "evening" }) {
                   onChange={(e) => maj(l.cle, "pleines", e.target.value)}
                 />
               </td>
-              <td>
+              <td className="cartes__saisie">
                 <Field
                   label={`${l.marque} : ${t("gaz.vides")} (${l.vides})`}
                   inputMode="numeric"

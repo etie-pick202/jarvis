@@ -697,6 +697,8 @@ export const fr = {
   "bord.a.valider": "À valider",
   "bord.voir.validations": "Tout traiter",
   "bord.perte": "À perte",
+  "fichier.choisir": "Choisir un fichier",
+  "fichier.aucun": "Aucun fichier choisi",
   "page.bientot": "Cet écran arrive bientôt.",
   "page.introuvable": "Page introuvable",
   "page.retour": "Retour à l'accueil",

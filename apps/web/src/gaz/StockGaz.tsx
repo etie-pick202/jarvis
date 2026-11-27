@@ -38,6 +38,7 @@ export function StockGaz() {
           actionVide={<Suite vers="/config/marques" libelle={t("vide.vers.marques")} />}
         >
           <Table
+            cartes
             caption={t("gaz.stock.titre")}
             colonnes={[t("gaz.marque"), t("gaz.pleines"), t("gaz.vides"), t("gaz.total"), ""]}
           >

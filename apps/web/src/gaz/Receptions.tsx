@@ -6,6 +6,7 @@ import { db } from "../offline/db.js";
 import { ecrire } from "../offline/ecrire.js";
 import { useOutbox } from "../offline/useConnection.js";
 import { Button } from "../ui/Button.js";
+import { ChampFichier } from "../ui/ChampFichier.js";
 import { Chip } from "../ui/Chip.js";
 import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
@@ -163,12 +164,12 @@ export function Receptions() {
               />
             </fieldset>
           ))}
-          <Field
+          <ChampFichier
             label={t("gaz.reception.piece")}
-            type="file"
             accept="image/*,application/pdf"
-            onChange={(e) => {
-              setPiece(e.target.files?.[0] ?? null);
+            fichier={piece}
+            onChoisir={(f) => {
+              setPiece(f);
               setEnregistree(false);
             }}
           />
@@ -184,6 +185,7 @@ export function Receptions() {
         <h2>{t("gaz.reception.historique")}</h2>
         <Etat {...lectureRecues}>
           <Table
+            cartes
             caption={t("gaz.reception.historique")}
             colonnes={[
               t("gaz.reception.date"),
@@ -195,8 +197,10 @@ export function Receptions() {
           >
             {enAttente.map((o) => (
               <tr key={o.id}>
-                <td colSpan={4}>{o.label}</td>
-                <td>
+                <td className="cartes__nu" colSpan={4}>
+                  {o.label}
+                </td>
+                <td className="cartes__nu">
                   <Chip tone="alerte">{t("sync.piece")}</Chip>
                 </td>
               </tr>
