@@ -1,16 +1,18 @@
 import type { Database } from "@jarvis/db";
 import { schema } from "@jarvis/db";
 import { type CreateSaleInput, type Sale, WALKIN_CUSTOMER } from "@jarvis/shared";
-import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { auditAndNotifyPdg } from "../audit/service.js";
 import { appendCashEntry, formatNumber, nextSequence, registerForPayment } from "../cash/ledger.js";
 import { dayRange } from "../cash/rules.js";
+import { moveArticleStock } from "../catalogue/article-stock.js";
 import { currentGasPrice } from "../catalogue/service.js";
 import { findOrCreateCustomer } from "../customers/service.js";
 import { reservedArticle, reservedFull } from "../delivery/reservations.js";
 import { AppError, type Deps } from "../http.js";
 import { appendStockMove, lockStock, stockOf } from "../stock/ledger.js";
 import { aggregateFullDemand, computeGasLine } from "./compute.js";
+import { exchangeCondition, pendingCondition, withSettlements } from "./settlements.js";
 
 const { sales, saleLines, brands, formats, articles } = schema;
 
@@ -242,10 +244,14 @@ export async function createSaleDetailed(
     }
     for (const art of articleRows) {
       if (art.trackStock) {
-        await tx
-          .update(articles)
-          .set({ stockQty: art.stockQty - (articleDemand.get(art.id) ?? 0) })
-          .where(eq(articles.id, art.id));
+        await moveArticleStock(tx, {
+          articleId: art.id,
+          kind: "sale",
+          delta: -(articleDemand.get(art.id) ?? 0),
+          label: `Vente ${number}`,
+          authorId,
+          createdAt: now,
+        });
       }
     }
     await appendCashEntry(tx, {
@@ -283,6 +289,9 @@ export interface SaleFilter {
   day?: string;
   /** Seulement les ventes comportant un échange entre marques différentes. */
   exchangeOnly?: boolean;
+  /** Seulement les écarts d'emballage restant à solder. */
+  pendingOnly?: boolean;
+  offset?: number;
 }
 
 export async function listSales(deps: Deps, filter: SaleFilter = {}): Promise<Sale[]> {
@@ -291,27 +300,28 @@ export async function listSales(deps: Deps, filter: SaleFilter = {}): Promise<Sa
     const [from, to] = dayRange(filter.day);
     conditions.push(gte(sales.createdAt, from), lt(sales.createdAt, to));
   }
-  if (filter.exchangeOnly) {
-    conditions.push(
-      sql`exists (select 1 from ${saleLines} where ${saleLines.saleId} = ${sales.id} and ${saleLines.returnedBrandId} is not null and ${saleLines.returnedBrandId} <> ${saleLines.brandId})`,
-    );
-  }
+  if (filter.exchangeOnly) conditions.push(exchangeCondition);
+  if (filter.pendingOnly) conditions.push(pendingCondition);
   const rows = await deps.db
     .select()
     .from(sales)
     .where(and(...conditions))
     .orderBy(desc(sales.createdAt), desc(sales.number))
-    .limit(filter.limit ?? 50);
+    .limit(filter.limit ?? 50)
+    .offset(filter.offset ?? 0);
   if (rows.length === 0) return [];
-  const lines = await deps.db
-    .select()
-    .from(saleLines)
-    .where(
-      inArray(
-        saleLines.saleId,
-        rows.map((r) => r.id),
+  const lines = await withSettlements(
+    deps.db,
+    await deps.db
+      .select()
+      .from(saleLines)
+      .where(
+        inArray(
+          saleLines.saleId,
+          rows.map((r) => r.id),
+        ),
       ),
-    );
+  );
   return rows.map((r) =>
     toSale(
       r,
@@ -324,5 +334,5 @@ export async function getSale(deps: Deps, id: string): Promise<Sale> {
   const [row] = await deps.db.select().from(sales).where(eq(sales.id, id)).limit(1);
   if (!row) throw new AppError(404, "not_found", "Vente introuvable");
   const lines = await deps.db.select().from(saleLines).where(eq(saleLines.saleId, id));
-  return toSale(row, lines);
+  return toSale(row, await withSettlements(deps.db, lines));
 }

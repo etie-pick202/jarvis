@@ -1,9 +1,10 @@
-import { loginInput, role, roles } from "@jarvis/shared";
+import { loginInput, role, roles, updateUserInput } from "@jarvis/shared";
 import { Hono } from "hono";
 import { z } from "zod";
-import { type AppEnv, parseJson } from "../http.js";
+import { type AppEnv, parse, parseJson } from "../http.js";
 import { bearerToken, requireAuth, requirePermission } from "./middleware.js";
 import { createUser, login, logout, switchRole } from "./service.js";
+import { listUsers, updateUser } from "./users.js";
 
 const createUserInput = z.object({
   username: z.string().trim().min(2).max(64),
@@ -27,6 +28,14 @@ export const authRoutes = new Hono<AppEnv>()
     const { role: target } = await parseJson(c, z.object({ role }));
     const token = bearerToken(c.req.header("Authorization")) ?? "";
     return c.json(await switchRole(c.get("deps"), token, c.get("user"), target));
+  })
+  .get("/users", requireAuth, requirePermission("user.manage"), async (c) =>
+    c.json(await listUsers(c.get("deps"))),
+  )
+  .patch("/users/:id", requireAuth, requirePermission("user.manage"), async (c) => {
+    const input = await parseJson(c, updateUserInput);
+    const userId = parse(z.uuid(), c.req.param("id"));
+    return c.json(await updateUser(c.get("deps"), c.get("user").id, userId, input));
   })
   .post("/users", requireAuth, requirePermission("user.manage"), async (c) => {
     const input = await parseJson(c, createUserInput);

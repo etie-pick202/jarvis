@@ -18,6 +18,14 @@ export const shopSettings = z.object({
   minimumOrder: fcfa,
   /** Frais de livraison par bouteille quand le quartier n'a pas son propre montant. */
   deliveryFeePerBottle: fcfa,
+  /** Numéros à qui le client envoie son paiement mobile ; vides tant qu'ils ne sont pas saisis. */
+  omNumber: text.optional(),
+  momoNumber: text.optional(),
+  /** Heure de la confirmation du soir (HH:MM) ; interne à la boutique. */
+  eveningCountTime: z
+    .string()
+    .regex(/^(([01]\d|2[0-3]):[0-5]\d)?$/, "Heure attendue au format HH:MM")
+    .optional(),
   /** Plafond fixé par le PDG ; null = aucun. */
   deliveryFeeCeiling: fcfa.nullable(),
 });
@@ -74,6 +82,6 @@ export const publicCatalogue = z.object({
   ),
   articles: z.array(z.object({ id, name: z.string(), price: fcfa, available: z.boolean() })),
   neighbourhoods: z.array(neighbourhood.pick({ id: true, name: true, feePerBottle: true })),
-  shop: shopSettings.omit({ deliveryFeeCeiling: true }),
+  shop: shopSettings.omit({ deliveryFeeCeiling: true, eveningCountTime: true }),
 });
 export type PublicCatalogue = z.infer<typeof publicCatalogue>;

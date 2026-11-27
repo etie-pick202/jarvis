@@ -12,6 +12,7 @@ export const PERMISSIONS = {
   "catalog.article.write": ["pdg", "gerant"],
   "sale.create": ["pdg", "gerant", "caissier"],
   "sale.read": ["pdg", "gerant", "caissier"],
+  "sale.settle": ["pdg"],
   "sale.cancel": ["pdg", "gerant"],
   "stock.read": ["pdg", "gerant", "caissier"],
   "stock.write": ["pdg", "gerant"],

@@ -13,6 +13,7 @@ import { desc, eq } from "drizzle-orm";
 import { recordAudit } from "../audit/service.js";
 import { guardUnique, requireRow } from "../db-errors.js";
 import { AppError, type Deps } from "../http.js";
+import { moveArticleStock } from "./article-stock.js";
 import { exceedsCeiling, type PriceRow, resolveGasPrice } from "./pricing.js";
 
 const { brands, formats, gasPrices, articles, articlePriceHistory } = schema;
@@ -162,6 +163,33 @@ export async function currentPrice(deps: Deps, formatId: string, brandId: string
   return price;
 }
 
+/** Prix en vigueur de chaque marque et format actifs, en une seule lecture. */
+export async function currentPrices(deps: Deps) {
+  const [activeBrands, activeFormats, rows] = await Promise.all([
+    deps.db.select().from(brands).where(eq(brands.active, true)).orderBy(brands.name),
+    deps.db.select().from(formats).where(eq(formats.active, true)).orderBy(formats.weightGrams),
+    deps.db.select().from(gasPrices),
+  ]);
+  const now = deps.now();
+  return activeFormats.flatMap((format) =>
+    activeBrands.flatMap((brand) => {
+      const price = resolveGasPrice(rows, format.id, brand.id, now);
+      if (!price) return [];
+      const { amount, transportContribution, purchaseCost, effectiveFrom } = price;
+      return [
+        {
+          formatId: format.id,
+          brandId: brand.id,
+          amount,
+          transportContribution,
+          purchaseCost,
+          effectiveFrom,
+        },
+      ];
+    }),
+  );
+}
+
 export const gasPriceHistory = (deps: Deps, formatId: string) =>
   deps.db
     .select()
@@ -172,12 +200,27 @@ export const gasPriceHistory = (deps: Deps, formatId: string) =>
 export const listArticles = (deps: Deps) => deps.db.select().from(articles).orderBy(articles.name);
 
 export async function createArticle(deps: Deps, actorId: string, input: CreateArticleInput) {
-  const row = requireRow(
-    await deps.db
-      .insert(articles)
-      .values({ ...input, createdBy: actorId })
-      .returning(),
-  );
+  const { initialQty = 0, ...values } = input;
+  if (initialQty > 0 && !values.trackStock) {
+    throw new AppError(422, "invalid_request", "Un stock de départ suppose un article suivi en stock");
+  }
+  const row = await deps.db.transaction(async (tx) => {
+    const created = requireRow(
+      await tx
+        .insert(articles)
+        .values({ ...values, createdBy: actorId })
+        .returning(),
+    );
+    if (initialQty === 0) return created;
+    return moveArticleStock(tx, {
+      articleId: created.id,
+      kind: "entry",
+      delta: initialQty,
+      label: "Stock de départ",
+      authorId: actorId,
+      createdAt: deps.now(),
+    });
+  });
   await deps.db
     .insert(articlePriceHistory)
     .values({ articleId: row.id, price: row.price, changedBy: actorId, changedAt: deps.now() });

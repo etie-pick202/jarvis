@@ -2,6 +2,7 @@ import { z } from "zod";
 import { paymentMethod } from "./cash.js";
 import { id, isoDateTime } from "./common.js";
 import { fcfa } from "./money.js";
+import { phoneNumber } from "./phone.js";
 import { saleLineInput } from "./sales.js";
 
 /** Commandes sans compte : choisir, indiquer son nom et son adresse, payer, suivre (module 5). */
@@ -26,7 +27,7 @@ export const createOrderInput = z
     /** Identifiant tiré par l'appareil : renvoyer la même commande ne la duplique pas. */
     clientRef: z.uuid(),
     customerName: z.string().trim().min(1).max(120),
-    phone: z.string().trim().min(6).max(30),
+    phone: phoneNumber,
     mode: orderMode,
     /** Quartier connu (liste de la vitrine), ou à défaut son nom. */
     neighbourhoodId: id.optional(),
