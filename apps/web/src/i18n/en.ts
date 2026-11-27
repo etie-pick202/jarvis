@@ -353,6 +353,7 @@ export const en: Record<MessageKey, string> = {
   "money.taux.enregistrer": "Save the rates",
   "money.taux.pdg": "Only the CEO changes the rates.",
   "money.taux.ok": "Rates saved.",
+  "saisie.telephone": "Incomplete number: 9 digits, or the country code (+33…).",
   "page.bientot": "This screen is coming soon.",
   "page.introuvable": "Page not found",
   "page.retour": "Back to home",

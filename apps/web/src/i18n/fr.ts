@@ -352,6 +352,7 @@ export const fr = {
   "money.taux.enregistrer": "Enregistrer les taux",
   "money.taux.pdg": "Seul le PDG modifie les taux.",
   "money.taux.ok": "Taux enregistrés.",
+  "saisie.telephone": "Numéro incomplet : 9 chiffres, ou l'indicatif du pays (+33…).",
   "page.bientot": "Cet écran arrive bientôt.",
   "page.introuvable": "Page introuvable",
   "page.retour": "Retour à l'accueil",

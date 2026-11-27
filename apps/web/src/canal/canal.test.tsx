@@ -67,7 +67,10 @@ describe("CanalSab", () => {
     const enregistrer = fiche.getByRole("button", { name: "Enregistrer l'abonné" }) as HTMLButtonElement;
     expect(enregistrer.disabled).toBe(true);
     await userEvent.type(fiche.getByLabelText("Nom"), "Biloa Paul");
-    await userEvent.type(fiche.getByLabelText("Téléphone"), "237690000099");
+    await userEvent.type(fiche.getByLabelText("Téléphone"), "69000");
+    expect(fiche.getByRole("alert").textContent).toContain("Numéro incomplet");
+    await userEvent.clear(fiche.getByLabelText("Téléphone"));
+    await userEvent.type(fiche.getByLabelText("Téléphone"), "690 00 00 99");
     await userEvent.type(fiche.getByLabelText("Numéro de décodeur"), "DEC-0099");
     await userEvent.selectOptions(fiche.getByLabelText("Formule"), "00000000-0000-4000-8000-000000001301");
     await userEvent.click(enregistrer);
