@@ -12,6 +12,8 @@ export default defineConfig({
         "src/**/*.int.test.ts",
         "src/index.ts",
         "src/seed.ts",
+        // Testé contre PostgreSQL (initialiser.int.test.ts).
+        "src/initialiser.ts",
         "src/schema.ts",
         "src/client.ts",
         "src/migrate.ts",
