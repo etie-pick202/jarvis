@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { api, nombreFr, type Rapport } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import type { MessageKey } from "../i18n/fr.js";
@@ -123,44 +123,4 @@ export function SituationGaz() {
   );
 }
 
-/** Exports : les fichiers CSV du serveur (ouvrent dans Excel), en attendant le format Sage 100 i7 à confirmer. */
-export function Exports() {
-  const { t } = useI18n();
-  const [erreur, setErreur] = useState(false);
-  const fichiers: ["sales" | "cash" | "stock", string, string][] = [
-    ["sales", t("rub.rapport.clients"), "ventes.csv"],
-    ["cash", t("rub.rapport.journal"), "caisse.csv"],
-    ["stock", t("rub.rapport.gaz"), "stock-gaz.csv"],
-  ];
-
-  async function exporter(nom: "sales" | "cash" | "stock", fichier: string) {
-    setErreur(false);
-    try {
-      telecharger(fichier, await (await api.exportCsv(nom)).text(), "text/csv;charset=utf-8");
-    } catch {
-      setErreur(true);
-    }
-  }
-
-  return (
-    <section className="carte">
-      <h1>{t("rub.rapport.exports")}</h1>
-      <p>{t("rapport.sage")}</p>
-      {erreur && (
-        <p role="alert" className="connexion__erreur">
-          {t("rapport.export.erreur")}
-        </p>
-      )}
-      <ul className="liste">
-        {fichiers.map(([nom, libelle, fichier]) => (
-          <li key={nom} className="validation">
-            <strong>{libelle}</strong>
-            <Button variant="noir" onClick={() => void exporter(nom, fichier)}>
-              {`${t("rapport.csv")} (${fichier})`}
-            </Button>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
+export { Exports } from "./Exports.js";
