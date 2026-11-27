@@ -494,3 +494,13 @@ export const moneyOperations = pgTable(
     uniqueIndex("money_operations_one_reversal").on(t.reversalOf).where(sql`${t.reversalOf} is not null`),
   ],
 );
+
+// ---------- Livraison ----------
+/** Quartiers livrés, saisis par le gérant : le montant retenu est reproposé la fois suivante. */
+export const neighbourhoods = pgTable("neighbourhoods", {
+  id: id(),
+  name: text("name").notNull().unique(),
+  feePerBottle: integer("fee_per_bottle").notNull(),
+  active: boolean("active").notNull().default(true),
+  createdAt: createdAt(),
+});
