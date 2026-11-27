@@ -12,7 +12,6 @@ import type {
   Fournisseur,
   GazStock,
   LigneAudit,
-  Livraison,
   LoginInput,
   Rapport,
   ReceptionResume,
@@ -283,6 +282,21 @@ export const api = {
   seuilCloture: async (signal?: AbortSignal): Promise<number> =>
     (await get("/cash/closure-threshold", contrat.closureThresholdResult, signal)).threshold,
 
+  /** Comptes (PDG). Écritures directes : un mot de passe n'est jamais gardé dans la file d'envoi. */
+  comptes: (signal?: AbortSignal): Promise<contrat.UserAccount[]> =>
+    get("/auth/users", contrat.userAccounts, signal),
+  creerCompte: (body: { username: string; displayName: string; password: string; roles: contrat.Role[] }) =>
+    request("/auth/users", { method: "POST", body, idempotencyKey: newIdempotencyKey(), parse: () => null }),
+  modifierCompte: (id: string, body: contrat.UpdateUserInput): Promise<contrat.UserAccount> =>
+    request(`/auth/users/${id}`, {
+      method: "PATCH",
+      body,
+      idempotencyKey: newIdempotencyKey(),
+      parse: lire(contrat.userAccount),
+    }),
+  seuilStock: async (signal?: AbortSignal): Promise<number> =>
+    (await get("/stock/thresholds", contrat.stockThresholds, signal)).default,
+
   /** Vue agrégée du PDG pour le jour d'activité. */
   tableau: async (signal?: AbortSignal): Promise<Tableau> => {
     const d = await get("/reports/dashboard", contrat.dashboard, signal);
@@ -353,12 +367,18 @@ export const api = {
     })),
 
   badges: async (signal?: AbortSignal): Promise<Badges> => {
-    const [bas, attente, echeances] = await Promise.all([
+    const [bas, attente, echeances, commandes] = await Promise.all([
       sansDroit(get("/stock/alerts", contrat.stockRows, signal), []),
       sansDroit(get("/inventory?pending=1", contrat.countRows, signal), []),
       sansDroit(get("/canal/due?within=7", contrat.canalSubscribers, signal), []),
+      sansDroit(get("/orders/summary", contrat.orderSummary, signal), { pending: 0, toDeliver: 0 }),
     ]);
-    return { commandes: 0, stockBas: bas.length, echeances: echeances.length, validations: attente.length };
+    return {
+      commandes: commandes.pending,
+      stockBas: bas.length,
+      echeances: echeances.length,
+      validations: attente.length,
+    };
   },
 
   /** Canal+ : formules, abonnés (liste complète, filtrée sur l'appareil) et échéances proches. */
@@ -386,8 +406,31 @@ export const api = {
   echeancesCanal: (jours: number, signal?: AbortSignal): Promise<contrat.CanalSubscriber[]> =>
     get(`/canal/due?within=${jours}`, contrat.canalSubscribers, signal),
 
+  /** Commandes de la boutique et livreurs à qui les confier. */
+  commandes: (signal?: AbortSignal): Promise<contrat.Order[]> => get("/orders", contrat.orders, signal),
+  livreurs: (signal?: AbortSignal) =>
+    sansDroit(
+      get("/orders/drivers", z.array(z.object({ id: z.string(), displayName: z.string() })), signal),
+      [],
+    ),
+  agirCommande: (id: string, action: string, body?: unknown): Promise<contrat.Order> =>
+    request(`/orders/${id}/${action}`, {
+      method: "POST",
+      body: body ?? {},
+      idempotencyKey: newIdempotencyKey(),
+      parse: lire(contrat.order),
+    }),
   /** Livraisons du jour : le module de livraison n'a pas encore de contrat côté serveur (lot 3). */
-  livraisons: async (): Promise<Livraison[]> => [],
+  remettre: (id: string, body: contrat.CompleteOrderInput) =>
+    request(`/deliveries/${id}/delivered`, {
+      method: "POST",
+      body,
+      idempotencyKey: newIdempotencyKey(),
+      parse: () => null,
+    }),
+  /** Tournée du livreur connecté. */
+  tournee: (signal?: AbortSignal): Promise<contrat.Delivery[]> =>
+    get("/deliveries", contrat.deliveries, signal),
 
   rapport: async (id: "clients" | "journal" | "x", signal?: AbortSignal): Promise<Rapport> => {
     if (id === "clients")
