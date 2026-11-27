@@ -431,6 +431,42 @@ const encaissementsCanal = (date: string) =>
     cancelled: false,
   }));
 
+const CLE_COMMANDE = "jarvis.fake-commande";
+const JETON_ESSAI = "jeton-essai-0001";
+
+/** Commande sans compte : la dernière est gardée pour que le suivi la retrouve. */
+function commandePublique(route: string, init?: RequestInit): Response {
+  const corpsRecu = JSON.parse(String(init?.body ?? "{}")) as {
+    mode?: "pickup" | "delivery";
+    paymentMethod?: string;
+    lines?: { quantity: number }[];
+  };
+  if (init?.method === "POST") {
+    const lignes = (corpsRecu.lines ?? []).map((l, i) => ({
+      label: `Produit d'essai ${i + 1}`,
+      quantity: l.quantity,
+      total: 7200 * l.quantity,
+    }));
+    const commande = {
+      number: "CMD0001",
+      status: "pending",
+      mode: corpsRecu.mode ?? "delivery",
+      paymentMethod: corpsRecu.paymentMethod ?? "cash",
+      paymentConfirmed: false,
+      total: lignes.reduce((n, l) => n + l.total, 0),
+      lines: lignes,
+      createdAt: `${jour}T10:00:00.000Z`,
+    };
+    localStorage.setItem(CLE_COMMANDE, JSON.stringify(commande));
+    return json({ ...commande, trackingToken: JETON_ESSAI }, 201);
+  }
+  const gardee = localStorage.getItem(CLE_COMMANDE);
+  if (!gardee || !route.startsWith(`/shop/orders/${JETON_ESSAI}`)) {
+    return erreur(404, "not_found", "Commande introuvable");
+  }
+  return json(JSON.parse(gardee));
+}
+
 const CLE_FAUX = "jarvis.fake-user";
 
 /** L'utilisateur « connecté » survit au rechargement, comme le ferait un jeton de session. */
@@ -460,6 +496,7 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
 
   // Vitrine publique : aucune session requise.
   if (route === "/shop/catalogue") return json(vitrine());
+  if (route.startsWith("/shop/orders")) return commandePublique(route, init);
 
   if (route === "/auth/login") {
     const body = JSON.parse(String(init?.body ?? "{}")) as { username?: string; password?: string };
