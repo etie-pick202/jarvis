@@ -78,3 +78,13 @@ export type Sale = z.infer<typeof sale>;
 
 export const cancelSaleInput = z.object({ justification });
 export type CancelSaleInput = z.infer<typeof cancelSaleInput>;
+
+/** Reçu d'une vente, prêt à être partagé. */
+export const saleReceipt = z.object({
+  number: z.string(),
+  lines: z.array(z.string()),
+  message: z.string(),
+  /** Lien WhatsApp prérempli ; sans numéro connu, WhatsApp laisse choisir le contact. */
+  whatsappUrl: z.url(),
+});
+export type SaleReceipt = z.infer<typeof saleReceipt>;
