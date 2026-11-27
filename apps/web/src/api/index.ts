@@ -12,7 +12,6 @@ import type {
   Fournisseur,
   GazStock,
   LigneAudit,
-  Livraison,
   LoginInput,
   Rapport,
   ReceptionResume,
@@ -357,12 +356,18 @@ export const api = {
     })),
 
   badges: async (signal?: AbortSignal): Promise<Badges> => {
-    const [bas, attente, echeances] = await Promise.all([
+    const [bas, attente, echeances, commandes] = await Promise.all([
       sansDroit(get("/stock/alerts", contrat.stockRows, signal), []),
       sansDroit(get("/inventory?pending=1", contrat.countRows, signal), []),
       sansDroit(get("/canal/due?within=7", contrat.canalSubscribers, signal), []),
+      sansDroit(get("/orders/summary", contrat.orderSummary, signal), { pending: 0, toDeliver: 0 }),
     ]);
-    return { commandes: 0, stockBas: bas.length, echeances: echeances.length, validations: attente.length };
+    return {
+      commandes: commandes.pending,
+      stockBas: bas.length,
+      echeances: echeances.length,
+      validations: attente.length,
+    };
   },
 
   /** Canal+ : formules, abonnés (liste complète, filtrée sur l'appareil) et échéances proches. */
@@ -390,8 +395,31 @@ export const api = {
   echeancesCanal: (jours: number, signal?: AbortSignal): Promise<contrat.CanalSubscriber[]> =>
     get(`/canal/due?within=${jours}`, contrat.canalSubscribers, signal),
 
+  /** Commandes de la boutique et livreurs à qui les confier. */
+  commandes: (signal?: AbortSignal): Promise<contrat.Order[]> => get("/orders", contrat.orders, signal),
+  livreurs: (signal?: AbortSignal) =>
+    sansDroit(
+      get("/orders/drivers", z.array(z.object({ id: z.string(), displayName: z.string() })), signal),
+      [],
+    ),
+  agirCommande: (id: string, action: string, body?: unknown): Promise<contrat.Order> =>
+    request(`/orders/${id}/${action}`, {
+      method: "POST",
+      body: body ?? {},
+      idempotencyKey: newIdempotencyKey(),
+      parse: lire(contrat.order),
+    }),
   /** Livraisons du jour : le module de livraison n'a pas encore de contrat côté serveur (lot 3). */
-  livraisons: async (): Promise<Livraison[]> => [],
+  remettre: (id: string, body: contrat.CompleteOrderInput) =>
+    request(`/deliveries/${id}/delivered`, {
+      method: "POST",
+      body,
+      idempotencyKey: newIdempotencyKey(),
+      parse: () => null,
+    }),
+  /** Tournée du livreur connecté. */
+  tournee: (signal?: AbortSignal): Promise<contrat.Delivery[]> =>
+    get("/deliveries", contrat.deliveries, signal),
 
   rapport: async (id: "clients" | "journal" | "x", signal?: AbortSignal): Promise<Rapport> => {
     if (id === "clients")

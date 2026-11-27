@@ -69,6 +69,12 @@ function Commande({ jeton }: Readonly<{ jeton: string }>) {
             </Chip>
           </p>
           <p>{t(o.mode === "delivery" ? "vente.livraison" : "boutique.retrait")}</p>
+          {o.deliveryCode && o.status !== "delivered" && o.status !== "cancelled" && (
+            <p>
+              {`${t("commande.code")} `}
+              <strong>{o.deliveryCode}</strong>
+            </p>
+          )}
           <p>
             {t(
               o.paymentMethod === "cash"
