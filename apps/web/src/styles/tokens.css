@@ -7,7 +7,7 @@
   --creme: #f6f4ec;
   --blanc: #ffffff;
   --ligne: #e3e0d5;
-  --ligne-champ: #b9b5a4;
+  --ligne-champ: #8a8778; /* 3:1 sur blanc et sur crème */
   --texte: #111111;
   --texte-2: #3a3a36;
   --texte-doux: #5f5e57;
@@ -31,16 +31,27 @@
   --police: "Inter Variable", system-ui, sans-serif;
   --police-titre: "Space Grotesk Variable", "Inter Variable", system-ui, sans-serif;
 
-  --rayon-s: 10px;
+  --rayon-s: 8px;
   --rayon-m: 12px;
-  --rayon-l: 14px;
+  --rayon-l: 12px;
   --rayon-pastille: 999px;
   --cible-min: 44px;
-  --hauteur-champ: 46px;
-  --hauteur-bouton: 52px;
+  --hauteur-champ: 48px;
+  --hauteur-bouton: 48px;
   --espace-1: 4px;
   --espace-2: 8px;
   --espace-3: 12px;
   --espace-4: 16px;
   --espace-5: 24px;
+
+  /* Téléphone d'abord : jamais de texte sous 14px. */
+  --taille-texte: 16px;
+  --taille-meta: 14px;
+  --ombre-flottante: 0 8px 24px rgb(0 0 0 / 18%);
+}
+@media (min-width: 900px) {
+  :root {
+    --taille-texte: 14px;
+    --taille-meta: 12px;
+  }
 }

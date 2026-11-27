@@ -6,6 +6,7 @@ import { useI18n } from "../i18n/index.js";
 import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Etat } from "../ui/Etat.js";
+import { Suite } from "../ui/Suite.js";
 import { Table } from "../ui/Table.js";
 import { FormatBouteille } from "../visuels/FormatBouteille.js";
 import { MarqueGaz } from "../visuels/MarqueGaz.js";
@@ -29,7 +30,13 @@ export function StockGaz() {
     <div className="page">
       <section className="carte">
         <h1>{t("gaz.stock.titre")}</h1>
-        <Etat {...lecture} vide={data.length === 0} messageVide={t("gaz.stock.vide")}>
+        <Etat
+          {...lecture}
+          vide={data.length === 0}
+          messageVide={t("gaz.stock.vide")}
+          texteVide={t("vide.stock")}
+          actionVide={<Suite vers="/config/marques" libelle={t("vide.vers.marques")} />}
+        >
           <Table
             caption={t("gaz.stock.titre")}
             colonnes={[t("gaz.marque"), t("gaz.pleines"), t("gaz.vides"), t("gaz.total"), ""]}
@@ -87,8 +94,8 @@ export function StockGaz() {
           onAbandonner={() => setCorrige(false)}
         />
       )}
-      {/* Sans stock lu, rien à confirmer : un seul message d'erreur sur la page. */}
-      {lecture.charge && <Comptage kind="evening" />}
+      {/* Sans stock lu, rien à confirmer : un seul message sur la page. */}
+      {lecture.charge && data.length > 0 && <Comptage kind="evening" />}
     </div>
   );
 }

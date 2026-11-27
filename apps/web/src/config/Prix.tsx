@@ -8,6 +8,7 @@ import { ecrire } from "../offline/ecrire.js";
 import { Button } from "../ui/Button.js";
 import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
+import { Suite } from "../ui/Suite.js";
 import { Table } from "../ui/Table.js";
 import { useEnvoi } from "../ui/useEnvoi.js";
 import { formatFcfa } from "../vente/regles.js";
@@ -152,7 +153,13 @@ export function Prix() {
     <div className="page">
       <section className="carte">
         <h1>{t("rub.config.prix")}</h1>
-        <Etat {...prix} vide={prix.data.length === 0} messageVide={t("tarifs.aucun.prix")}>
+        <Etat
+          {...prix}
+          vide={prix.data.length === 0}
+          messageVide={t("tarifs.aucun.prix")}
+          texteVide={t("vide.prix")}
+          actionVide={<Suite vers="/config/marques" libelle={t("vide.vers.marques")} />}
+        >
           <Table
             caption={t("rub.config.prix")}
             colonnes={[

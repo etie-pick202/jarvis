@@ -9,9 +9,9 @@
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: var(--espace-3);
-  padding: var(--espace-2) var(--espace-4);
+  min-height: 56px;
+  padding: 0 var(--espace-3);
   background: var(--noir);
 }
 .coque__marque {
@@ -27,7 +27,50 @@
 }
 .coque__haut .btn {
   min-height: var(--cible-min);
-  font-size: 13px;
+  padding: 0 var(--espace-3);
+  font-size: var(--taille-meta);
+  white-space: nowrap;
+}
+/* Très petit écran : le logo seul, pour que la barre reste sur une ligne. */
+@media (max-width: 419px) {
+  .coque__haut .marque-jarvis__nom {
+    display: none;
+  }
+}
+.menu {
+  position: relative;
+}
+.menu__bouton {
+  display: grid;
+  place-items: center;
+  width: var(--cible-min);
+  height: var(--cible-min);
+  border: 0;
+  border-radius: var(--rayon-s);
+  background: transparent;
+  color: var(--nav-texte);
+  cursor: pointer;
+}
+.menu__bouton[aria-expanded="true"] {
+  background: #2a2a28;
+}
+.menu__panneau {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+  min-width: 220px;
+  padding: var(--espace-3);
+  background: var(--noir);
+  border: 1px solid #3a3a36;
+  border-radius: var(--rayon-m);
+  box-shadow: var(--ombre-flottante);
+}
+.menu__panneau .segments__option {
+  flex: 1;
 }
 .coque__zone {
   min-width: 0;
@@ -46,6 +89,7 @@
   margin-right: var(--espace-4);
 }
 .coque__rubriques {
+  scroll-padding-inline: var(--espace-4);
   display: flex;
   gap: var(--espace-5);
   padding: 0 var(--espace-4);
@@ -58,9 +102,10 @@
 .rubrique {
   display: flex;
   align-items: center;
+  flex: none;
   min-height: var(--cible-min);
   padding: 0 2px;
-  font-size: 14px;
+  font-size: var(--taille-texte);
   font-weight: 500;
   color: var(--texte-doux);
   text-decoration: none;
@@ -91,10 +136,10 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  font-size: 14px;
+  font-size: var(--taille-texte);
 }
 .nav__texte small {
-  font-size: 11px;
+  font-size: var(--taille-meta);
   opacity: 0.85;
 }
 .nav__pastille {
@@ -107,6 +152,7 @@
 .coque__bas {
   position: sticky;
   bottom: 0;
+  z-index: 10;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
@@ -115,7 +161,7 @@
 .coque__bas .nav__lien {
   flex-direction: column;
   gap: 2px;
-  font-size: 11px;
+  font-size: var(--taille-meta);
   font-weight: 600;
   border-radius: 0;
 }

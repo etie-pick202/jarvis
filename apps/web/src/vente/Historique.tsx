@@ -94,7 +94,12 @@ function Journee({ jour, setJour }: Readonly<{ jour: string; setJour: (j: string
         ) : (
           <output className="bloc">{avis.texte}</output>
         ))}
-      <Etat {...lecture} vide={lecture.data.length === 0} messageVide={t("ventes.aucune")}>
+      <Etat
+        {...lecture}
+        vide={lecture.data.length === 0}
+        messageVide={t("ventes.aucune")}
+        texteVide={t("vide.ventes")}
+      >
         <p>
           <strong>{`${t("ventes.total")} : ${formatFcfa(totalVendu(lecture.data))}`}</strong>
         </p>

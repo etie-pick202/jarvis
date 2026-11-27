@@ -235,7 +235,12 @@ export function Commandes({ historique = false }: Readonly<{ historique?: boolea
           {erreur}
         </p>
       )}
-      <Etat {...lecture} vide={liste.length === 0} messageVide={t("commandes.aucune")}>
+      <Etat
+        {...lecture}
+        vide={liste.length === 0}
+        messageVide={t("commandes.aucune")}
+        texteVide={t("vide.commandes")}
+      >
         <ul className="liste">
           {visibles.map((o) => (
             <Carte key={o.id} commande={o} livreurs={livreurs.data} gere={gere} agir={agirSur(o)} />

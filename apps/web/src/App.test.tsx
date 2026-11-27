@@ -94,7 +94,8 @@ describe("App", () => {
 
   it("change de langue depuis l'écran et garde le choix", async () => {
     renderAt("/vente/nouvelle", "gerant");
-    await userEvent.click(await screen.findByRole("radio", { name: "EN" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Menu" }));
+    await userEvent.click(screen.getByRole("radio", { name: "EN" }));
     expect(await screen.findByRole("heading", { level: 1, name: "New sale" })).toBeTruthy();
     expect(localStorage.getItem("jarvis.lang")).toBe("en");
   });
@@ -106,7 +107,8 @@ describe("App", () => {
 
   it("se déconnecte", async () => {
     renderAt("/vente/nouvelle", "gerant");
-    await userEvent.click(await screen.findByRole("button", { name: "Déconnexion" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Menu" }));
+    await userEvent.click(screen.getByRole("button", { name: "Déconnexion" }));
     expect(await screen.findByLabelText("Identifiant")).toBeTruthy();
     expect(localStorage.getItem("jarvis.session")).toBeNull();
   });

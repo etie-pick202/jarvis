@@ -195,7 +195,12 @@ export function Abonnes() {
           value={recherche}
           onChange={(e) => setRecherche(e.target.value)}
         />
-        <Etat {...lecture} vide={trouves.length === 0} messageVide={t("canal.aucun")}>
+        <Etat
+          {...lecture}
+          vide={trouves.length === 0}
+          messageVide={t("canal.aucun")}
+          texteVide={t("vide.abonnes")}
+        >
           <Table
             caption={t("canal.abonnes.titre")}
             colonnes={[

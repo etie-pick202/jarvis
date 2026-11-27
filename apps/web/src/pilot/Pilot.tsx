@@ -12,6 +12,7 @@ import { usePagination, VoirPlus } from "../ui/listes.js";
 import { Table } from "../ui/Table.js";
 import { useGarde } from "../ui/useEnvoi.js";
 import { formatFcfa } from "../vente/regles.js";
+import { MiseEnRoute } from "./MiseEnRoute.js";
 
 const TABLEAU_VIDE: Tableau = {
   caJour: 0,
@@ -31,6 +32,10 @@ export function TableauDeBord() {
   const { t, lang } = useI18n();
   const lecture = useCached("pilot-tableau", api.tableau, TABLEAU_VIDE);
   const tab = lecture.data;
+  const { profilsActifs } = useSession();
+  const pdg = profilsActifs.includes("pdg");
+  // Rien vendu, rien en caisse, rien en stock : des chiffres à zéro n'apprennent rien au PDG.
+  const neuf = lecture.charge && tab.nbVentes === 0 && tab.totalCaisses === 0 && tab.pleines === 0;
   const pourcent = tab.margePct === null ? "" : ` (${tab.margePct.toLocaleString(lang)} %)`;
   const chiffres: [string, string][] = [
     [t("pilot.ca"), formatFcfa(tab.caJour)],
@@ -48,8 +53,9 @@ export function TableauDeBord() {
   return (
     <div className="page">
       <h1>{t("rub.pilot.tableau")}</h1>
+      {pdg && <MiseEnRoute />}
       <Etat {...lecture}>
-        <dl className="chiffres">
+        <dl className={neuf ? "chiffres chiffres--neuf" : "chiffres"}>
           {chiffres.map(([libelle, valeur]) => (
             <div key={libelle} className="chiffres__carte">
               <dt>{libelle}</dt>
