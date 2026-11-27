@@ -25,6 +25,9 @@ export const catalogueRoutes = new Hono<AppEnv>()
   .get("/formats", requirePermission("catalog.gas.read"), async (c) =>
     c.json(await svc.listFormats(c.get("deps"))),
   )
+  .get("/prices/current", requirePermission("catalog.gas.read"), async (c) =>
+    c.json(await svc.currentPrices(c.get("deps"))),
+  )
   .get("/prices/:formatId/current", requirePermission("catalog.gas.read"), async (c) => {
     const brandId = c.req.query("brandId");
     return c.json(

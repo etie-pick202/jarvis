@@ -120,3 +120,16 @@ export const article = z.object({
   active: z.boolean(),
 });
 export type Article = z.infer<typeof article>;
+
+/** GET /catalogue/prices/current : prix en vigueur de chaque marque et format actifs. */
+export const currentGasPrices = z.array(
+  z.object({
+    formatId: id,
+    brandId: id,
+    amount: fcfa,
+    transportContribution: fcfa,
+    purchaseCost: fcfa,
+    effectiveFrom: isoDateTime,
+  }),
+);
+export type CurrentGasPrices = z.infer<typeof currentGasPrices>;
