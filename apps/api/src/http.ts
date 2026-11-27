@@ -13,7 +13,7 @@ export interface Deps {
   /** Durée d'inactivité avant déconnexion automatique, en minutes. */
   sessionIdleMinutes: number;
   /** Absent : l'envoi par e-mail est inactif. */
-  mailer?: Mailer | undefined;
+  mailer?: Mailer;
 }
 
 export type AppEnv = {

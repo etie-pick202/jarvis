@@ -9,11 +9,12 @@ const databaseUrl = process.env.DATABASE_URL;
 let fetchHandler: (req: Request) => Response | Promise<Response>;
 if (databaseUrl) {
   const { db } = createDb(databaseUrl);
+  const mailer = mailerFromEnv(process.env);
   fetchHandler = createApp({
     db,
     now: () => new Date(),
     sessionIdleMinutes: Number(process.env.SESSION_IDLE_MINUTES ?? 30),
-    mailer: mailerFromEnv(process.env),
+    ...(mailer ? { mailer } : {}),
   }).fetch;
 } else {
   // Sans base (test de fumée de l'image) : seul /health répond, le reste est refusé clairement.

@@ -21,11 +21,10 @@ export interface Mailer {
 
 type Transport = { sendMail(mail: MailMessage & { from: string }): Promise<unknown> };
 
-export function smtpMailer(
-  url: string,
-  from: string,
-  open: (url: string) => Transport = (u) => createTransport(u),
-): Mailer {
+/** Connexion chiffrée obligatoire : sans TLS, ni identifiants ni rapports ne partent. */
+export const openSmtp = (url: string) => createTransport({ url, requireTLS: true });
+
+export function smtpMailer(url: string, from: string, open: (url: string) => Transport = openSmtp): Mailer {
   const transport = open(url);
   return {
     async send(message) {

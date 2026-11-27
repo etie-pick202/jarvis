@@ -1,6 +1,6 @@
 import { emailReportsStatus } from "@jarvis/shared";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { type MailMessage, mailerFromEnv, smtpMailer } from "../notifications/mailer.js";
+import { type MailMessage, mailerFromEnv, openSmtp, smtpMailer } from "../notifications/mailer.js";
 import { addUser, authGet, createTestApp, jsonPost } from "../testing/db.js";
 
 describe("transport SMTP", () => {
@@ -10,6 +10,13 @@ describe("transport SMTP", () => {
     expect(mailerFromEnv({ SMTP_FROM: "jarvis@example.test" })).toBeUndefined();
     const env = { SMTP_URL: "smtp://localhost:2525", SMTP_FROM: "jarvis@example.test" };
     expect(mailerFromEnv(env)).toBeDefined();
+  });
+
+  it("exige une connexion chiffrée, sans perdre les réglages de l'adresse", () => {
+    const transport = openSmtp("smtp://localhost:2525") as unknown as {
+      transporter: { options: { requireTLS?: boolean; host?: string; port?: number } };
+    };
+    expect(transport.transporter.options).toMatchObject({ requireTLS: true, host: "localhost", port: 2525 });
   });
 
   it("passe l'expéditeur configuré au transport", async () => {
