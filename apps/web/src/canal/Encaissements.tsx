@@ -34,12 +34,12 @@ function Saisie({
   abonnes,
   formules,
   encaisses,
-}: {
+}: Readonly<{
   abonnes: readonly CanalSubscriber[];
   formules: readonly CanalFormula[];
   /** Abonnés déjà encaissés aujourd'hui d'après le serveur. */
   encaisses: ReadonlySet<string>;
-}) {
+}>) {
   const { t, lang } = useI18n();
   const caisses = useCached("caisses", api.caisses, []);
   const [abonneId, setAbonneId] = useState("");
@@ -148,7 +148,9 @@ function Saisie({
           { value: "orange_money", label: t("paiement.om") },
         ]}
       />
-      {echeance && <p role="status">{`${t("canal.nouvelle.echeance")} : ${dateCourte(echeance, lang)}`}</p>}
+      {echeance && (
+        <output className="bloc">{`${t("canal.nouvelle.echeance")} : ${dateCourte(echeance, lang)}`}</output>
+      )}
       {standBy && (
         <p role="alert" className="connexion__erreur">
           {t("canal.caisse.standby")}
@@ -175,7 +177,7 @@ function Saisie({
       </Button>
       {fait && (
         <>
-          <p role="status">{`${t("canal.encaisse.ok")} ${recu}`}</p>
+          <output className="bloc">{`${t("canal.encaisse.ok")} ${recu}`}</output>
           <a
             className="btn btn--contour"
             href={`https://wa.me/${fait.telephone.replace(/\D/gu, "")}?text=${encodeURIComponent(recu)}`}
@@ -197,7 +199,7 @@ export function Encaissements() {
   return <Journee key={jour} jour={jour} setJour={setJour} />;
 }
 
-function Journee({ jour, setJour }: { jour: string; setJour: (j: string) => void }) {
+function Journee({ jour, setJour }: Readonly<{ jour: string; setJour: (j: string) => void }>) {
   const { t, lang } = useI18n();
   const { profilsActifs } = useSession();
   const charger = useCallback((s: AbortSignal) => api.encaissementsCanal(jour, s), [jour]);
@@ -260,11 +262,9 @@ function Journee({ jour, setJour }: { jour: string; setJour: (j: string) => void
                 <td>{p.formulaName}</td>
                 <td>{`${p.reversalOf ? "−" : ""}${formatFcfa(p.amount)}`}</td>
                 <td>
-                  {p.reversalOf ? (
-                    <Chip tone="alerte">{t("canal.annulation")}</Chip>
-                  ) : p.cancelled ? (
-                    <Chip tone="danger">{t("canal.annule")}</Chip>
-                  ) : peutAnnuler && permis.has(p.id) ? (
+                  {p.reversalOf && <Chip tone="alerte">{t("canal.annulation")}</Chip>}
+                  {p.cancelled && <Chip tone="danger">{t("canal.annule")}</Chip>}
+                  {peutAnnuler && permis.has(p.id) && (
                     <Button
                       variant="contour"
                       aria-label={`${t("canal.annuler")} ${p.subscriberName}`}
@@ -272,7 +272,7 @@ function Journee({ jour, setJour }: { jour: string; setJour: (j: string) => void
                     >
                       {t("canal.annuler")}
                     </Button>
-                  ) : null}
+                  )}
                 </td>
               </tr>
             ))}
