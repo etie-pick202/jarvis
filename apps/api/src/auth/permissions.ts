@@ -34,6 +34,7 @@ export const PERMISSIONS = {
   "delivery.ceiling": ["pdg"],
   "order.read": ["pdg", "gerant", "caissier"],
   "order.manage": ["pdg", "gerant"],
+  "delivery.drive": ["pdg", "gerant", "livreur"],
   "sync.replay": ["pdg", "gerant", "caissier"],
 } as const satisfies Record<string, readonly Role[]>;
 

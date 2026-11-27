@@ -1,9 +1,17 @@
-import { createOrderInput, orderStatus, setPaymentReferenceInput, validateOrderInput } from "@jarvis/shared";
+import {
+  assignOrderInput,
+  completeOrderInput,
+  createOrderInput,
+  orderStatus,
+  setPaymentReferenceInput,
+  validateOrderInput,
+} from "@jarvis/shared";
 import { Hono } from "hono";
 import { z } from "zod";
 import { requireAuth, requirePermission } from "../auth/middleware.js";
 import { type AppEnv, parse, parseJson } from "../http.js";
 import { idempotency } from "../idempotency.js";
+import { assign, collect, drivers } from "./fulfilment.js";
 import * as svc from "./orders.js";
 
 const uuid = z.uuid();
@@ -30,6 +38,21 @@ export const orderRoutes = new Hono<AppEnv>()
     return c.json(await svc.listOrders(c.get("deps"), status ? parse(orderStatus, status) : undefined));
   })
   .get("/summary", requirePermission("order.read"), async (c) => c.json(await svc.summary(c.get("deps"))))
+  .get("/drivers", requirePermission("order.manage"), async (c) => c.json(await drivers(c.get("deps"))))
+  .post("/:id/assign", requirePermission("order.manage"), async (c) => {
+    const { driverId } = await parseJson(c, assignOrderInput);
+    return c.json(await assign(c.get("deps"), c.get("user").id, parse(uuid, c.req.param("id")), driverId));
+  })
+  .post("/:id/collect", requirePermission("order.manage"), async (c) =>
+    c.json(
+      await collect(
+        c.get("deps"),
+        c.get("user"),
+        parse(uuid, c.req.param("id")),
+        await parseJson(c, completeOrderInput),
+      ),
+    ),
+  )
   .get("/:id", requirePermission("order.read"), async (c) =>
     c.json(await svc.getOrder(c.get("deps").db, parse(uuid, c.req.param("id")))),
   )
