@@ -13,6 +13,9 @@ import { Shell } from "./shell/Shell.js";
 
 // Écrans chargés à la demande : le premier affichage ne télécharge que la coque et la connexion.
 const Abonnes = lazy(() => import("./canal/Abonnes.js").then((m) => ({ default: m.Abonnes })));
+const Encaissements = lazy(() =>
+  import("./canal/Encaissements.js").then((m) => ({ default: m.Encaissements })),
+);
 const Echeances = lazy(() => import("./canal/Echeances.js").then((m) => ({ default: m.Echeances })));
 const Cloture = lazy(() => import("./caisse/Cloture.js").then((m) => ({ default: m.Cloture })));
 const Depenses = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Depenses })));
@@ -230,6 +233,14 @@ export function App() {
               element={
                 <Garde volet="canal">
                   <Echeances />
+                </Garde>
+              }
+            />
+            <Route
+              path="canal/encaissements"
+              element={
+                <Garde volet="canal">
+                  <Encaissements />
                 </Garde>
               }
             />
