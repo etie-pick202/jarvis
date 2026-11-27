@@ -217,8 +217,17 @@ export function Quartiers() {
     <div className="page">
       <section className="carte">
         <h1>{t("rub.livre.quartiers")}</h1>
-        <Etat {...quartiers} vide={quartiers.data.length === 0} messageVide={t("quartiers.aucun")}>
-          <Table caption={t("rub.livre.quartiers")} colonnes={[t("quartiers.nom"), t("quartiers.frais"), ""]}>
+        <Etat
+          {...quartiers}
+          vide={quartiers.data.length === 0}
+          messageVide={t("quartiers.aucun")}
+          texteVide={t("vide.quartiers")}
+        >
+          <Table
+            cartes
+            caption={t("rub.livre.quartiers")}
+            colonnes={[t("quartiers.nom"), t("quartiers.frais"), ""]}
+          >
             {quartiers.data.map((q) => (
               <tr key={q.id}>
                 <th scope="row">

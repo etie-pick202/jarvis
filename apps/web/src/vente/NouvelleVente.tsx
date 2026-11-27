@@ -7,8 +7,11 @@ import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Field } from "../ui/Field.js";
 import { Segmented } from "../ui/Segmented.js";
+import { Squelette } from "../ui/Squelette.js";
+import { Suite } from "../ui/Suite.js";
 import { useGarde } from "../ui/useEnvoi.js";
 import { FormatBouteille } from "../visuels/FormatBouteille.js";
+import { EtatVide } from "../visuels/Illustration.js";
 import { MarqueGaz } from "../visuels/MarqueGaz.js";
 import { useCatalogue, useSuggestions } from "./donnees.js";
 import { Recu, type RecuVente } from "./Recu.js";
@@ -31,7 +34,7 @@ const CLIENT_COMPTOIR = "Client comptoir";
 export function NouvelleVente() {
   const garde = useGarde();
   const { t } = useI18n();
-  const { articles, pret, consommer } = useCatalogue();
+  const { articles, pret, hors, consommer } = useCatalogue();
   const [etape, setEtape] = useState<1 | 2 | 3>(1);
   const [article, setArticle] = useState<Article | null>(null);
   const [nom, setNom] = useState("");
@@ -97,7 +100,21 @@ export function NouvelleVente() {
   }
 
   if (recu) return <Recu recu={recu} onNouvelle={reinitialiser} />;
-  if (!pret) return <p role="status">{t("page.chargement")}</p>;
+  if (!pret) return <Squelette />;
+  if (articles.length === 0) {
+    return (
+      <section className="carte vente">
+        <EtatVide
+          genre={hors ? "hors-ligne" : "vide"}
+          niveau={1}
+          titre={t(hors ? "vide.catalogue.hors" : "vide.vente.titre")}
+          texte={t(hors ? "vide.catalogue.hors.texte" : "vide.vente")}
+        >
+          {!hors && <Suite vers="/config/prix" libelle={t("vide.vers.prix")} />}
+        </EtatVide>
+      </section>
+    );
+  }
 
   const detail = article ? detailGaz(article) : null;
   return (
@@ -209,9 +226,17 @@ export function NouvelleVente() {
               )}
             </div>
           )}
-          <Button block disabled={!etape1Ok} onClick={() => setEtape(2)}>
-            {t("vente.suivant")}
-          </Button>
+          <div className="action-fixe">
+            {panier && (
+              <p className="action-fixe__total">
+                <span>{t("vente.total")}</span>
+                <strong>{formatFcfa(total(panier))}</strong>
+              </p>
+            )}
+            <Button block disabled={!etape1Ok} onClick={() => setEtape(2)}>
+              {t("vente.suivant")}
+            </Button>
+          </div>
         </>
       )}
 
@@ -247,7 +272,7 @@ export function NouvelleVente() {
               { value: "livraison", label: t("vente.livraison") },
             ]}
           />
-          <div className="vente__actions">
+          <div className="vente__actions action-fixe">
             <Button variant="contour" onClick={() => setEtape(1)}>
               {t("vente.retour")}
             </Button>
@@ -299,7 +324,7 @@ export function NouvelleVente() {
               <dd>{formatFcfa(total(panier))}</dd>
             </div>
           </dl>
-          <div className="vente__actions">
+          <div className="vente__actions action-fixe">
             <Button variant="contour" onClick={() => setEtape(2)}>
               {t("vente.retour")}
             </Button>

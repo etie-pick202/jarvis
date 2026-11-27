@@ -1,6 +1,7 @@
 import "fake-indexeddb/auto";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeApi, setFakeUser } from "../api/fake.js";
 import { SessionProvider } from "../auth/SessionProvider.js";
@@ -14,7 +15,7 @@ function ui(node: React.ReactNode, profil: "pdg" | "gerant" = "pdg") {
   return render(
     <I18nProvider initial="fr">
       <SessionProvider initial={{ userId: "u", nom: "x", profils: [profil], profilActif: profil }}>
-        {node}
+        <MemoryRouter>{node}</MemoryRouter>
       </SessionProvider>
     </I18nProvider>,
   );
@@ -39,6 +40,15 @@ describe("CoCoPilot", () => {
     expect(await screen.findByText("469 512 FCFA")).toBeTruthy();
     expect(await screen.findByText("98 / 33")).toBeTruthy();
     expect(await screen.findByText(/TRADEX en rupture/u)).toBeTruthy();
+  });
+
+  it("le tableau de bord détaille les caisses, signale la perte et mène aux validations", async () => {
+    ui(<TableauDeBord />);
+    expect(await screen.findByRole("table", { name: "Caisses" })).toBeTruthy();
+    expect(screen.getByText("À perte")).toBeTruthy();
+    expect((await screen.findByRole("link", { name: /Tout traiter/u })).getAttribute("href")).toBe(
+      "/pilot/validations",
+    );
   });
 
   it("la page des alertes distingue l'urgent du à surveiller", async () => {

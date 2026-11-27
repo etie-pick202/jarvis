@@ -13,7 +13,8 @@
     "test:coverage": "vitest run --coverage --passWithNoTests",
     "test:integration": "vitest run --config vitest.integration.config.ts --passWithNoTests",
     "generate": "drizzle-kit generate",
-    "seed": "tsx src/seed.ts"
+    "seed": "tsx src/seed.ts",
+    "initialiser": "tsx src/initialiser.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.4",

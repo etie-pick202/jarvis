@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
 import { useSession } from "../auth/SessionProvider.js";
 import { useI18n } from "../i18n/index.js";
@@ -14,10 +14,12 @@ import {
 } from "../nav/volets.js";
 import { StatusLight } from "../offline/StatusLight.js";
 import { Button } from "../ui/Button.js";
+import { Squelette } from "../ui/Squelette.js";
 import { IconeRubrique } from "../visuels/IconeRubrique.js";
 import { MarqueJarvis } from "../visuels/LogoJarvis.js";
 import { Icone } from "./icones.js";
 import { LivreurMode } from "./LivreurMode.js";
+import { Menu } from "./Menu.js";
 import { badgeDuVolet, useBadges } from "./useBadges.js";
 
 /** Volets de la barre du bas sur téléphone ; les autres se rangent sous « Plus ». */
@@ -63,10 +65,12 @@ export function Shell() {
             {mode === "livreur" ? t("mode.gestion") : t("mode.livreur")}
           </Button>
         )}
-        <LanguageSwitch />
-        <Button variant="contour" onClick={() => void logout()}>
-          {t("login.sortir")}
-        </Button>
+        <Menu>
+          <LanguageSwitch />
+          <Button variant="contour" onClick={() => void logout()}>
+            {t("login.sortir")}
+          </Button>
+        </Menu>
       </header>
 
       {mode === "livreur" ? (
@@ -90,7 +94,7 @@ export function Shell() {
           <div className="coque__zone">
             {courant && <Rubriques volet={courant} profils={profilsActifs} />}
             <main id="contenu" className="coque__contenu">
-              <Suspense fallback={<p role="status">{t("page.chargement")}</p>}>
+              <Suspense fallback={<Squelette />}>
                 <Outlet />
               </Suspense>
             </main>
@@ -116,8 +120,15 @@ export function Shell() {
 
 function Rubriques({ volet, profils }: { volet: Volet; profils: readonly Profil[] }) {
   const { t } = useI18n();
+  const { pathname } = useLocation();
+  const barre = useRef<HTMLElement>(null);
+  // La rubrique ouverte reste visible quand la barre défile (téléphone).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: le chemin déclenche le recentrage
+  useEffect(() => {
+    barre.current?.querySelector(".active")?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [pathname]);
   return (
-    <nav className="coque__rubriques" aria-label={`${volet.nom} : ${t("nav.rubriques")}`}>
+    <nav ref={barre} className="coque__rubriques" aria-label={`${volet.nom} : ${t("nav.rubriques")}`}>
       <h2 className="coque__titre">{volet.nom}</h2>
       {rubriquesPour(volet, profils).map((r: Rubrique) => (
         <NavLink key={r.id} to={cheminVolet(volet, r)} className="rubrique">

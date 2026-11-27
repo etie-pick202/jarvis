@@ -2,7 +2,6 @@ import { lazy, Suspense } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router";
 import { LoginPage } from "./auth/LoginPage.js";
 import { useSession } from "./auth/SessionProvider.js";
-import { useI18n } from "./i18n/index.js";
 import { cheminVolet, voletsPour } from "./nav/volets.js";
 import { SyncPage } from "./offline/SyncPage.js";
 import { ErrorBoundary, NotFound } from "./pages/Errors.js";
@@ -11,6 +10,7 @@ import { Placeholder } from "./pages/Placeholder.js";
 import { LivreurMode } from "./shell/LivreurMode.js";
 import { Plus } from "./shell/Plus.js";
 import { Shell } from "./shell/Shell.js";
+import { Squelette } from "./ui/Squelette.js";
 
 // Écrans chargés à la demande : le premier affichage ne télécharge que la coque et la connexion.
 const Quartiers = lazy(() => import("./commandes/Quartiers.js").then((m) => ({ default: m.Quartiers })));
@@ -67,14 +67,9 @@ const NouvelleVente = lazy(() =>
   import("./vente/NouvelleVente.js").then((m) => ({ default: m.NouvelleVente })),
 );
 
-function Chargement() {
-  const { t } = useI18n();
-  return <p role="status">{t("page.chargement")}</p>;
-}
-
 function RequireAuth() {
   const { session, loading } = useSession();
-  if (loading) return <Chargement />;
+  if (loading) return <Squelette />;
   return session ? <Outlet /> : <Navigate to="/connexion" replace />;
 }
 
@@ -93,7 +88,7 @@ export function App() {
         <Route
           path="boutique/suivi/:jeton"
           element={
-            <Suspense fallback={<Chargement />}>
+            <Suspense fallback={<Squelette />}>
               <Suivi />
             </Suspense>
           }
@@ -101,7 +96,7 @@ export function App() {
         <Route
           path="boutique"
           element={
-            <Suspense fallback={<Chargement />}>
+            <Suspense fallback={<Squelette />}>
               <Boutique />
             </Suspense>
           }
@@ -115,7 +110,7 @@ export function App() {
               path="vente/nouvelle"
               element={
                 <Garde volet="vente">
-                  <Suspense fallback={<Chargement />}>
+                  <Suspense fallback={<Squelette />}>
                     <NouvelleVente />
                   </Suspense>
                 </Garde>

@@ -11,6 +11,7 @@ const TRACES: Record<string, string> = {
   rapport: "M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3",
   config: "M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM12 2v3M12 19v3M2 12h3M19 12h3",
   plus: "M5 12h.01M12 12h.01M19 12h.01",
+  menu: "M4 6h16M4 12h16M4 18h16",
 };
 
 export function Icone({ id }: { id: string }) {
