@@ -11,6 +11,7 @@ export * from "./phone.js";
 export * from "./pricing.js";
 export * from "./responses.js";
 export * from "./roles.js";
+export * from "./sage.js";
 export * from "./sales.js";
 export * from "./stock.js";
 export * from "./stock-ops.js";
