@@ -3,15 +3,18 @@ import { createDb } from "@jarvis/db";
 import { errorBody } from "@jarvis/shared";
 import { Hono } from "hono";
 import { app as baseApp, createApp } from "./app.js";
+import { mailerFromEnv } from "./notifications/mailer.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 let fetchHandler: (req: Request) => Response | Promise<Response>;
 if (databaseUrl) {
   const { db } = createDb(databaseUrl);
+  const mailer = mailerFromEnv(process.env);
   fetchHandler = createApp({
     db,
     now: () => new Date(),
     sessionIdleMinutes: Number(process.env.SESSION_IDLE_MINUTES ?? 30),
+    ...(mailer ? { mailer } : {}),
   }).fetch;
 } else {
   // Sans base (test de fumée de l'image) : seul /health répond, le reste est refusé clairement.
