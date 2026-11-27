@@ -137,9 +137,11 @@ function Formulaire({
             </>
           )}
           {nouvelle !== "" && <p>{t("notif.ajouter.avant")}</p>}
-          <Button type="submit" disabled={occupe || nouvelle !== ""}>
-            {t("config.enregistrer")}
-          </Button>
+          <div className="vente__actions">
+            <Button type="submit" disabled={occupe || nouvelle !== ""}>
+              {t("config.enregistrer")}
+            </Button>
+          </div>
         </>
       )}
       {ok && <output className="bloc">{t("config.enregistre")}</output>}
