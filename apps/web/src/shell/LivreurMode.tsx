@@ -1,5 +1,5 @@
-import type { CompleteOrderInput, Delivery, OrderStatus, PaymentMethod } from "@jarvis/shared";
-import { type FormEvent, useState } from "react";
+import type { Brand, CompleteOrderInput, Delivery, OrderStatus, PaymentMethod } from "@jarvis/shared";
+import { type FormEvent, useId, useState } from "react";
 import { ApiError } from "../api/client.js";
 import { api } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
@@ -30,12 +30,41 @@ function moyensPossibles(l: Delivery): PaymentMethod[] {
 
 const LIBELLES = { cash: "paiement.especes", orange_money: "paiement.om", momo: "paiement.momo" } as const;
 
+/** Vide attendu d'après la commande : la marque annoncée par le client, sinon celle de la bouteille livrée. */
+const videAttendu = (l: Delivery["lines"][number]) => l.returnedBrandId ?? l.brandId ?? "";
+
+function ChoixVide({
+  libelle,
+  valeur,
+  marques,
+  onChange,
+}: Readonly<{ libelle: string; valeur: string; marques: readonly Brand[]; onChange: (id: string) => void }>) {
+  const id = useId();
+  return (
+    <div className="champ">
+      <label className="champ__label" htmlFor={id}>
+        {libelle}
+      </label>
+      <select id={id} className="champ__saisie" value={valeur} onChange={(e) => onChange(e.target.value)}>
+        {marques.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function Remise({
   livraison,
+  marques,
   onValider,
   onAnnuler,
 }: Readonly<{
   livraison: Delivery;
+  /** Vide tant que la liste n'a pas pu être lue : la marque de la commande s'applique alors. */
+  marques: readonly Brand[];
   /** Renvoie le refus du serveur à afficher, ou null si la remise est acceptée ou mise en file. */
   onValider: (corps: CompleteOrderInput) => Promise<string | null>;
   onAnnuler: () => void;
@@ -45,6 +74,8 @@ function Remise({
   const [moyen, setMoyen] = useState<PaymentMethod>(moyens[0] ?? "cash");
   const [encaisse, setEncaisse] = useState(false);
   const [vides, setVides] = useState(false);
+  /** Marques choisies, par rang de la ligne dans la commande. */
+  const [rapportees, setRapportees] = useState<Record<number, string>>({});
   const [code, setCode] = useState("");
   const [refus, setRefus] = useState<string | null>(null);
   const codeLu = /^\d{4}$/u.test(code.trim());
@@ -53,7 +84,18 @@ function Remise({
   const pret = codeLu && (dejaPaye || encaisse) && (!aDuGaz || vides);
   const [valider, occupe] = useEnvoi(async () => {
     setRefus(null);
-    setRefus(await onValider({ paymentMethod: moyen, code: code.trim() }));
+    // Seuls les écarts avec la commande sont envoyés.
+    const echanges = livraison.lines.flatMap((l, line) => {
+      const choisie = rapportees[line];
+      return choisie && choisie !== videAttendu(l) ? [{ line, returnedBrandId: choisie }] : [];
+    });
+    setRefus(
+      await onValider({
+        paymentMethod: moyen,
+        code: code.trim(),
+        ...(echanges.length > 0 ? { returnedEmpties: echanges } : {}),
+      }),
+    );
   });
 
   function envoyer(event: FormEvent) {
@@ -83,6 +125,21 @@ function Remise({
           {t("mode.encaisse")}
         </label>
       )}
+      {marques.length > 0 &&
+        livraison.lines.map((l, line) => {
+          if (l.kind !== "gas") return null;
+          const attendue = videAttendu(l);
+          return (
+            <ChoixVide
+              // biome-ignore lint/suspicious/noArrayIndexKey: le rang est l'identifiant de la ligne pour le serveur
+              key={line}
+              libelle={`${t("mode.vide.marque")} (${l.label})`}
+              valeur={rapportees[line] ?? attendue}
+              marques={marques.filter((m) => m.active || m.id === attendue)}
+              onChange={(id) => setRapportees((r) => ({ ...r, [line]: id }))}
+            />
+          );
+        })}
       {aDuGaz && (
         <label className="vente__bascule">
           <input type="checkbox" checked={vides} onChange={(e) => setVides(e.target.checked)} />
@@ -153,10 +210,12 @@ function Probleme({
 
 function Carte({
   livraison: l,
+  marques,
   enAttente,
   onChange,
 }: Readonly<{
   livraison: Delivery;
+  marques: readonly Brand[];
   enAttente: boolean;
   onChange: (suivante: Delivery) => void;
 }>) {
@@ -246,7 +305,7 @@ function Carte({
         </div>
       )}
       {panneau === "remise" && (
-        <Remise livraison={l} onValider={remettre} onAnnuler={() => setPanneau(null)} />
+        <Remise livraison={l} marques={marques} onValider={remettre} onAnnuler={() => setPanneau(null)} />
       )}
       {panneau === "probleme" && (
         <Probleme
@@ -262,6 +321,8 @@ function Carte({
 export function LivreurMode() {
   const { t } = useI18n();
   const lecture = useCached("tournee", api.tournee, []);
+  // Lues avec la tournée pour rester disponibles sans réseau.
+  const marques = useCached("mode-marques", api.marquesConfig, []);
   const attente = useOutbox().filter((o) => o.status === "pending");
 
   return (
@@ -272,6 +333,7 @@ export function LivreurMode() {
           <Carte
             key={l.id}
             livraison={l}
+            marques={marques.data}
             enAttente={attente.some((o) => o.path.startsWith(`/deliveries/${l.id}/`))}
             onChange={(suivante) => lecture.modifier((d) => d.map((x) => (x.id === l.id ? suivante : x)))}
           />

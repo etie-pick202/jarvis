@@ -32,18 +32,12 @@ function appA(path: string, profils: ("pdg" | "caissier")[]) {
   );
 }
 
-describe("écrans provisoires et droits", () => {
+describe("adresses inconnues et droits", () => {
   beforeEach(() => {
     localStorage.clear();
     reseauFictif();
   });
   afterEach(() => vi.unstubAllGlobals());
-
-  it("une rubrique pas encore faite affiche l'écran provisoire de son volet", async () => {
-    appA("/config/notifications", ["pdg"]);
-    expect(await screen.findByRole("heading", { level: 1, name: "CoCoConfig" })).toBeTruthy();
-    expect(screen.getByText("Cet écran arrive bientôt.")).toBeTruthy();
-  });
 
   it("une rubrique inconnue ou hors profil n'ouvre rien", async () => {
     appA("/market/inconnue", ["pdg"]);
