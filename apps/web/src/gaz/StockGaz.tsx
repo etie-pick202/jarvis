@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { api } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
+import { useSession } from "../auth/SessionProvider.js";
 import { useI18n } from "../i18n/index.js";
+import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Etat } from "../ui/Etat.js";
 import { Table } from "../ui/Table.js";
 import { FormatBouteille } from "../visuels/FormatBouteille.js";
 import { MarqueGaz } from "../visuels/MarqueGaz.js";
+import { CorrectionStock } from "./CorrectionStock.js";
 import { Comptage } from "./Inventaire.js";
 
 /** Stock plein et vide par marque, alerte de seuil bas, confirmation du soir. */
@@ -13,6 +17,10 @@ export function StockGaz() {
   const { t } = useI18n();
   const lecture = useCached("gaz-stock", api.gazStock, []);
   const { data } = lecture;
+  const { profilsActifs } = useSession();
+  const peutCorriger = profilsActifs.includes("pdg") || profilsActifs.includes("gerant");
+  const [corrige, setCorrige] = useState(false);
+  const [fait, setFait] = useState(false);
   const formats = new Set(data.map((s) => s.formatId));
   const pleines = data.reduce((n, s) => n + s.pleines, 0);
   const vides = data.reduce((n, s) => n + s.vides, 0);
@@ -53,7 +61,32 @@ export function StockGaz() {
             </tr>
           </Table>
         </Etat>
+        {fait && <output className="bloc">{t("corr.faite")}</output>}
+        {peutCorriger && data.length > 0 && !corrige && (
+          <div className="vente__actions">
+            <Button
+              variant="contour"
+              onClick={() => {
+                setCorrige(true);
+                setFait(false);
+              }}
+            >
+              {t("corr.stock.bouton")}
+            </Button>
+          </div>
+        )}
       </section>
+      {corrige && (
+        <CorrectionStock
+          lignes={data}
+          onFait={() => {
+            setCorrige(false);
+            setFait(true);
+            lecture.recharger();
+          }}
+          onAbandonner={() => setCorrige(false)}
+        />
+      )}
       {/* Sans stock lu, rien à confirmer : un seul message d'erreur sur la page. */}
       {lecture.charge && <Comptage kind="evening" />}
     </div>

@@ -73,6 +73,9 @@
           },
           {
             "context": "flux-branches"
+          },
+          {
+            "context": "e2e-vraie-api"
           }
         ]
       }
