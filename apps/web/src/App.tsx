@@ -13,6 +13,11 @@ import { Plus } from "./shell/Plus.js";
 import { Shell } from "./shell/Shell.js";
 
 // Écrans chargés à la demande : le premier affichage ne télécharge que la coque et la connexion.
+const Quartiers = lazy(() => import("./commandes/Quartiers.js").then((m) => ({ default: m.Quartiers })));
+const Historique = lazy(() => import("./vente/Historique.js").then((m) => ({ default: m.Historique })));
+const Clients = lazy(() => import("./vente/Clients.js").then((m) => ({ default: m.Clients })));
+const Marques = lazy(() => import("./config/Marques.js").then((m) => ({ default: m.Marques })));
+const Prix = lazy(() => import("./config/Prix.js").then((m) => ({ default: m.Prix })));
 const Utilisateurs = lazy(() =>
   import("./config/Utilisateurs.js").then((m) => ({ default: m.Utilisateurs })),
 );
@@ -29,6 +34,9 @@ const Encaissements = lazy(() =>
 const Operations = lazy(() => import("./money/Operations.js").then((m) => ({ default: m.Operations })));
 const Float = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Float })));
 const Commissions = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Commissions })));
+const MouvementsArticles = lazy(() =>
+  import("./market/Mouvements.js").then((m) => ({ default: m.MouvementsArticles })),
+);
 const Commandes = lazy(() => import("./commandes/Commandes.js").then((m) => ({ default: m.Commandes })));
 const HistoriqueCommandes = lazy(() =>
   import("./commandes/Commandes.js").then((m) => ({ default: m.HistoriqueCommandes })),
@@ -379,6 +387,54 @@ export function App() {
               element={
                 <Garde volet="config">
                   <ConfigLangue />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/marques"
+              element={
+                <Garde volet="config">
+                  <Marques />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/prix"
+              element={
+                <Garde volet="config">
+                  <Prix />
+                </Garde>
+              }
+            />
+            <Route
+              path="vente/historique"
+              element={
+                <Garde volet="vente">
+                  <Historique />
+                </Garde>
+              }
+            />
+            <Route
+              path="vente/clients"
+              element={
+                <Garde volet="vente">
+                  <Clients />
+                </Garde>
+              }
+            />
+            <Route
+              path="market/mouvements"
+              element={
+                <Garde volet="market">
+                  <MouvementsArticles />
+                </Garde>
+              }
+            />
+            <Route
+              path="livre/quartiers"
+              element={
+                <Garde volet="livre">
+                  <Quartiers />
                 </Garde>
               }
             />

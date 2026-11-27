@@ -111,42 +111,40 @@ export const api = {
 
   /** Catalogue vendable : gaz (marque × format avec son prix en vigueur) et articles libres. */
   catalogue: async (signal?: AbortSignal): Promise<Article[]> => {
-    const [brands, formats, articles, stock] = await Promise.all([
+    const [brands, formats, articles, stock, tarifs] = await Promise.all([
       get("/catalogue/brands", LISTES.marques, signal),
       get("/catalogue/formats", LISTES.formats, signal),
       get("/catalogue/articles", LISTES.articles, signal),
       get("/stock", contrat.stockRows, signal),
+      // Prix en vigueur de chaque marque et format (exceptions comprises), en une seule lecture.
+      sansDroit(get("/catalogue/prices/current", contrat.currentGasPrices, signal), []),
     ]);
-    const combinaisons = brands
+    const gaz = brands
       .filter((b) => b.active)
-      .flatMap((b) => formats.filter((f) => f.active).map((f) => ({ b, f })));
-    const gaz = (
-      await Promise.all(
-        combinaisons.map(async ({ b, f }): Promise<Article[]> => {
-          // Prix en vigueur (exception de marque comprise) ; 404 = le PDG n'a pas encore saisi de prix.
-          const prix = await sansDroit<contrat.GasPrice | null>(
-            get(`/catalogue/prices/${f.id}/current?brandId=${b.id}`, contrat.gasPrice, signal),
-            null,
-          );
-          if (!prix) return [];
-          return [
-            {
-              id: `${b.id}:${f.id}`,
-              nom: `Gaz ${f.label} ${b.name}`,
-              genre: "gaz",
-              marque: b.name,
-              formatLibelle: f.label,
-              prix: prix.amount + prix.transportContribution,
-              stock: stock.find((s) => s.brandId === b.id && s.formatId === f.id)?.full ?? 0,
-              // Valeur non relevée : l'écart d'un échange ne se calcule pas, il sera régularisé par le PDG.
-              valeurEmballage: b.packagingValueKnown === false ? undefined : b.packagingValue,
-              brandId: b.id,
-              formatId: f.id,
-            },
-          ];
-        }),
-      )
-    ).flat();
+      .flatMap((b) =>
+        formats
+          .filter((f) => f.active)
+          .flatMap((f): Article[] => {
+            // Sans prix saisi par le PDG, le gaz n'est pas proposé à la vente.
+            const prix = tarifs.find((p) => p.brandId === b.id && p.formatId === f.id);
+            if (!prix) return [];
+            return [
+              {
+                id: `${b.id}:${f.id}`,
+                nom: `Gaz ${f.label} ${b.name}`,
+                genre: "gaz",
+                marque: b.name,
+                formatLibelle: f.label,
+                prix: prix.amount + prix.transportContribution,
+                stock: stock.find((x) => x.brandId === b.id && x.formatId === f.id)?.full ?? 0,
+                // Valeur non relevée : l'écart d'un échange ne se calcule pas, il sera régularisé par le PDG.
+                valeurEmballage: b.packagingValueKnown === false ? undefined : b.packagingValue,
+                brandId: b.id,
+                formatId: f.id,
+              },
+            ];
+          }),
+      );
     const libres = articles
       .filter((a) => a.active)
       .map(
@@ -179,6 +177,35 @@ export const api = {
       parse: lire(contrat.trackedOrder),
     }),
 
+  /** Écritures de vente d'un jour (annulations comprises). */
+  ventesDuJour: (jour: string, signal?: AbortSignal): Promise<contrat.Sale[]> =>
+    get(`/sales?date=${jour}&limit=500`, LISTES.ventes, signal),
+  /** Noms des marques et des articles, pour décrire les lignes d'une vente. */
+  nomsProduits: async (signal?: AbortSignal): Promise<Record<string, string>> => {
+    const [marques, articles] = await Promise.all([
+      sansDroit(get("/catalogue/brands", LISTES.marques, signal), []),
+      sansDroit(get("/catalogue/articles", LISTES.articles, signal), []),
+    ]);
+    return Object.fromEntries([
+      ...marques.map((m) => [m.id, `Gaz ${m.name}`]),
+      ...articles.map((a) => [a.id, a.name]),
+    ]);
+  },
+  /** Réglages des tarifs : toutes les marques et tous les formats, désactivés compris. */
+  marquesConfig: (signal?: AbortSignal) => get("/catalogue/brands", LISTES.marques, signal),
+  formatsConfig: (signal?: AbortSignal) => get("/catalogue/formats", LISTES.formats, signal),
+  prixEnVigueur: (signal?: AbortSignal): Promise<contrat.CurrentGasPrices> =>
+    get("/catalogue/prices/current", contrat.currentGasPrices, signal),
+
+  mouvementsArticle: (id: string, signal?: AbortSignal): Promise<contrat.ArticleMove[]> =>
+    get(`/catalogue/articles/${id}/moves`, contrat.articleMoves, signal),
+
+  /** Réglages de la boutique et quartiers livrés (côté gestion). */
+  reglagesBoutique: (signal?: AbortSignal): Promise<contrat.ShopSettings> =>
+    get("/delivery/settings", contrat.shopSettings, signal),
+  quartiers: (signal?: AbortSignal): Promise<contrat.Neighbourhood[]> =>
+    get("/delivery/neighbourhoods", contrat.neighbourhoods, signal),
+
   /** Commande reçue au téléphone, saisie par la boutique. */
   commandeTelephone: (body: contrat.CreateOrderInput, ref: string): Promise<contrat.PlacedOrder> =>
     request("/orders", { method: "POST", body, idempotencyKey: ref, parse: lire(contrat.placedOrder) }),
@@ -203,16 +230,21 @@ export const api = {
     })),
 
   /** Dernières ventes avec échange entre marques ; l'écart est vide tant qu'il reste à régulariser. */
-  echanges: async (signal?: AbortSignal): Promise<Echange[]> => {
-    const [ventes, noms] = await Promise.all([
-      get("/sales?type=exchange", LISTES.ventes, signal),
+  /** Les 200 échanges les plus récents (ou seulement ceux à régulariser) et le nombre d'écarts à solder. */
+  pageEchanges: async (
+    attente: boolean,
+    signal?: AbortSignal,
+  ): Promise<{ echanges: Echange[]; aRegulariser: number }> => {
+    const [page, noms] = await Promise.all([
+      get(`/sales/exchanges?limit=200&pending=${attente ? 1 : 0}`, contrat.exchangePage, signal),
       marquesParId(signal),
     ]);
-    return ventes.flatMap((v) =>
+    const echanges = page.items.flatMap((v) =>
       v.lines
         .filter((l) => l.kind === "gas" && l.returnedBrandId && l.returnedBrandId !== l.brandId)
         .map((l, i) => ({
           id: `${v.id}:${i}`,
+          venteId: v.id,
           date: v.createdAt,
           client: v.customerName,
           remise: noms.get(l.brandId ?? "") ?? "?",
@@ -220,7 +252,15 @@ export const api = {
           ecart: l.packagingGapPending ? null : l.packagingGap,
         })),
     );
+    return { echanges, aRegulariser: page.pendingCount };
   },
+  solderEcart: (venteId: string, packagingGap?: number) =>
+    request(`/sales/${venteId}/settle-packaging`, {
+      method: "POST",
+      body: packagingGap === undefined ? {} : { packagingGap },
+      idempotencyKey: newIdempotencyKey(),
+      parse: () => null,
+    }),
 
   marques: async (signal?: AbortSignal): Promise<{ id: string; nom: string }[]> =>
     (await get("/catalogue/brands", LISTES.marques, signal))
