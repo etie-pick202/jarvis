@@ -30,6 +30,9 @@ livraison selon le quartier, contact et raison sociale.
   non confirmé bloque la remise, sauf encaissement en espèces.
 - Un livreur ne voit et ne modifie que les livraisons qui lui sont confiées.
 
+- Preuve de remise : un code à 4 chiffres est donné au client à la commande ; le livreur doit le saisir pour valider
+  une livraison (pas au retrait en boutique).
+
 ## Conséquences
 
 Tout se règle dans l'application, sans reprogrammation.

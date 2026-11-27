@@ -100,7 +100,10 @@ async function lockMine(tx: Tx, driverId: string, orderId: string) {
 export async function depart(deps: Deps, driverId: string, orderId: string): Promise<Delivery> {
   return deps.db.transaction(async (tx) => {
     assertStatus(await lockMine(tx, driverId, orderId), ["validated", "problem"]);
-    await tx.update(orders).set({ status: "out_for_delivery" }).where(eq(orders.id, orderId));
+    await tx
+      .update(orders)
+      .set({ status: "out_for_delivery", startedAt: deps.now() })
+      .where(eq(orders.id, orderId));
     return toDelivery(await getOrder(tx, orderId));
   });
 }
@@ -200,6 +203,10 @@ export async function deliver(
   return deps.db.transaction(async (tx) => {
     const row = await lockMine(tx, driverId, orderId);
     assertStatus(row, ["out_for_delivery"]);
+    // Preuve de remise : sans le code du client, rien n'est enregistré.
+    if (row.deliveryCode && input.code !== row.deliveryCode) {
+      throw new AppError(422, "invalid_request", "Code de livraison incorrect");
+    }
     await complete(tx, deps, driverId, row, input);
     return toDelivery(await getOrder(tx, orderId));
   });
