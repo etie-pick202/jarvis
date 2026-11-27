@@ -30,6 +30,14 @@ const ROUTES: [string, string][] = [
   ["/rapport/x", "X de caisse"],
   ["/rapport/gaz", "Situation gaz"],
   ["/rapport/exports", "Exports"],
+  ["/config/marques", "Marques et formats"],
+  ["/config/prix", "Prix"],
+  ["/config/utilisateurs", "Utilisateurs et droits"],
+  ["/config/caisses", "Caisses"],
+  ["/config/langue", "Langue"],
+  ["/livre/file", "Commandes en ligne"],
+  ["/livre/historique", "Historique"],
+  ["/vente/commandes", "Commandes en ligne"],
 ];
 
 describe("écrans chargés à la demande", () => {

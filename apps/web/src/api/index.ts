@@ -177,6 +177,12 @@ export const api = {
       parse: lire(contrat.trackedOrder),
     }),
 
+  /** Réglages des tarifs : toutes les marques et tous les formats, désactivés compris. */
+  marquesConfig: (signal?: AbortSignal) => get("/catalogue/brands", LISTES.marques, signal),
+  formatsConfig: (signal?: AbortSignal) => get("/catalogue/formats", LISTES.formats, signal),
+  prixEnVigueur: (signal?: AbortSignal): Promise<contrat.CurrentGasPrices> =>
+    get("/catalogue/prices/current", contrat.currentGasPrices, signal),
+
   /** Recherche de client dès les premières lettres (le serveur normalise accents et casse). */
   clients: async (q: string, signal?: AbortSignal): Promise<Client[]> =>
     (await get(`/customers?q=${encodeURIComponent(q)}`, contrat.customerRows, signal)).map((c) => ({

@@ -13,6 +13,8 @@ import { Plus } from "./shell/Plus.js";
 import { Shell } from "./shell/Shell.js";
 
 // Écrans chargés à la demande : le premier affichage ne télécharge que la coque et la connexion.
+const Marques = lazy(() => import("./config/Marques.js").then((m) => ({ default: m.Marques })));
+const Prix = lazy(() => import("./config/Prix.js").then((m) => ({ default: m.Prix })));
 const Utilisateurs = lazy(() =>
   import("./config/Utilisateurs.js").then((m) => ({ default: m.Utilisateurs })),
 );
@@ -379,6 +381,22 @@ export function App() {
               element={
                 <Garde volet="config">
                   <ConfigLangue />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/marques"
+              element={
+                <Garde volet="config">
+                  <Marques />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/prix"
+              element={
+                <Garde volet="config">
+                  <Prix />
                 </Garde>
               }
             />
