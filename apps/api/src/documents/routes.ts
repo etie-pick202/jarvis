@@ -1,9 +1,11 @@
-import { language } from "@jarvis/shared";
+import { emailReportsInput, language } from "@jarvis/shared";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { requireAuth, requirePermission } from "../auth/middleware.js";
 import { businessDate } from "../cash/rules.js";
-import { type AppEnv, parse } from "../http.js";
+import { type AppEnv, parse, parseJson } from "../http.js";
+import { idempotency } from "../idempotency.js";
+import { emailReports, emailStatus } from "./email.js";
 import { toPdf } from "./pdf.js";
 import * as svc from "./service.js";
 
@@ -24,7 +26,13 @@ const receiptOf = (c: Context<AppEnv>) =>
 
 /** Reçus et rapports à partager (WhatsApp, e-mail). */
 export const documentRoutes = new Hono<AppEnv>()
-  .use("*", requireAuth)
+  .use("*", requireAuth, idempotency)
+  .get("/reports/email", requirePermission("report.read"), async (c) =>
+    c.json(await emailStatus(c.get("deps"))),
+  )
+  .post("/reports/email", requirePermission("report.read"), async (c) =>
+    c.json(await emailReports(c.get("deps"), c.get("user").id, await parseJson(c, emailReportsInput))),
+  )
   .get("/sales/:id/receipt", requirePermission("sale.read"), async (c) => c.json(await receiptOf(c)))
   .get("/sales/:id/receipt.pdf", requirePermission("sale.read"), async (c) => {
     const receipt = await receiptOf(c);

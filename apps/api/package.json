@@ -17,14 +17,16 @@
     "@jarvis/shared": "workspace:*",
     "drizzle-orm": "^0.45.4",
     "hono": "^4.6.0",
+    "nodemailer": "^10.6.1",
     "zod": "^4.6.6"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.6.0",
     "@types/node": "^22.0.0",
+    "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.11.0",
-    "pg": "^8.13.0",
     "@vitest/coverage-v8": "^4.1.0",
+    "pg": "^8.13.0",
     "tsup": "^8.3.0",
     "tsx": "^4.19.0",
     "vitest": "^4.1.0"
