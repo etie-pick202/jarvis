@@ -17,6 +17,9 @@ const Boutique = lazy(() => import("./boutique/Boutique.js").then((m) => ({ defa
 const Encaissements = lazy(() =>
   import("./canal/Encaissements.js").then((m) => ({ default: m.Encaissements })),
 );
+const Operations = lazy(() => import("./money/Operations.js").then((m) => ({ default: m.Operations })));
+const Float = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Float })));
+const Commissions = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Commissions })));
 const Echeances = lazy(() => import("./canal/Echeances.js").then((m) => ({ default: m.Echeances })));
 const Cloture = lazy(() => import("./caisse/Cloture.js").then((m) => ({ default: m.Cloture })));
 const Depenses = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Depenses })));
@@ -259,6 +262,30 @@ export function App() {
               element={
                 <Garde volet="canal">
                   <Echeances rappels />
+                </Garde>
+              }
+            />
+            <Route
+              path="money/operations"
+              element={
+                <Garde volet="money">
+                  <Operations />
+                </Garde>
+              }
+            />
+            <Route
+              path="money/float"
+              element={
+                <Garde volet="money">
+                  <Float />
+                </Garde>
+              }
+            />
+            <Route
+              path="money/commissions"
+              element={
+                <Garde volet="money">
+                  <Commissions />
                 </Garde>
               }
             />

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { id, isoDateTime, signedInt } from "./common.js";
 import { fcfa } from "./money.js";
+import { phoneNumber } from "./phone.js";
 
 /** Dépôts et retraits Orange Money et MoMo (caisses « transaction », en stand-by par défaut). */
 
@@ -15,7 +16,7 @@ export const moneyOperationInput = z.object({
   operator: mobileOperator,
   kind: moneyOperationKind,
   amount: fcfa.positive(),
-  phone: z.string().trim().min(6).max(30),
+  phone: phoneNumber,
   customerName: z.string().trim().min(1).max(120).optional(),
   /** Référence de la transaction donnée par l'opérateur (unique par opérateur). */
   reference: z.string().trim().min(3).max(60),

@@ -431,6 +431,29 @@ const encaissementsCanal = (date: string) =>
     cancelled: false,
   }));
 
+const FLOATS = [
+  { operator: "orange_money" as const, active: true, float: 250000 },
+  { operator: "momo" as const, active: false, float: 0 },
+];
+
+const operationsMoney = (date: string) => [
+  {
+    id: uuid(1601),
+    operator: "orange_money" as const,
+    kind: "deposit" as const,
+    amount: 25000,
+    commission: 0,
+    phone: "237690000011",
+    customerName: "Client Essai",
+    reference: "OM-0001",
+    authorId: uuid(1),
+    authorName: "Gérant démo",
+    createdAt: `${date}T08:30:00.000Z`,
+    reversalOf: null,
+    cancelled: false,
+  },
+];
+
 const CLE_FAUX = "jarvis.fake-user";
 
 /** L'utilisateur « connecté » survit au rechargement, comme le ferait un jeton de session. */
@@ -542,6 +565,12 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       return json(FORMULES);
     case "/canal/payments":
       return json(encaissementsCanal(url.searchParams.get("date") ?? jour));
+    case "/money/float":
+      return json(FLOATS);
+    case "/money/commissions":
+      return json({ orange_money: { deposit: 100, withdrawal: 150 }, momo: { deposit: 0, withdrawal: 0 } });
+    case "/money/operations":
+      return json(operationsMoney(url.searchParams.get("date") ?? jour));
     case "/canal/subscribers":
       return json(ABONNES);
     case "/canal/due": {
