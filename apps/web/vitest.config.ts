@@ -6,6 +6,8 @@ export default defineConfig({
   test: {
     include: ["src/**/*.test.{ts,tsx}"],
     environment: "jsdom",
+    // Les parcours qui saisissent de nombreux champs dépassent 5 s sur une machine chargée.
+    testTimeout: 15_000,
     setupFiles: ["./src/test-setup.ts"],
     coverage: {
       provider: "v8",

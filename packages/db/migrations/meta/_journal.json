@@ -50,6 +50,69 @@
       "when": 1795618763786,
       "tag": "0006_emballage_inconnu",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795732480056,
+      "tag": "0007_canal_abonnes",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795733047900,
+      "tag": "0008_canal_encaissements",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795733691858,
+      "tag": "0009_orange_money_momo",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795734760044,
+      "tag": "0010_quartiers",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795735484586,
+      "tag": "0011_commandes",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795736078566,
+      "tag": "0012_tournee",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795737982435,
+      "tag": "0013_ecarts_soldes",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795738603060,
+      "tag": "0014_mouvements_articles",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1795739733704,
+      "tag": "0015_code_livraison",
+      "breakpoints": true
     }
   ]
 }

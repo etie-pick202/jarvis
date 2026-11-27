@@ -21,14 +21,7 @@ export interface Badges {
   validations: number;
 }
 
-export interface Livraison {
-  id: string;
-  client: string;
-  quartier: string;
-  article: string;
-  montant: number;
-  etat: "a_livrer" | "parti" | "livre" | "probleme";
-}
+export type { CanalFormula, CanalSubscriber } from "@jarvis/shared";
 
 /** Un article vendable : une bouteille de gaz (marque × format) ou un article libre. */
 export interface Article {
@@ -67,6 +60,7 @@ export interface GazStock {
 
 export interface Echange {
   id: string;
+  venteId: string;
   date: string;
   client: string;
   remise: string;
@@ -96,6 +90,8 @@ export interface Caisse {
   nom: string;
   /** Solde théorique : calculé par le serveur après chaque mouvement, jamais saisi à la main. */
   solde: number;
+  /** Fond de caisse du matin : solde à l'ouverture du jour d'activité. */
+  fond: number;
   /** Les caisses en veille (transactions OM et MoMo) s'activent par un réglage. */
   actif: boolean;
   /** Part comptée en espèces (mention « dont … en espèces »). */
@@ -105,8 +101,16 @@ export interface Caisse {
 export interface Tableau {
   caJour: number;
   nbVentes: number;
-  livraisonsEnCours: number;
-  echeances: number;
+  marge: number;
+  margePct: number | null;
+  totalCaisses: number;
+  especes: number;
+  pleines: number;
+  vides: number;
+  alertesStock: number;
+  notifications: number;
+  /** Abonnements Canal+ dépassés ou à moins de 7 jours ; absent sur un serveur ancien. */
+  echeancesCanal?: number;
 }
 
 export interface Alerte {
@@ -126,6 +130,8 @@ export interface Validation {
 export interface LigneAudit {
   id: string;
   date: string;
+  /** Vide pour une action du système. */
+  auteur: string;
   action: string;
   detail: string;
 }

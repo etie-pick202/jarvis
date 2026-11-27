@@ -73,6 +73,22 @@ export async function stockAlerts(deps: Deps) {
   return (await stockLevels(deps)).filter((l) => l.low);
 }
 
+export async function listThresholds(deps: Deps) {
+  const rows = await deps.db.select().from(settings).where(like(settings.key, "low_stock:%"));
+  const fallback = parseThreshold(
+    rows.find((r) => r.key === thresholdKey())?.value,
+    DEFAULT_LOW_STOCK_THRESHOLD,
+  );
+  return {
+    default: fallback,
+    overrides: rows.flatMap((r) => {
+      const [, brandId, formatId] = r.key.split(":");
+      if (!brandId || !formatId) return [];
+      return [{ brandId, formatId, threshold: parseThreshold(r.value, fallback) }];
+    }),
+  };
+}
+
 export async function setThreshold(deps: Deps, actorId: string, input: SetThresholdInput) {
   if (Boolean(input.brandId) !== Boolean(input.formatId)) {
     throw new AppError(422, "invalid_request", "Indiquer la marque et le format ensemble, ou aucun des deux");

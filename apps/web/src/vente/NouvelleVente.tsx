@@ -7,6 +7,7 @@ import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Field } from "../ui/Field.js";
 import { Segmented } from "../ui/Segmented.js";
+import { useGarde } from "../ui/useEnvoi.js";
 import { FormatBouteille } from "../visuels/FormatBouteille.js";
 import { MarqueGaz } from "../visuels/MarqueGaz.js";
 import { useCatalogue, useSuggestions } from "./donnees.js";
@@ -28,6 +29,7 @@ const CLIENT_COMPTOIR = "Client comptoir";
 
 /** Nouvelle vente en trois écrans : article, quantité, moyen de paiement. */
 export function NouvelleVente() {
+  const garde = useGarde();
   const { t } = useI18n();
   const { articles, pret, consommer } = useCatalogue();
   const [etape, setEtape] = useState<1 | 2 | 3>(1);
@@ -195,6 +197,9 @@ export function NouvelleVente() {
                       </option>
                     ))}
                   </select>
+                  {ecart === null && rapportee !== "" && rapportee !== article?.marque && (
+                    <p role="status">{t("vente.ecart.inconnu")}</p>
+                  )}
                   {ecart !== null && (
                     <p role="status">
                       {ecart >= 0 ? t("vente.gain") : t("vente.perte")} : {formatFcfa(Math.abs(ecart))}
@@ -298,7 +303,7 @@ export function NouvelleVente() {
             <Button variant="contour" onClick={() => setEtape(2)}>
               {t("vente.retour")}
             </Button>
-            <Button disabled={envoi} onClick={() => void encaisser()}>
+            <Button disabled={envoi} onClick={() => void garde(encaisser)()}>
               {`${t("vente.encaisser")} ${formatFcfa(total(panier))}`}
             </Button>
           </div>

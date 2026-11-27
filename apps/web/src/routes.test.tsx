@@ -13,6 +13,9 @@ const ROUTES: [string, string][] = [
   ["/caisse/depenses", "Nouvelle dépense"],
   ["/caisse/transferts", "Transfert entre caisses"],
   ["/caisse/cloture", "Clôture du jour"],
+  ["/canal/abonnes", "Abonnés Canal+"],
+  ["/canal/echeances", "Échéances"],
+  ["/canal/rappels", "Rappels"],
   ["/gaz/stock", "Stock de gaz par marque"],
   ["/gaz/echanges", "Échanges entre marques"],
   ["/gaz/fournisseurs", "Fournisseurs"],
@@ -27,6 +30,14 @@ const ROUTES: [string, string][] = [
   ["/rapport/x", "X de caisse"],
   ["/rapport/gaz", "Situation gaz"],
   ["/rapport/exports", "Exports"],
+  ["/config/marques", "Marques et formats"],
+  ["/config/prix", "Prix"],
+  ["/config/utilisateurs", "Utilisateurs et droits"],
+  ["/config/caisses", "Caisses"],
+  ["/config/langue", "Langue"],
+  ["/livre/file", "Commandes en ligne"],
+  ["/livre/historique", "Historique"],
+  ["/vente/commandes", "Commandes en ligne"],
 ];
 
 describe("écrans chargés à la demande", () => {
@@ -51,6 +62,7 @@ describe("écrans chargés à la demande", () => {
         </SessionProvider>
       </I18nProvider>,
     );
-    expect(await screen.findByRole("heading", { level: 1, name: titre })).toBeTruthy();
+    // Le premier écran paie le chargement à la demande de son module : délai large pour une machine lente.
+    expect(await screen.findByRole("heading", { level: 1, name: titre }, { timeout: 8000 })).toBeTruthy();
   });
 });

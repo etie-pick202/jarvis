@@ -97,6 +97,11 @@ export const createArticleInput = z.object({
   price: fcfa,
   purchaseCost: fcfa.default(0),
   trackStock: z.boolean().default(false),
+  category: z.string().trim().max(60).optional(),
+  /** Seuil d'alerte de stock bas ; 0 = aucune alerte. */
+  lowThreshold: z.number().int().min(0).optional(),
+  /** Stock de départ, pour un article suivi. */
+  initialQty: z.number().int().min(0).optional(),
 });
 export type CreateArticleInput = z.infer<typeof createArticleInput>;
 
@@ -105,6 +110,8 @@ export const updateArticleInput = z
     name: z.string().trim().min(1).max(120).optional(),
     price: fcfa.optional(),
     purchaseCost: fcfa.optional(),
+    category: z.string().trim().max(60).optional(),
+    lowThreshold: z.number().int().min(0).optional(),
     active: z.boolean().optional(),
   })
   .refine(atLeastOne, atLeastOneField);
@@ -118,5 +125,49 @@ export const article = z.object({
   trackStock: z.boolean(),
   stockQty: z.number().int(),
   active: z.boolean(),
+  category: z.string().optional(),
+  lowThreshold: z.number().int().optional(),
 });
 export type Article = z.infer<typeof article>;
+
+/** GET /catalogue/prices/current : prix en vigueur de chaque marque et format actifs. */
+export const currentGasPrices = z.array(
+  z.object({
+    formatId: id,
+    brandId: id,
+    amount: fcfa,
+    transportContribution: fcfa,
+    purchaseCost: fcfa,
+    effectiveFrom: isoDateTime,
+  }),
+);
+export type CurrentGasPrices = z.infer<typeof currentGasPrices>;
+
+export const adjustArticleInput = z.object({
+  delta: z
+    .number()
+    .int()
+    .refine((n) => n !== 0, { message: "Variation nulle" }),
+  justification: z.string().optional(),
+});
+export type AdjustArticleInput = z.infer<typeof adjustArticleInput>;
+
+export const restockArticleInput = z.object({
+  quantity: z.number().int().min(1),
+  /** Pièce du fournisseur, envoyée au préalable (POST /receipts). */
+  receiptId: id,
+  unitCost: fcfa.optional(),
+  label: z.string().trim().min(1).max(200).optional(),
+});
+export type RestockArticleInput = z.infer<typeof restockArticleInput>;
+
+export const articleMove = z.object({
+  id,
+  at: isoDateTime,
+  kind: z.enum(["sale", "entry", "adjustment"]),
+  label: z.string(),
+  delta: z.number().int(),
+  authorName: z.string(),
+});
+export type ArticleMove = z.infer<typeof articleMove>;
+export const articleMoves = z.array(articleMove);

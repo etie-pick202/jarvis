@@ -218,3 +218,8 @@
     padding: var(--espace-5) 28px;
   }
 }
+
+.livreur__actions .btn,
+.livreur article .btn {
+  min-height: var(--cible-min);
+}

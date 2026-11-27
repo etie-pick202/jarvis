@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { schema } from "@jarvis/db";
 import {
+  canalPaymentSyncPayload,
   countInput,
   createExpenseInput,
   createReceptionInput,
@@ -15,6 +16,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { auditAndNotifyPdg } from "../audit/service.js";
 import { can, type Permission } from "../auth/permissions.js";
+import { recordPayment } from "../canal/payments.js";
 import { createExpense, createTransfer } from "../cash/service.js";
 import { AppError, type Deps, parse } from "../http.js";
 import { createSaleDetailed } from "../sales/service.js";
@@ -29,6 +31,7 @@ const PERMISSION_OF: Record<SyncOperation["type"], Permission> = {
   reception: "stock.write",
   inventory_weekly: "stock.write",
   inventory_evening: "stock.write",
+  canal_payment: "canal.write",
 };
 
 /** Empreinte du contenu d'une opération : une même clé avec un autre contenu est refusée. */
@@ -64,6 +67,12 @@ async function apply(deps: Deps, user: SessionUser, op: SyncOperation) {
       return { body: await recordCount(deps, user.id, "weekly", parse(countInput, op.payload)) };
     case "inventory_evening":
       return { body: await recordCount(deps, user.id, "evening", parse(countInput, op.payload)) };
+    case "canal_payment": {
+      const { subscriberId, ...input } = parse(canalPaymentSyncPayload, op.payload);
+      return {
+        body: await recordPayment(deps, user.id, subscriberId, input, new Date(op.occurredAt)),
+      };
+    }
   }
 }
 
