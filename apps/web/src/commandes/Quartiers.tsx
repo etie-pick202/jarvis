@@ -223,7 +223,11 @@ export function Quartiers() {
           messageVide={t("quartiers.aucun")}
           texteVide={t("vide.quartiers")}
         >
-          <Table caption={t("rub.livre.quartiers")} colonnes={[t("quartiers.nom"), t("quartiers.frais"), ""]}>
+          <Table
+            cartes
+            caption={t("rub.livre.quartiers")}
+            colonnes={[t("quartiers.nom"), t("quartiers.frais"), ""]}
+          >
             {quartiers.data.map((q) => (
               <tr key={q.id}>
                 <th scope="row">
