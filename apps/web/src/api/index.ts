@@ -394,6 +394,7 @@ export const api = {
       idempotencyKey: newIdempotencyKey(),
       parse: lire(contrat.order),
     }),
+  /** Livraisons du jour : le module de livraison n'a pas encore de contrat côté serveur (lot 3). */
   remettre: (id: string, body: contrat.CompleteOrderInput) =>
     request(`/deliveries/${id}/delivered`, {
       method: "POST",
