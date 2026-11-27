@@ -1,9 +1,11 @@
+import { sageAccounts } from "@jarvis/shared";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { requireAuth, requirePermission } from "../auth/middleware.js";
 import { businessDate } from "../cash/rules.js";
-import { type AppEnv, AppError, parse } from "../http.js";
+import { type AppEnv, AppError, parse, parseJson } from "../http.js";
 import { toCsv } from "./compute.js";
+import { journalLines, readAccounts, sageCsv, writeAccounts } from "./sage.js";
 import * as svc from "./service.js";
 import { toXlsx } from "./xlsx.js";
 
@@ -50,6 +52,14 @@ function file(c: Context<AppEnv>, name: string, format: "csv" | "xlsx", table: s
 
 /** Les trois exports, en CSV et en Excel. */
 const exportRoutes = new Hono<AppEnv>();
+// Écritures comptables à importer dans Sage.
+exportRoutes.get("/sage.csv", async (c) => {
+  const { days, label } = period(c);
+  return c.body(new Uint8Array(sageCsv(await journalLines(c.get("deps"), days))), 200, {
+    "content-type": "text/csv; charset=windows-1252",
+    "content-disposition": `attachment; filename="sage-${label}.csv"`,
+  });
+});
 for (const format of ["csv", "xlsx"] as const) {
   exportRoutes
     .get(`/sales.${format}`, async (c) => {
@@ -82,4 +92,8 @@ export const reportRoutes = new Hono<AppEnv>()
     return c.json(await svc.xReport(deps, dayOf(c.req.query("date"), deps.now())));
   })
   .get("/gas-situation", async (c) => c.json(await svc.gasSituation(c.get("deps"))))
+  .get("/sage-accounts", async (c) => c.json(await readAccounts(c.get("deps"))))
+  .put("/sage-accounts", requirePermission("user.manage"), async (c) =>
+    c.json(await writeAccounts(c.get("deps"), c.get("user").id, await parseJson(c, sageAccounts))),
+  )
   .route("/export", exportRoutes);
