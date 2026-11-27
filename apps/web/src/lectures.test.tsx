@@ -1,6 +1,7 @@
 import "fake-indexeddb/auto";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeApi, setFakeUser } from "./api/fake.js";
 import { SessionProvider } from "./auth/SessionProvider.js";
@@ -16,7 +17,7 @@ const ui = (node: React.ReactNode, profil: "pdg" | "gerant" = "pdg") =>
   render(
     <I18nProvider initial="fr">
       <SessionProvider initial={{ userId: "u", nom: "x", profils: [profil], profilActif: profil }}>
-        {node}
+        <MemoryRouter>{node}</MemoryRouter>
       </SessionProvider>
     </I18nProvider>,
   );

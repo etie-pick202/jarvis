@@ -226,9 +226,17 @@ export function NouvelleVente() {
               )}
             </div>
           )}
-          <Button block disabled={!etape1Ok} onClick={() => setEtape(2)}>
-            {t("vente.suivant")}
-          </Button>
+          <div className="action-fixe">
+            {panier && (
+              <p className="action-fixe__total">
+                <span>{t("vente.total")}</span>
+                <strong>{formatFcfa(total(panier))}</strong>
+              </p>
+            )}
+            <Button block disabled={!etape1Ok} onClick={() => setEtape(2)}>
+              {t("vente.suivant")}
+            </Button>
+          </div>
         </>
       )}
 
@@ -264,7 +272,7 @@ export function NouvelleVente() {
               { value: "livraison", label: t("vente.livraison") },
             ]}
           />
-          <div className="vente__actions">
+          <div className="vente__actions action-fixe">
             <Button variant="contour" onClick={() => setEtape(1)}>
               {t("vente.retour")}
             </Button>
@@ -316,7 +324,7 @@ export function NouvelleVente() {
               <dd>{formatFcfa(total(panier))}</dd>
             </div>
           </dl>
-          <div className="vente__actions">
+          <div className="vente__actions action-fixe">
             <Button variant="contour" onClick={() => setEtape(2)}>
               {t("vente.retour")}
             </Button>

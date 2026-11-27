@@ -12,6 +12,7 @@ import { usePagination, VoirPlus } from "../ui/listes.js";
 import { Table } from "../ui/Table.js";
 import { useGarde } from "../ui/useEnvoi.js";
 import { formatFcfa } from "../vente/regles.js";
+import { BordCaisses, BordValidations } from "./Bord.js";
 import { MiseEnRoute } from "./MiseEnRoute.js";
 
 const TABLEAU_VIDE: Tableau = {
@@ -37,11 +38,9 @@ export function TableauDeBord() {
   // Rien vendu, rien en caisse, rien en stock : des chiffres à zéro n'apprennent rien au PDG.
   const neuf = lecture.charge && tab.nbVentes === 0 && tab.totalCaisses === 0 && tab.pleines === 0;
   const pourcent = tab.margePct === null ? "" : ` (${tab.margePct.toLocaleString(lang)} %)`;
-  const chiffres: [string, string][] = [
-    [t("pilot.ca"), formatFcfa(tab.caJour)],
-    [t("pilot.marge"), `${formatFcfa(tab.marge)}${pourcent}`],
+  const aPerte = tab.marge < 0;
+  const autres: [string, string][] = [
     [t("pilot.ventes"), String(tab.nbVentes)],
-    [t("pilot.caisses"), formatFcfa(tab.totalCaisses)],
     [t("pilot.especes"), formatFcfa(tab.especes)],
     [t("pilot.stock"), `${tab.pleines} / ${tab.vides}`],
     [t("pilot.stock.alertes"), String(tab.alertesStock)],
@@ -51,20 +50,47 @@ export function TableauDeBord() {
       : ([[t("pilot.canal"), String(tab.echeancesCanal)]] as [string, string][])),
   ];
   return (
-    <div className="page">
+    <div className="page page--large">
       <h1>{t("rub.pilot.tableau")}</h1>
       {pdg && <MiseEnRoute />}
       <Etat {...lecture}>
-        <dl className={neuf ? "chiffres chiffres--neuf" : "chiffres"}>
-          {chiffres.map(([libelle, valeur]) => (
-            <div key={libelle} className="chiffres__carte">
-              <dt>{libelle}</dt>
-              <dd>{valeur}</dd>
+        <div className={neuf ? "bord__chiffres chiffres--neuf" : "bord__chiffres"}>
+          <dl className="chiffres chiffres--cles">
+            <div className="chiffres__carte chiffres__carte--phare">
+              <dt>{t("pilot.ca")}</dt>
+              <dd>{formatFcfa(tab.caJour)}</dd>
             </div>
-          ))}
-        </dl>
+            <div className={`chiffres__carte${aPerte ? " chiffres__carte--perte" : ""}`}>
+              <dt>{t("pilot.marge")}</dt>
+              <dd>{`${formatFcfa(tab.marge)}${pourcent}`}</dd>
+              {aPerte && (
+                <dd className="chiffres__note">
+                  <Chip tone="danger">{t("bord.perte")}</Chip>
+                </dd>
+              )}
+            </div>
+            <div className="chiffres__carte">
+              <dt>{t("pilot.caisses")}</dt>
+              <dd>{formatFcfa(tab.totalCaisses)}</dd>
+            </div>
+          </dl>
+          <dl className="chiffres chiffres--autres">
+            {autres.map(([libelle, valeur]) => (
+              <div key={libelle} className="chiffres__carte">
+                <dt>{libelle}</dt>
+                <dd>{valeur}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </Etat>
-      <Alertes />
+      <div className="bord">
+        <BordCaisses />
+        <div className="bord__cote">
+          <Alertes />
+          <BordValidations />
+        </div>
+      </div>
     </div>
   );
 }

@@ -152,3 +152,68 @@ a.btn {
   flex: none;
   min-width: 0;
 }
+
+/* Comptoir : grandes cases au pouce ; total et action restent sous la main. */
+.vente__articles {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+.vente__article {
+  position: relative;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  min-height: 96px;
+  padding: var(--espace-3);
+}
+.vente__article span {
+  flex: none;
+  min-width: 0;
+}
+.vente__article input {
+  position: absolute;
+  top: var(--espace-3);
+  right: var(--espace-3);
+}
+.vente__article .vente__nom {
+  flex-direction: column;
+  align-items: flex-start;
+  padding-right: 28px;
+}
+.vente__article strong {
+  margin-top: auto;
+  font-family: var(--police-titre);
+  font-size: 18px;
+}
+.action-fixe {
+  position: sticky;
+  /* Au-dessus de la barre du bas du téléphone. */
+  bottom: 64px;
+  z-index: 5;
+  background: var(--blanc);
+  border-top: 1px solid var(--ligne);
+  margin: 0 calc(-1 * var(--espace-4));
+  padding: var(--espace-3) var(--espace-4);
+}
+.action-fixe__total {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 var(--espace-2);
+}
+@media (min-width: 900px) {
+  .action-fixe {
+    bottom: 0;
+  }
+}
+
+/* Livreur : une carte par livraison, gestes de 56 px en bas de carte. */
+.livreur article .livreur__actions .btn {
+  min-height: 56px;
+}
+.livreur article > .livreur__ligne strong {
+  font-family: var(--police-titre);
+  font-size: 18px;
+}
+.livreur {
+  width: 100%;
+  max-width: 640px;
+}
