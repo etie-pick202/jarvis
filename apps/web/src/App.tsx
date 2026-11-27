@@ -16,6 +16,9 @@ import { Shell } from "./shell/Shell.js";
 const Quartiers = lazy(() => import("./commandes/Quartiers.js").then((m) => ({ default: m.Quartiers })));
 const Historique = lazy(() => import("./vente/Historique.js").then((m) => ({ default: m.Historique })));
 const Clients = lazy(() => import("./vente/Clients.js").then((m) => ({ default: m.Clients })));
+const Notifications = lazy(() =>
+  import("./config/Notifications.js").then((m) => ({ default: m.Notifications })),
+);
 const Marques = lazy(() => import("./config/Marques.js").then((m) => ({ default: m.Marques })));
 const Prix = lazy(() => import("./config/Prix.js").then((m) => ({ default: m.Prix })));
 const Utilisateurs = lazy(() =>
@@ -395,6 +398,14 @@ export function App() {
               element={
                 <Garde volet="config">
                   <Marques />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/notifications"
+              element={
+                <Garde volet="config">
+                  <Notifications />
                 </Garde>
               }
             />

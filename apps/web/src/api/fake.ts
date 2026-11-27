@@ -836,6 +836,15 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       return json({ configured: true, recipients: ["direction@exemple.test"] });
     case "/reports/sage-accounts":
       return json(DEFAULT_SAGE_ACCOUNTS);
+    case "/control/notification-settings":
+      return moi.roles.some((r) => r === "pdg" || r === "gerant")
+        ? json({
+            reminders: ["pdg", "gerant"],
+            stockAlerts: ["pdg", "gerant"],
+            reports: ["pdg"],
+            reportEmails: ["direction@exemple.test"],
+          })
+        : erreur(403, "forbidden", "Réservé à la direction");
     case "/control/audit":
       return json(AUDIT);
     case "/control/notifications":

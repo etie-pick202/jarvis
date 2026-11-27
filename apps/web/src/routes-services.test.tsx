@@ -23,6 +23,7 @@ const ROUTES: [string, string][] = [
   ["/livre/historique", "Historique"],
   ["/config/utilisateurs", "Utilisateurs et droits"],
   ["/config/caisses", "Caisses"],
+  ["/config/notifications", "Notifications"],
   ["/config/langue", "Langue"],
 ];
 

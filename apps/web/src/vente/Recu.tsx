@@ -1,5 +1,6 @@
 import { useI18n } from "../i18n/index.js";
 import { Button } from "../ui/Button.js";
+import { partagerFichier } from "../ui/partage.js";
 import { lienWhatsappPour } from "../ui/telephone.js";
 import { LogoCocosab } from "../visuels/LogoCocosab.js";
 import { recuPdf } from "./pdf.js";
@@ -39,19 +40,6 @@ export function Recu({ recu, onNouvelle }: { recu: RecuVente; onNouvelle: () => 
   const lignes = lignesRecu(recu, t);
   const nom = `recu-${recu.numero}.pdf`;
 
-  async function partagerPdf() {
-    const fichier = new File([recuPdf(lignes) as BlobPart], nom, { type: "application/pdf" });
-    if (navigator.canShare?.({ files: [fichier] })) {
-      await navigator.share({ files: [fichier], title: lignes[0] });
-      return;
-    }
-    const lien = document.createElement("a");
-    lien.href = URL.createObjectURL(fichier);
-    lien.download = nom;
-    lien.click();
-    URL.revokeObjectURL(lien.href);
-  }
-
   const whatsapp = lienWhatsappPour(recu.telephone ?? "", lignes.join("\n"));
 
   return (
@@ -65,7 +53,10 @@ export function Recu({ recu, onNouvelle }: { recu: RecuVente; onNouvelle: () => 
         ))}
       </ul>
       <div className="vente__actions">
-        <Button variant="noir" onClick={() => void partagerPdf()}>
+        <Button
+          variant="noir"
+          onClick={() => void partagerFichier(nom, recuPdf(lignes) as BlobPart, lignes[0] ?? nom)}
+        >
           {t("vente.pdf")}
         </Button>
         <a className="btn btn--contour" href={whatsapp} target="_blank" rel="noreferrer">

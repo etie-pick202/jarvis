@@ -328,6 +328,9 @@ export const api = {
     }),
   comptesSage: (signal?: AbortSignal): Promise<contrat.SageAccounts> =>
     get("/reports/sage-accounts", contrat.sageAccounts, signal),
+  /** Destinataires des rappels, alertes et rapports (lecture : PDG et gérant ; écriture : PDG). */
+  destinataires: (signal?: AbortSignal): Promise<contrat.NotificationSettings> =>
+    get("/control/notification-settings", contrat.notificationSettings, signal),
 
   /** Comptes (PDG). Écritures directes : un mot de passe n'est jamais gardé dans la file d'envoi. */
   comptes: (signal?: AbortSignal): Promise<contrat.UserAccount[]> =>
