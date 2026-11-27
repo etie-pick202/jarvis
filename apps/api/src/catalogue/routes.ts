@@ -23,10 +23,10 @@ const uuid = z.uuid();
 export const catalogueRoutes = new Hono<AppEnv>()
   .use("*", requireAuth, idempotency)
   // Lecture : marques, formats, prix en vigueur
-  .get("/brands", requirePermission("catalog.gas.read"), async (c) =>
+  .get("/brands", requirePermission("catalog.reference.read"), async (c) =>
     c.json(await svc.listBrands(c.get("deps"))),
   )
-  .get("/formats", requirePermission("catalog.gas.read"), async (c) =>
+  .get("/formats", requirePermission("catalog.reference.read"), async (c) =>
     c.json(await svc.listFormats(c.get("deps"))),
   )
   .get("/prices/current", requirePermission("catalog.gas.read"), async (c) =>
