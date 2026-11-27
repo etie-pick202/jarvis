@@ -286,6 +286,7 @@ export const api = {
       vides: d.stock.empty,
       alertesStock: d.stock.alerts.length,
       notifications: d.unreadNotifications,
+      echeancesCanal: d.canalDue,
     };
   },
 
@@ -361,6 +362,12 @@ export const api = {
     get("/canal/subscribers", contrat.canalSubscribers, signal),
   encaissementsCanal: (jour: string, signal?: AbortSignal): Promise<contrat.CanalPayment[]> =>
     get(`/canal/payments?date=${jour}`, contrat.canalPayments, signal),
+  relancesCanal: (
+    jours: number,
+    langue: "fr" | "en",
+    signal?: AbortSignal,
+  ): Promise<contrat.CanalReminder[]> =>
+    get(`/canal/reminders?within=${jours}&lang=${langue}`, contrat.canalReminders, signal),
   /** Articles hors gaz, actifs ou non. */
   articlesLibres: (signal?: AbortSignal) => get("/catalogue/articles", LISTES.articles, signal),
   /** Orange Money et MoMo : float par opérateur, commissions et opérations du jour. */
@@ -373,7 +380,6 @@ export const api = {
   echeancesCanal: (jours: number, signal?: AbortSignal): Promise<contrat.CanalSubscriber[]> =>
     get(`/canal/due?within=${jours}`, contrat.canalSubscribers, signal),
 
-  /** Livraisons du jour : le module de livraison n'a pas encore de contrat côté serveur (lot 3). */
   /** Commandes de la boutique et livreurs à qui les confier. */
   commandes: (signal?: AbortSignal): Promise<contrat.Order[]> => get("/orders", contrat.orders, signal),
   livreurs: (signal?: AbortSignal) =>
@@ -387,6 +393,13 @@ export const api = {
       body: body ?? {},
       idempotencyKey: newIdempotencyKey(),
       parse: lire(contrat.order),
+    }),
+  remettre: (id: string, body: contrat.CompleteOrderInput) =>
+    request(`/deliveries/${id}/delivered`, {
+      method: "POST",
+      body,
+      idempotencyKey: newIdempotencyKey(),
+      parse: () => null,
     }),
   /** Tournée du livreur connecté. */
   tournee: (signal?: AbortSignal): Promise<contrat.Delivery[]> =>

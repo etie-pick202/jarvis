@@ -11,6 +11,7 @@ test("CoCoLivre : le livreur part, encaisse et confirme la remise", async ({ pag
   await carte.getByRole("button", { name: "Livré" }).click();
   await carte.getByRole("checkbox", { name: "J'ai encaissé le montant" }).check();
   await carte.getByRole("checkbox", { name: "Bouteilles vides récupérées" }).check();
+  await carte.getByLabel(/^Code donné/u).fill("4321");
   await carte.getByRole("button", { name: "Confirmer la remise" }).click();
   await expect(carte.getByText("Livré", { exact: true })).toBeVisible();
 });

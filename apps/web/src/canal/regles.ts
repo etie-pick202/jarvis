@@ -40,11 +40,6 @@ export function dateCourte(jour: string, langue: string): string {
   }).format(new Date(`${jour}T00:00:00Z`));
 }
 
-/** Lien WhatsApp prérempli (aucune API payante) : le gérant relit et envoie lui-même. */
-export function lienRappel(a: Pick<CanalSubscriber, "phone">, message: string): string {
-  return `https://wa.me/${a.phone.replace(/\D/gu, "")}?text=${encodeURIComponent(message)}`;
-}
-
 /** Jour d'activité (heure de Douala, UTC+1), comme le serveur. */
 export function jourActivite(instant: Date): string {
   return new Date(instant.getTime() + 3_600_000).toISOString().slice(0, 10);
