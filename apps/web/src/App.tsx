@@ -24,6 +24,10 @@ const Encaissements = lazy(() =>
 const Operations = lazy(() => import("./money/Operations.js").then((m) => ({ default: m.Operations })));
 const Float = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Float })));
 const Commissions = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Commissions })));
+const Commandes = lazy(() => import("./commandes/Commandes.js").then((m) => ({ default: m.Commandes })));
+const HistoriqueCommandes = lazy(() =>
+  import("./commandes/Commandes.js").then((m) => ({ default: m.HistoriqueCommandes })),
+);
 const Echeances = lazy(() => import("./canal/Echeances.js").then((m) => ({ default: m.Echeances })));
 const Cloture = lazy(() => import("./caisse/Cloture.js").then((m) => ({ default: m.Cloture })));
 const Depenses = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Depenses })));
@@ -322,6 +326,30 @@ export function App() {
               element={
                 <Garde volet="livre">
                   <LivreurMode />
+                </Garde>
+              }
+            />
+            <Route
+              path="vente/commandes"
+              element={
+                <Garde volet="vente">
+                  <Commandes />
+                </Garde>
+              }
+            />
+            <Route
+              path="livre/file"
+              element={
+                <Garde volet="livre">
+                  <Commandes />
+                </Garde>
+              }
+            />
+            <Route
+              path="livre/historique"
+              element={
+                <Garde volet="livre">
+                  <HistoriqueCommandes />
                 </Garde>
               }
             />

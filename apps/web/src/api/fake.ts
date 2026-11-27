@@ -528,6 +528,63 @@ const TOURNEE = [
   livraison(2, { status: "out_for_delivery", paymentMethod: "momo" }),
 ];
 
+/** Commandes d'exemple : à valider (paiement mobile), à livrer, à retirer, terminée. */
+const commande = (n: number, plus: Record<string, unknown>) => ({
+  id: uuid(1900 + n),
+  number: `CMD020${n}`,
+  source: "online",
+  status: "pending",
+  mode: "delivery",
+  customerName: `Acheteur Essai ${n}`,
+  phone: `23769000003${n}`,
+  neighbourhoodName: "Quartier Essai Sud",
+  landmark: null,
+  latitude: null,
+  longitude: null,
+  paymentMethod: "cash",
+  paymentReference: null,
+  paymentConfirmedAt: null,
+  deliveryFeePerBottle: 400,
+  total: 7200,
+  lines: livraison(1, {}).lines,
+  createdAt: `${jour}T08:0${n}:00.000Z`,
+  assignedTo: null,
+  problemNote: null,
+  saleId: null,
+  ...plus,
+});
+
+const LIVREURS = [{ id: uuid(4), displayName: "Livreur démo" }];
+
+const COMMANDES = [
+  commande(1, { paymentMethod: "momo", paymentReference: "MOMO-0001" }),
+  commande(2, { status: "validated", source: "phone" }),
+  commande(3, { status: "validated", mode: "pickup", neighbourhoodName: null, deliveryFeePerBottle: 0 }),
+  commande(4, { status: "delivered" }),
+];
+
+/** Rejoue la transition demandée sur la commande d'exemple. */
+function agirSurCommande(route: string, init?: RequestInit): Response {
+  const [, , id = "", action = ""] = route.split("/");
+  const o = COMMANDES.find((x) => x.id === id);
+  if (!o) return erreur(404, "not_found", "Commande introuvable");
+  const corps = JSON.parse(String(init?.body ?? "{}")) as {
+    driverId?: string;
+    deliveryFeePerBottle?: number;
+  };
+  const effets: Record<string, Record<string, unknown>> = {
+    validate: {
+      status: "validated",
+      deliveryFeePerBottle: corps.deliveryFeePerBottle ?? o.deliveryFeePerBottle,
+    },
+    "confirm-payment": { paymentConfirmedAt: `${jour}T09:00:00.000Z` },
+    assign: { assignedTo: corps.driverId },
+    collect: { status: "delivered" },
+    cancel: { status: "cancelled" },
+  };
+  return json({ ...o, ...effets[action] });
+}
+
 const CLE_FAUX = "jarvis.fake-user";
 
 /** L'utilisateur « connecté » survit au rechargement, comme le ferait un jeton de session. */
@@ -594,6 +651,7 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   }
   if (route === "/receipts" && ecriture)
     return json({ id: uuid(1201), contentType: "application/pdf", size: 1 }, 201);
+  if (ecriture && route.startsWith("/orders/")) return agirSurCommande(route, init);
   if (ecriture) return json({ ok: true }, 201);
 
   switch (route) {
@@ -638,6 +696,12 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       );
     case "/canal/formulas":
       return json(FORMULES);
+    case "/orders":
+      return json(COMMANDES);
+    case "/orders/drivers":
+      return json(LIVREURS);
+    case "/orders/summary":
+      return json({ pending: 1, toDeliver: 2 });
     case "/deliveries":
       return json(TOURNEE);
     case "/canal/payments":
