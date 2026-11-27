@@ -125,4 +125,41 @@ describe("CoCoMarket", () => {
     expect(lignes.map((l) => l.textContent)).toEqual(["Tuyau gaz", "Détendeur"]);
     expect(screen.getByText("Rupture")).toBeTruthy();
   });
+
+  it("crée un article suivi avec catégorie, seuil et stock de départ", async () => {
+    ui(<Articles />);
+    await screen.findByRole("rowheader", { name: "Détendeur" });
+    await userEvent.type(screen.getByLabelText("Article"), "Brûleur");
+    await userEvent.type(screen.getByLabelText("Prix (FCFA)"), "2500");
+    await userEvent.type(screen.getByLabelText("Catégorie (facultatif)"), "Accessoires");
+    expect(screen.queryByLabelText("Stock de départ")).toBeNull();
+    await userEvent.click(screen.getByLabelText("Suivre le stock de cet article"));
+    await userEvent.type(screen.getByLabelText("Stock de départ"), "1,5");
+    expect(screen.getByRole("alert").textContent).toMatch(/Quantité invalide/u);
+    expect(bouton("Ajouter l'article").disabled).toBe(true);
+    await userEvent.clear(screen.getByLabelText("Stock de départ"));
+    await userEvent.type(screen.getByLabelText("Stock de départ"), "8");
+    await userEvent.type(screen.getByLabelText(/Seuil de stock bas/u), "3");
+    await userEvent.click(bouton("Ajouter l'article"));
+    await waitFor(async () => expect(await operations()).toHaveLength(1));
+    expect((await operations())[0]?.body).toMatchObject({
+      category: "Accessoires",
+      lowThreshold: 3,
+      initialQty: 8,
+      trackStock: true,
+    });
+    await userEvent.type(screen.getByRole("searchbox"), "accessoires");
+    expect(screen.getAllByRole("rowheader")).toHaveLength(1);
+  });
+
+  it("modifie le seuil d'un article suivi, sans stock de départ", async () => {
+    ui(<Articles />);
+    await userEvent.click(await screen.findByRole("button", { name: "Modifier Détendeur" }));
+    expect(screen.queryByLabelText("Stock de départ")).toBeNull();
+    await userEvent.type(screen.getByLabelText(/Seuil de stock bas/u), "5");
+    await userEvent.click(bouton("Enregistrer l'article"));
+    await waitFor(async () => expect(await operations()).toHaveLength(1));
+    expect((await operations())[0]?.body).toMatchObject({ lowThreshold: 5, category: "" });
+    expect((await operations())[0]?.body).not.toHaveProperty("initialQty");
+  });
 });
