@@ -315,6 +315,19 @@ export const api = {
   seuilCloture: async (signal?: AbortSignal): Promise<number> =>
     (await get("/cash/closure-threshold", contrat.closureThresholdResult, signal)).threshold,
 
+  /** Envoi des rapports par e-mail : état de la configuration et destinataires réglés par le PDG. */
+  etatEnvoi: (signal?: AbortSignal): Promise<contrat.EmailReportsStatus> =>
+    get("/documents/reports/email", contrat.emailReportsStatus, signal),
+  /** En direct seulement : un envoi différé partirait sans que personne le sache. */
+  envoyerRapports: (body: contrat.EmailReportsInput, ref: string) =>
+    request("/documents/reports/email", {
+      method: "POST",
+      body,
+      idempotencyKey: ref,
+      parse: lire(z.object({ sent: z.array(z.string()), recipients: z.array(z.string()) })),
+    }),
+  comptesSage: (signal?: AbortSignal): Promise<contrat.SageAccounts> =>
+    get("/reports/sage-accounts", contrat.sageAccounts, signal),
   /** Destinataires des rappels, alertes et rapports (lecture : PDG et gérant ; écriture : PDG). */
   destinataires: (signal?: AbortSignal): Promise<contrat.NotificationSettings> =>
     get("/control/notification-settings", contrat.notificationSettings, signal),

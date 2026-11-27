@@ -15,7 +15,7 @@ const TYPES: Record<Format, string> = {
   pdf: "application/pdf",
 };
 
-/** Exports du serveur : Excel et CSV sur une période, PDF d'un jour (en attendant le format Sage 100 i7). */
+/** Exports du serveur : Excel et CSV sur une période, PDF d'un jour et écritures à importer dans Sage. */
 export function Exports() {
   const { t } = useI18n();
   const [du, setDu] = useState(() => jourActivite(new Date()));
