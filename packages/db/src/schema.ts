@@ -112,6 +112,8 @@ export const articles = pgTable("articles", {
   purchaseCost: integer("purchase_cost").notNull().default(0),
   trackStock: boolean("track_stock").notNull().default(false),
   stockQty: integer("stock_qty").notNull().default(0),
+  category: text("category").notNull().default(""),
+  lowThreshold: integer("low_threshold").notNull().default(0),
   active: boolean("active").notNull().default(true),
   createdBy: uuid("created_by").references(() => users.id),
   createdAt: createdAt(),
@@ -575,3 +577,23 @@ export const packagingSettlements = pgTable("packaging_settlements", {
     .references(() => users.id),
   createdAt: createdAt(),
 });
+
+/** Mouvements des articles suivis (ajout seul) : ventes, entrées avec pièce, corrections. */
+export const articleMoves = pgTable(
+  "article_moves",
+  {
+    id: id(),
+    articleId: uuid("article_id")
+      .notNull()
+      .references(() => articles.id),
+    kind: text("kind").notNull(),
+    delta: integer("delta").notNull(),
+    label: text("label").notNull(),
+    receiptId: uuid("receipt_id").references((): AnyPgColumn => receiptFiles.id),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("article_moves_article").on(t.articleId, t.createdAt)],
+);

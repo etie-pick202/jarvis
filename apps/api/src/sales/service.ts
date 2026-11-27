@@ -5,6 +5,7 @@ import { and, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { auditAndNotifyPdg } from "../audit/service.js";
 import { appendCashEntry, formatNumber, nextSequence, registerForPayment } from "../cash/ledger.js";
 import { dayRange } from "../cash/rules.js";
+import { moveArticleStock } from "../catalogue/article-stock.js";
 import { currentGasPrice } from "../catalogue/service.js";
 import { findOrCreateCustomer } from "../customers/service.js";
 import { reservedArticle, reservedFull } from "../delivery/reservations.js";
@@ -243,10 +244,14 @@ export async function createSaleDetailed(
     }
     for (const art of articleRows) {
       if (art.trackStock) {
-        await tx
-          .update(articles)
-          .set({ stockQty: art.stockQty - (articleDemand.get(art.id) ?? 0) })
-          .where(eq(articles.id, art.id));
+        await moveArticleStock(tx, {
+          articleId: art.id,
+          kind: "sale",
+          delta: -(articleDemand.get(art.id) ?? 0),
+          label: `Vente ${number}`,
+          authorId,
+          createdAt: now,
+        });
       }
     }
     await appendCashEntry(tx, {

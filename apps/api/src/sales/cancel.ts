@@ -4,6 +4,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { auditAndNotifyPdg } from "../audit/service.js";
 import { formatNumber, nextSequence } from "../cash/ledger.js";
 import { appendCheckedEntry } from "../cash/service.js";
+import { moveArticleStock } from "../catalogue/article-stock.js";
 import { AppError, type Deps } from "../http.js";
 import { appendStockMove, lockStock, stockOf } from "../stock/ledger.js";
 import { toSale } from "./service.js";
@@ -110,10 +111,14 @@ export async function cancelSale(
       if (l.kind === "article" && l.articleId) {
         const [art] = await tx.select().from(articles).where(eq(articles.id, l.articleId));
         if (art?.trackStock) {
-          await tx
-            .update(articles)
-            .set({ stockQty: art.stockQty + l.quantity })
-            .where(eq(articles.id, art.id));
+          await moveArticleStock(tx, {
+            articleId: art.id,
+            kind: "sale",
+            delta: l.quantity,
+            label: `Annulation vente ${original.number}`,
+            authorId: actor.id,
+            createdAt: now,
+          });
         }
       }
     }
