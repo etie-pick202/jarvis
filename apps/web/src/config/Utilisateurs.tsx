@@ -64,9 +64,9 @@ function useRetour() {
     }
   }
   const vue = retour && (
-    <p role={retour.ok ? "status" : "alert"} className={retour.ok ? undefined : "connexion__erreur"}>
+    <output className={retour.ok ? "bloc" : "bloc connexion__erreur"} role={retour.ok ? undefined : "alert"}>
       {retour.texte}
-    </p>
+    </output>
   );
   return { tenter, vue, effacer: () => setRetour(null) };
 }
@@ -82,7 +82,7 @@ function Compte({
   const [motDePasse, setMotDePasse] = useState("");
   const { tenter, vue } = useRetour();
   const court = motDePasse !== "" && motDePasse.length < MOT_DE_PASSE_MIN;
-  const change = [...roles].sort().join() !== [...compte.roles].sort().join();
+  const change = roles.length !== compte.roles.length || roles.some((r) => !compte.roles.includes(r));
   const pret = roles.length > 0 && !court && (change || motDePasse !== "");
 
   const [basculer, bascule] = useEnvoi(async () => {
@@ -104,6 +104,8 @@ function Compte({
     );
     if (ok) setMotDePasse("");
   });
+
+  const modifier = t("canal.modifier");
 
   function soumettre(event: FormEvent) {
     event.preventDefault();
@@ -133,7 +135,7 @@ function Compte({
           )}
         </div>
         {ouvert && (
-          <form onSubmit={soumettre} aria-label={`${t("canal.modifier")} ${compte.displayName}`}>
+          <form onSubmit={soumettre} aria-label={`${modifier} ${compte.displayName}`}>
             <Profils
               legende={t("config.droits")}
               choisis={roles}

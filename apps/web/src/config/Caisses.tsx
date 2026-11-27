@@ -63,7 +63,7 @@ function Seuil({
 }>) {
   const { t } = useI18n();
   // Tant que rien n'est tapé, le champ suit la valeur lue (copie locale puis serveur).
-  const [tape, setSaisie] = useState<string | null>(null);
+  const [tape, setTape] = useState<string | null>(null);
   const saisie = tape ?? String(actuel);
   const [ok, setOk] = useState(false);
   const valeur = /^\d{1,9}$/u.test(saisie.trim()) ? Number(saisie) : null;
@@ -86,7 +86,7 @@ function Seuil({
         readOnly={!peutModifier}
         value={saisie}
         onChange={(e) => {
-          setSaisie(e.target.value);
+          setTape(e.target.value);
           setOk(false);
         }}
       />
@@ -100,7 +100,7 @@ function Seuil({
           {t("config.enregistrer")}
         </Button>
       )}
-      {ok && <p role="status">{t("config.enregistre")}</p>}
+      {ok && <output className="bloc">{t("config.enregistre")}</output>}
     </form>
   );
 }
