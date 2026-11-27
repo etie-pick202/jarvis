@@ -33,6 +33,9 @@ const Encaissements = lazy(() =>
 const Operations = lazy(() => import("./money/Operations.js").then((m) => ({ default: m.Operations })));
 const Float = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Float })));
 const Commissions = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Commissions })));
+const MouvementsArticles = lazy(() =>
+  import("./market/Mouvements.js").then((m) => ({ default: m.MouvementsArticles })),
+);
 const Commandes = lazy(() => import("./commandes/Commandes.js").then((m) => ({ default: m.Commandes })));
 const HistoriqueCommandes = lazy(() =>
   import("./commandes/Commandes.js").then((m) => ({ default: m.HistoriqueCommandes })),
@@ -415,6 +418,14 @@ export function App() {
               element={
                 <Garde volet="vente">
                   <Clients />
+                </Garde>
+              }
+            />
+            <Route
+              path="market/mouvements"
+              element={
+                <Garde volet="market">
+                  <MouvementsArticles />
                 </Garde>
               }
             />

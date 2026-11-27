@@ -605,6 +605,25 @@ function ecrireCompte(route: string, init?: RequestInit): Response {
   return json({ ...c, active: corps.active ?? c.active, roles: corps.roles ?? c.roles });
 }
 
+const mouvementsArticle = () => [
+  {
+    id: uuid(2001),
+    at: `${jour}T08:00:00.000Z`,
+    kind: "entry",
+    label: "Réception d'exemple",
+    delta: 10,
+    authorName: "Gérant démo",
+  },
+  {
+    id: uuid(2002),
+    at: `${jour}T11:00:00.000Z`,
+    kind: "sale",
+    label: "TK1993",
+    delta: -1,
+    authorName: "Caissier démo",
+  },
+];
+
 const CLE_FAUX = "jarvis.fake-user";
 
 /** L'utilisateur « connecté » survit au rechargement, comme le ferait un jeton de session. */
@@ -674,6 +693,8 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   if (ecriture && route.startsWith("/orders/")) return agirSurCommande(route, init);
   if (ecriture && route.startsWith("/auth/users")) return ecrireCompte(route, init);
   if (ecriture) return json({ ok: true }, 201);
+
+  if (route.startsWith("/catalogue/articles/") && route.endsWith("/moves")) return json(mouvementsArticle());
 
   switch (route) {
     case "/catalogue/brands":
