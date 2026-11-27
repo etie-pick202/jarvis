@@ -20,3 +20,23 @@ export function useEnvoi(action: () => Promise<void>): [() => Promise<void>, boo
   }
   return [lancer, occupe];
 }
+
+/**
+ * Même garde pour un gestionnaire existant : tant qu'un appel court, les suivants sont ignorés. Pour un formulaire,
+ * le rechargement de page est empêché même quand l'appel est ignoré.
+ */
+export function useGarde() {
+  const enCours = useRef(false);
+  return <A extends unknown[]>(action: (...args: A) => Promise<void>) =>
+    async (...args: A): Promise<void> => {
+      const premier = args[0] as { preventDefault?: () => void } | undefined;
+      premier?.preventDefault?.();
+      if (enCours.current) return;
+      enCours.current = true;
+      try {
+        await action(...args);
+      } finally {
+        enCours.current = false;
+      }
+    };
+}

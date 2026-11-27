@@ -10,6 +10,7 @@ import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
 import { usePagination, VoirPlus } from "../ui/listes.js";
 import { Table } from "../ui/Table.js";
+import { useGarde } from "../ui/useEnvoi.js";
 import { formatFcfa } from "../vente/regles.js";
 
 const TABLEAU_VIDE: Tableau = {
@@ -85,6 +86,7 @@ export function Alertes({ page = false }: { page?: boolean }) {
 
 /** Validations en attente : le PDG valide ou refuse (avec motif) les comptages, le gérant consulte. */
 export function Validations() {
+  const garde = useGarde();
   const { t, lang } = useI18n();
   const { profilsActifs } = useSession();
   const lecture = useCached("pilot-validations", api.validations, []);
@@ -127,7 +129,7 @@ export function Validations() {
               </div>
               {peutDecider && refus !== v.id && (
                 <div className="vente__actions">
-                  <Button variant="noir" onClick={() => void decider(v, "valider")}>
+                  <Button variant="noir" onClick={() => void garde(decider)(v, "valider")}>
                     {t("pilot.valider")}
                   </Button>
                   <Button
@@ -144,7 +146,10 @@ export function Validations() {
               {peutDecider && refus === v.id && (
                 <div className="validation__refus">
                   <Field label={t("pilot.motif")} value={motif} onChange={(e) => setMotif(e.target.value)} />
-                  <Button disabled={motif.trim().length < 5} onClick={() => void decider(v, "refuser")}>
+                  <Button
+                    disabled={motif.trim().length < 5}
+                    onClick={() => void garde(decider)(v, "refuser")}
+                  >
                     {t("pilot.confirmer.refus")}
                   </Button>
                   <Button variant="contour" onClick={() => setRefus(null)}>

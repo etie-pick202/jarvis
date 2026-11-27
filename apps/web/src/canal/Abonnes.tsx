@@ -10,6 +10,7 @@ import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
 import { usePagination, VoirPlus } from "../ui/listes.js";
 import { Table } from "../ui/Table.js";
+import { useGarde } from "../ui/useEnvoi.js";
 import { formatFcfa } from "../vente/regles.js";
 import { EtatChip } from "./EtatChip.js";
 import { Formules } from "./Formules.js";
@@ -50,6 +51,7 @@ function Fiche({
   onValider: (s: Saisie) => Promise<void>;
   onAnnuler?: () => void;
 }) {
+  const garde = useGarde();
   const { t } = useI18n();
   const [s, setS] = useState(initiale);
   const idFormule = useId();
@@ -62,7 +64,7 @@ function Fiche({
   }
 
   return (
-    <form className="carte" onSubmit={envoyer} aria-label={titre}>
+    <form className="carte" onSubmit={garde(envoyer)} aria-label={titre}>
       <h2>{titre}</h2>
       <Field label={t("canal.nom")} value={s.nom} onChange={(e) => maj("nom")(e.target.value)} />
       <Field
