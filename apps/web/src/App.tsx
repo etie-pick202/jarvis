@@ -15,6 +15,7 @@ import { Shell } from "./shell/Shell.js";
 const Articles = lazy(() => import("./market/Articles.js").then((m) => ({ default: m.Articles })));
 const StockArticles = lazy(() => import("./market/Articles.js").then((m) => ({ default: m.StockArticles })));
 const Abonnes = lazy(() => import("./canal/Abonnes.js").then((m) => ({ default: m.Abonnes })));
+const Boutique = lazy(() => import("./boutique/Boutique.js").then((m) => ({ default: m.Boutique })));
 const Encaissements = lazy(() =>
   import("./canal/Encaissements.js").then((m) => ({ default: m.Encaissements })),
 );
@@ -66,6 +67,15 @@ export function App() {
     <ErrorBoundary>
       <Routes>
         <Route path="connexion" element={<LoginPage />} />
+        {/* Vitrine publique : sans compte. */}
+        <Route
+          path="boutique"
+          element={
+            <Suspense fallback={<Chargement />}>
+              <Boutique />
+            </Suspense>
+          }
+        />
         <Route element={<RequireAuth />}>
           <Route element={<Shell />}>
             <Route index element={<Accueil />} />
