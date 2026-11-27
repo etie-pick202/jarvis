@@ -4,22 +4,23 @@ Tout est dans `.github/workflows/`. Une pull request ne peut être fusionnée qu
 
 ## Contrôles d'une pull request
 
-| Contrôle (nom exact) | Fichier        | Ce qu'il vérifie                                                                             | Obligatoire           |
-| -------------------- | -------------- | -------------------------------------------------------------------------------------------- | --------------------- |
-| `verify`             | `ci.yml`       | Biome (lint et format), TypeScript, tests unitaires avec **seuils de couverture**, build     | oui                   |
-| `integration`        | `ci.yml`       | Tests `*.int.test.ts` de l'API contre un vrai PostgreSQL (`DATABASE_URL`)                    | oui                   |
-| `e2e`                | `ci.yml`       | Playwright (Chromium) sur la PWA construite, profils bureau et Android                       | oui                   |
-| `pr-title`           | `ci.yml`       | Titre au format Conventional Commits (devient le commit en squash)                           | oui                   |
-| `no-ai-mentions`     | `ci.yml`       | Règle n°1 : aucune mention d'IA dans le titre, la description, les commits                   | oui                   |
-| `audit-dependances`  | `security.yml` | `pnpm audit` : aucune vulnérabilité haute ou critique                                        | oui                   |
-| `dependency-review`  | `security.yml` | Nouvelles dépendances d'une PR : licences et vulnérabilités                                  | oui                   |
-| `trivy-fichiers`     | `security.yml` | Vulnérabilités, secrets et mauvaise configuration (Dockerfile, workflows)                    | oui                   |
-| `gitleaks`           | `security.yml` | Secrets dans tout l'historique                                                               | oui                   |
-| `codeql`             | `codeql.yml`   | Analyse statique de sécurité                                                                 | oui                   |
-| `flux-branches`      | `ci.yml`       | Sens des PR : travail → `develop` → `staging` → `main` (`hotfix/*` vers `staging` ou `main`) | oui                   |
-| `docker-build`       | `docker.yml`   | Construit les images API et web, les scanne (Trivy) et démarre l'API (`/health`)             | oui                   |
-| `lighthouse`         | `ci.yml`       | Performance, accessibilité, bonnes pratiques de la PWA (accessibilité bloquante)             | non                   |
-| `sonar`              | `ci.yml`       | SonarCloud : qualité, duplication, couverture, porte qualité                                 | non (voir ci-dessous) |
+| Contrôle (nom exact) | Fichier        | Ce qu'il vérifie                                                                                | Obligatoire           |
+| -------------------- | -------------- | ----------------------------------------------------------------------------------------------- | --------------------- |
+| `verify`             | `ci.yml`       | Biome (lint et format), TypeScript, tests unitaires avec **seuils de couverture**, build        | oui                   |
+| `integration`        | `ci.yml`       | Tests `*.int.test.ts` de l'API contre un vrai PostgreSQL (`DATABASE_URL`)                       | oui                   |
+| `e2e`                | `ci.yml`       | Playwright (Chromium) sur la PWA construite, profils bureau et Android                          | oui                   |
+| `e2e-vraie-api`      | `ci.yml`       | Playwright sur la PWA de production branchée à la vraie API et à PostgreSQL (sans faux serveur) | oui                   |
+| `pr-title`           | `ci.yml`       | Titre au format Conventional Commits (devient le commit en squash)                              | oui                   |
+| `no-ai-mentions`     | `ci.yml`       | Règle n°1 : aucune mention d'IA dans le titre, la description, les commits                      | oui                   |
+| `audit-dependances`  | `security.yml` | `pnpm audit` : aucune vulnérabilité haute ou critique                                           | oui                   |
+| `dependency-review`  | `security.yml` | Nouvelles dépendances d'une PR : licences et vulnérabilités                                     | oui                   |
+| `trivy-fichiers`     | `security.yml` | Vulnérabilités, secrets et mauvaise configuration (Dockerfile, workflows)                       | oui                   |
+| `gitleaks`           | `security.yml` | Secrets dans tout l'historique                                                                  | oui                   |
+| `codeql`             | `codeql.yml`   | Analyse statique de sécurité                                                                    | oui                   |
+| `flux-branches`      | `ci.yml`       | Sens des PR : travail → `develop` → `staging` → `main` (`hotfix/*` vers `staging` ou `main`)    | oui                   |
+| `docker-build`       | `docker.yml`   | Construit les images API et web, les scanne (Trivy) et démarre l'API (`/health`)                | oui                   |
+| `lighthouse`         | `ci.yml`       | Performance, accessibilité, bonnes pratiques de la PWA (accessibilité bloquante)                | non                   |
+| `sonar`              | `ci.yml`       | SonarCloud : qualité, duplication, couverture, porte qualité                                    | non (voir ci-dessous) |
 
 Les tâches du plan de travail ajoutent leurs tests dans les paquets : `pnpm test` (rapide), `pnpm test:coverage`, `pnpm test:integration` (nom de fichier `*.int.test.ts`, dossier `apps/api`), `pnpm test:e2e` (dossier `apps/web/e2e`).
 
