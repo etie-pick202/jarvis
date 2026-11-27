@@ -59,6 +59,15 @@ const LISTES = {
   ventes: z.array(contrat.sale),
 };
 
+/** Corps de POST /control/corrections/stock. */
+export interface CorrectionStockSaisie {
+  brandId: string;
+  formatId: string;
+  state: contrat.BottleState;
+  delta: number;
+  justification: string;
+}
+
 const get = <S extends z.ZodType>(path: string, schema: S, signal?: AbortSignal) =>
   request(path, { signal, parse: lire(schema) });
 
@@ -331,6 +340,20 @@ export const api = {
   /** Destinataires des rappels, alertes et rapports (lecture : PDG et gérant ; écriture : PDG). */
   destinataires: (signal?: AbortSignal): Promise<contrat.NotificationSettings> =>
     get("/control/notification-settings", contrat.notificationSettings, signal),
+
+  /** Journal d'une caisse pour un jour, le plus récent d'abord. */
+  mouvementsCaisse: (id: string, jour: string, signal?: AbortSignal): Promise<contrat.CashEntry[]> =>
+    get(`/cash/registers/${id}/entries?date=${jour}`, z.array(contrat.cashEntry), signal),
+  /** Corrections (PDG, gérant) : en direct seulement, le serveur vérifie le stock et le solde au moment même. */
+  corrigerStock: (body: CorrectionStockSaisie, ref: string) =>
+    request("/control/corrections/stock", { method: "POST", body, idempotencyKey: ref, parse: () => null }),
+  corrigerCaisse: (entryId: string, justification: string, ref: string) =>
+    request(`/control/corrections/cash/${entryId}`, {
+      method: "POST",
+      body: { justification },
+      idempotencyKey: ref,
+      parse: () => null,
+    }),
 
   /** Comptes (PDG). Écritures directes : un mot de passe n'est jamais gardé dans la file d'envoi. */
   comptes: (signal?: AbortSignal): Promise<contrat.UserAccount[]> =>

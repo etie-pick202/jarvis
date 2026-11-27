@@ -4,6 +4,8 @@ const PORT = 4173;
 
 export default defineConfig({
   testDir: "./e2e",
+  // Les parcours contre la vraie API ont leur propre configuration (playwright.real-api.config.ts).
+  testIgnore: "real-api/**",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

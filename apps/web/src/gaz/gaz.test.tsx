@@ -10,7 +10,14 @@ import { Echanges } from "./Echanges.js";
 import { Fournisseurs } from "./Fournisseurs.js";
 import { StockGaz } from "./StockGaz.js";
 
-const ui = (node: React.ReactNode) => render(<I18nProvider initial="fr">{node}</I18nProvider>);
+const ui = (node: React.ReactNode) =>
+  render(
+    <I18nProvider initial="fr">
+      <SessionProvider initial={{ userId: "u", nom: "x", profils: ["gerant"], profilActif: "gerant" }}>
+        {node}
+      </SessionProvider>
+    </I18nProvider>,
+  );
 
 /** Stock de l'exemple : pleines et vides par marque (OLA, TRADEX, BOCOM, TOTAL, STARGAS). */
 const PLEINES = [30, 0, 18, 28, 22];

@@ -94,6 +94,47 @@ jobs:
           path: apps/web/playwright-report
           retention-days: 7
 
+  e2e-api:
+    name: e2e-vraie-api
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: jarvis
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: jarvis_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U jarvis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://jarvis@localhost:5432/jarvis_e2e
+      # Mot de passe des comptes d'essai FICTIFS d'une base jetable : pas un secret.
+      E2E_PASSWORD: essai-bout-en-bout
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Installer Chromium (Playwright)
+        run: pnpm --filter @jarvis/web exec playwright install --with-deps chromium
+      - name: Bout en bout sur la vraie API et PostgreSQL
+        run: pnpm --filter @jarvis/web test:e2e:api
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: failure()
+        with:
+          name: playwright-report-api
+          path: apps/web/playwright-report-api
+          retention-days: 7
+
   lighthouse:
     name: lighthouse
     runs-on: ubuntu-latest

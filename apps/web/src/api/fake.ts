@@ -586,6 +586,45 @@ function agirSurCommande(route: string, init?: RequestInit): Response {
   return json({ ...o, ...effets[action] });
 }
 
+/** Journal d'exemple : une dépense, un transfert déjà corrigé et son inverse, une vente. */
+const journalCaisse = (registerId: string, date: string) => {
+  const ecriture = (n: number, plus: Record<string, unknown>) => ({
+    id: uuid(2600 + n),
+    number: `RG00${40 + n}`,
+    registerId,
+    direction: "out",
+    type: "MSC",
+    paymentMethod: "cash",
+    customerName: null,
+    label: "Carburant moto de livraison",
+    amount: 2000,
+    balanceAfter: 213300,
+    operatorId: uuid(2),
+    createdAt: `${date}T09:0${n}:00.000Z`,
+    saleId: null,
+    reversalOf: null,
+    ...plus,
+  });
+  return [
+    ecriture(4, {
+      direction: "in",
+      type: "REG",
+      label: "Vente comptoir",
+      customerName: "Client comptoir",
+      amount: 6800,
+      saleId: uuid(2700),
+    }),
+    ecriture(3, {
+      direction: "in",
+      type: "MEC",
+      label: "Correction du mouvement RG0042",
+      reversalOf: uuid(2602),
+    }),
+    ecriture(2, { label: "Dépense saisie deux fois" }),
+    ecriture(1, {}),
+  ];
+};
+
 const reglagesBoutique = () => ({
   ...vitrine().shop,
   omNumber: "+237690000100",
@@ -708,9 +747,19 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
     };
     return json({ sent: reports.map((r) => `${r}.${format}`), recipients: ["direction@exemple.test"] });
   }
+  if (ecriture && route.startsWith("/control/corrections/")) {
+    if (!moi.roles.some((r) => r === "pdg" || r === "gerant")) {
+      return erreur(403, "forbidden", "Correction réservée à la direction");
+    }
+    return json({ ok: true }, 201);
+  }
   if (ecriture) return json({ ok: true }, 201);
 
   if (route.startsWith("/catalogue/articles/") && route.endsWith("/moves")) return json(mouvementsArticle());
+
+  if (route.startsWith("/cash/registers/") && route.endsWith("/entries")) {
+    return json(journalCaisse(route.split("/")[3] ?? "", url.searchParams.get("date") ?? jour));
+  }
 
   if (route === "/delivery/settings") return json(reglagesBoutique());
   if (route === "/delivery/neighbourhoods") {
