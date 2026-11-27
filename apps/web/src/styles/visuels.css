@@ -184,3 +184,10 @@ output.bloc {
   margin: 0 auto;
   padding: var(--espace-3);
 }
+
+.correction__saisie {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
