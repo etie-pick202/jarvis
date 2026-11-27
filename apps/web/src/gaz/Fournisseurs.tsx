@@ -73,10 +73,12 @@ export function Fournisseurs() {
               <tr key={f.id}>
                 <th scope="row">{f.nom}</th>
                 <td>{f.telephone ? <a href={`tel:${f.telephone}`}>{f.telephone}</a> : "—"}</td>
-                <td className="marques-liste">
-                  {f.marques.map((m) => (
-                    <MarqueGaz key={m} nom={m} compacte />
-                  ))}
+                <td>
+                  <div className="marques-liste">
+                    {f.marques.map((m) => (
+                      <MarqueGaz key={m} nom={m} compacte />
+                    ))}
+                  </div>
                 </td>
               </tr>
             ))}

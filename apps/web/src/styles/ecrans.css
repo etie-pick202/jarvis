@@ -316,7 +316,7 @@
     padding: var(--espace-1) 0;
     font-size: var(--taille-texte);
   }
-  .tableau--cartes td[data-label]:not([data-label=""])::before {
+  .tableau--cartes td[data-label]:not([data-label=""], .cartes__saisie, .cartes__nu)::before {
     content: attr(data-label);
     color: var(--texte-doux);
     font-size: var(--taille-meta);
@@ -391,10 +391,6 @@ a[href^="tel:"]:not(.btn) {
 
 /* Cartes à saisie : le nom, puis les champs côte à côte. */
 @media (max-width: 559px) {
-  .tableau--cartes td.cartes__nu::before,
-  .tableau--cartes td.cartes__saisie::before {
-    content: none;
-  }
   .tableau--cartes tr:has(.cartes__saisie) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
