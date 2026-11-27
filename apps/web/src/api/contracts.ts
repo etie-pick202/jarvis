@@ -108,6 +108,8 @@ export interface Tableau {
   vides: number;
   alertesStock: number;
   notifications: number;
+  /** Abonnements Canal+ dépassés ou à moins de 7 jours ; absent sur un serveur ancien. */
+  echeancesCanal?: number;
 }
 
 export interface Alerte {

@@ -1,4 +1,4 @@
-import type { CreateCanalSubscriberInput, UpdateCanalSubscriberInput } from "@jarvis/shared";
+import { type CreateCanalSubscriberInput, toE164, type UpdateCanalSubscriberInput } from "@jarvis/shared";
 import { type FormEvent, useId, useState } from "react";
 import { api, type CanalFormula, type CanalSubscriber } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
@@ -34,7 +34,7 @@ const depuis = (a: CanalSubscriber): Saisie => ({
 });
 
 const valide = (s: Saisie) =>
-  s.nom.trim() !== "" && s.telephone.trim().length >= 6 && s.decodeur.trim().length >= 3 && s.formule !== "";
+  s.nom.trim() !== "" && toE164(s.telephone) !== null && s.decodeur.trim().length >= 3 && s.formule !== "";
 
 /** Fiche abonné : nom, téléphone, décodeur, formule, échéance. Création et modification. */
 function Fiche({
@@ -71,6 +71,11 @@ function Fiche({
         value={s.telephone}
         onChange={(e) => maj("telephone")(e.target.value)}
       />
+      {s.telephone.trim() !== "" && toE164(s.telephone) === null && (
+        <p role="alert" className="connexion__erreur">
+          {t("saisie.telephone")}
+        </p>
+      )}
       <Field
         label={t("canal.decodeur")}
         value={s.decodeur}
@@ -135,7 +140,7 @@ export function Abonnes() {
     return {
       id: base?.id ?? crypto.randomUUID(),
       name: s.nom.trim(),
-      phone: s.telephone.trim(),
+      phone: toE164(s.telephone) ?? s.telephone.trim(),
       decoderNumber: s.decodeur.trim(),
       formulaId: s.formule,
       formulaName: f?.name ?? "",
@@ -150,7 +155,7 @@ export function Abonnes() {
 
   const corps = (s: Saisie) => ({
     name: s.nom.trim(),
-    phone: s.telephone.trim(),
+    phone: toE164(s.telephone) ?? s.telephone.trim(),
     decoderNumber: s.decodeur.trim(),
     formulaId: s.formule,
     expiresOn: s.echeance || null,
