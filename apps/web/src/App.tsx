@@ -23,6 +23,9 @@ const Encaissements = lazy(() =>
 const Operations = lazy(() => import("./money/Operations.js").then((m) => ({ default: m.Operations })));
 const Float = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Float })));
 const Commissions = lazy(() => import("./money/Reglages.js").then((m) => ({ default: m.Commissions })));
+const MouvementsArticles = lazy(() =>
+  import("./market/Mouvements.js").then((m) => ({ default: m.MouvementsArticles })),
+);
 const Echeances = lazy(() => import("./canal/Echeances.js").then((m) => ({ default: m.Echeances })));
 const Cloture = lazy(() => import("./caisse/Cloture.js").then((m) => ({ default: m.Cloture })));
 const Depenses = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Depenses })));
@@ -313,6 +316,14 @@ export function App() {
               element={
                 <Garde volet="market">
                   <StockArticles />
+                </Garde>
+              }
+            />
+            <Route
+              path="market/mouvements"
+              element={
+                <Garde volet="market">
+                  <MouvementsArticles />
                 </Garde>
               }
             />

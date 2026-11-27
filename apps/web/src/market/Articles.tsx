@@ -220,7 +220,12 @@ export function StockArticles() {
               <tr key={a.id}>
                 <th scope="row">{a.name}</th>
                 <td>{a.stockQty}</td>
-                <td>{a.stockQty <= 0 && <Chip tone="danger">{t("gaz.rupture")}</Chip>}</td>
+                <td>
+                  {a.stockQty <= 0 && <Chip tone="danger">{t("gaz.rupture")}</Chip>}
+                  {a.stockQty > 0 && a.stockQty <= (a.lowThreshold ?? 0) && (
+                    <Chip tone="alerte">{t("gaz.bas")}</Chip>
+                  )}
+                </td>
               </tr>
             ))}
           </Table>

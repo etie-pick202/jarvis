@@ -490,6 +490,25 @@ const operationsMoney = (date: string) => [
   },
 ];
 
+const mouvementsArticle = () => [
+  {
+    id: uuid(2001),
+    at: `${jour}T08:00:00.000Z`,
+    kind: "entry",
+    label: "Réception d'exemple",
+    delta: 10,
+    authorName: "Gérant démo",
+  },
+  {
+    id: uuid(2002),
+    at: `${jour}T11:00:00.000Z`,
+    kind: "sale",
+    label: "TK1993",
+    delta: -1,
+    authorName: "Caissier démo",
+  },
+];
+
 const CLE_FAUX = "jarvis.fake-user";
 
 /** L'utilisateur « connecté » survit au rechargement, comme le ferait un jeton de session. */
@@ -557,6 +576,8 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   if (route === "/receipts" && ecriture)
     return json({ id: uuid(1201), contentType: "application/pdf", size: 1 }, 201);
   if (ecriture) return json({ ok: true }, 201);
+
+  if (route.startsWith("/catalogue/articles/") && route.endsWith("/moves")) return json(mouvementsArticle());
 
   switch (route) {
     case "/catalogue/brands":
