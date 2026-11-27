@@ -717,6 +717,7 @@ function baseNeuve(route: string): unknown {
     "/control/notifications",
   ];
   if (listes.includes(route)) return [];
+  if (route === "/orders/summary") return { pending: 0, toDeliver: 0 };
   if (route === "/auth/users") return comptes().filter((c) => c.roles.includes("pdg"));
   if (route === "/cash/registers") return registres;
   if (route === "/reports/dashboard") {

@@ -194,3 +194,12 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+/* Téléphone : cellules resserrées pour que les colonnes restent à l'écran. */
+@media (max-width: 559px) {
+  .tableau th,
+  .tableau td {
+    padding: 10px 6px;
+    font-size: var(--taille-meta);
+  }
+}

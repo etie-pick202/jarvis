@@ -146,3 +146,9 @@
 a.btn {
   text-decoration: none;
 }
+
+/* La pastille de marque garde sa taille, quelle que soit la largeur de la case. */
+.vente__article .marque-gaz {
+  flex: none;
+  min-width: 0;
+}
