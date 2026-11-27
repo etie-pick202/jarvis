@@ -19,7 +19,10 @@ export function registerForPayment(method: PaymentMethod): CashRegisterId {
   return method === "cash" ? "sales_cash" : "settlement_om_momo";
 }
 
-export async function nextSequence(tx: Database, sequence: "sale_number_seq" | "cash_entry_number_seq") {
+export async function nextSequence(
+  tx: Database,
+  sequence: "sale_number_seq" | "cash_entry_number_seq" | "order_number_seq",
+) {
   const res = await tx.execute(sql`select nextval(${sequence}::regclass) as n`);
   const row = (res as unknown as { rows: { n: string | number }[] }).rows[0];
   return Number(row?.n);

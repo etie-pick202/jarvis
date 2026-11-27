@@ -408,6 +408,28 @@ const vitrine = () => ({
     deliveryFeePerBottle: 400,
   },
 });
+/** Deux encaissements d'exemple pour la date demandée. */
+const encaissementsCanal = (date: string) =>
+  ABONNES.slice(1, 3).map((a, i) => ({
+    id: uuid(1501 + i),
+    subscriberId: a.id,
+    subscriberName: a.name,
+    decoderNumber: a.decoderNumber,
+    formulaId: a.formulaId,
+    formulaName: a.formulaName,
+    months: 1,
+    amount: a.formulaPrice,
+    commission: 0,
+    paymentMethod: i === 0 ? ("cash" as const) : ("orange_money" as const),
+    registerId: i === 0 ? ("canal_cash" as const) : ("canal_om" as const),
+    previousExpiry: null,
+    newExpiry: date,
+    authorId: uuid(1),
+    authorName: "Gérant démo",
+    createdAt: `${date}T0${9 - i}:15:00.000Z`,
+    reversalOf: null,
+    cancelled: false,
+  }));
 
 const CLE_FAUX = "jarvis.fake-user";
 
@@ -518,6 +540,8 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       );
     case "/canal/formulas":
       return json(FORMULES);
+    case "/canal/payments":
+      return json(encaissementsCanal(url.searchParams.get("date") ?? jour));
     case "/canal/subscribers":
       return json(ABONNES);
     case "/canal/due": {
