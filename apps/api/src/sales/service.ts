@@ -61,6 +61,9 @@ export interface SaleOptions {
   occurredAt?: Date;
   /** Rejeu hors ligne : la bouteille est déjà partie, on enregistre la vente et on signale l'écart de stock. */
   allowOutOfStock?: boolean;
+  /** Commande remise : prix du gaz à la date de la commande et prix des articles annoncés au client. */
+  priceAt?: Date;
+  articlePrices?: ReadonlyMap<string, number>;
 }
 
 export async function createSale(deps: Deps, authorId: string, input: CreateSaleInput): Promise<Sale> {
@@ -74,7 +77,8 @@ export async function createSaleDetailed(
   options: SaleOptions = {},
 ): Promise<{ sale: Sale; shortages: string[] }> {
   const now = deps.now();
-  const priceAt = options.occurredAt && options.occurredAt < now ? options.occurredAt : now;
+  const priceAt =
+    options.priceAt ?? (options.occurredAt && options.occurredAt < now ? options.occurredAt : now);
   const shortages: string[] = [];
   const deliveryFee = input.deliveryFeePerBottle ?? 0;
   const gasLines = input.lines.flatMap((l) => (l.kind === "gas" ? [l] : []));
@@ -197,9 +201,9 @@ export async function createSaleDetailed(
         kind: "article",
         articleId: art.id,
         quantity: line.quantity,
-        unitPrice: art.price,
+        unitPrice: options.articlePrices?.get(art.id) ?? art.price,
         purchaseCost: art.purchaseCost,
-        total: line.quantity * art.price,
+        total: line.quantity * (options.articlePrices?.get(art.id) ?? art.price),
       });
     }
 
