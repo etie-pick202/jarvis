@@ -13,6 +13,12 @@ import { Plus } from "./shell/Plus.js";
 import { Shell } from "./shell/Shell.js";
 
 // Écrans chargés à la demande : le premier affichage ne télécharge que la coque et la connexion.
+const Quartiers = lazy(() => import("./commandes/Quartiers.js").then((m) => ({ default: m.Quartiers })));
+const Utilisateurs = lazy(() =>
+  import("./config/Utilisateurs.js").then((m) => ({ default: m.Utilisateurs })),
+);
+const ConfigCaisses = lazy(() => import("./config/Caisses.js").then((m) => ({ default: m.ConfigCaisses })));
+const ConfigLangue = lazy(() => import("./config/Caisses.js").then((m) => ({ default: m.ConfigLangue })));
 const Articles = lazy(() => import("./market/Articles.js").then((m) => ({ default: m.Articles })));
 const StockArticles = lazy(() => import("./market/Articles.js").then((m) => ({ default: m.StockArticles })));
 const Abonnes = lazy(() => import("./canal/Abonnes.js").then((m) => ({ default: m.Abonnes })));
@@ -28,7 +34,6 @@ const Commandes = lazy(() => import("./commandes/Commandes.js").then((m) => ({ d
 const HistoriqueCommandes = lazy(() =>
   import("./commandes/Commandes.js").then((m) => ({ default: m.HistoriqueCommandes })),
 );
-const Quartiers = lazy(() => import("./commandes/Quartiers.js").then((m) => ({ default: m.Quartiers })));
 const Echeances = lazy(() => import("./canal/Echeances.js").then((m) => ({ default: m.Echeances })));
 const Cloture = lazy(() => import("./caisse/Cloture.js").then((m) => ({ default: m.Cloture })));
 const Depenses = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Depenses })));
@@ -351,6 +356,30 @@ export function App() {
               element={
                 <Garde volet="livre">
                   <HistoriqueCommandes />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/utilisateurs"
+              element={
+                <Garde volet="config">
+                  <Utilisateurs />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/caisses"
+              element={
+                <Garde volet="config">
+                  <ConfigCaisses />
+                </Garde>
+              }
+            />
+            <Route
+              path="config/langue"
+              element={
+                <Garde volet="config">
+                  <ConfigLangue />
                 </Garde>
               }
             />
