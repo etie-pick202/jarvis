@@ -10,6 +10,7 @@ import { customerRoutes } from "./customers/routes.js";
 import { driverRoutes } from "./delivery/driver-routes.js";
 import { orderRoutes, publicOrderRoutes } from "./delivery/order-routes.js";
 import { deliveryRoutes, shopRoutes } from "./delivery/routes.js";
+import { documentRoutes } from "./documents/routes.js";
 import { type AppEnv, type Deps, errorResponse, withDeps } from "./http.js";
 import { moneyRoutes } from "./money/routes.js";
 import { reportRoutes } from "./reports/routes.js";
@@ -47,6 +48,7 @@ export function createApp(deps: Deps) {
   api.route("/customers", customerRoutes);
   api.route("/delivery", deliveryRoutes);
   api.route("/deliveries", driverRoutes);
+  api.route("/documents", documentRoutes);
   api.route("/shop", shopRoutes);
   api.route("/shop/orders", publicOrderRoutes);
   api.route("/orders", orderRoutes);
