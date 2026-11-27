@@ -8,6 +8,7 @@ import { SyncPage } from "./offline/SyncPage.js";
 import { ErrorBoundary, NotFound } from "./pages/Errors.js";
 import { Garde } from "./pages/Garde.js";
 import { Placeholder } from "./pages/Placeholder.js";
+import { LivreurMode } from "./shell/LivreurMode.js";
 import { Plus } from "./shell/Plus.js";
 import { Shell } from "./shell/Shell.js";
 
@@ -313,6 +314,14 @@ export function App() {
               element={
                 <Garde volet="market">
                   <StockArticles />
+                </Garde>
+              }
+            />
+            <Route
+              path="livre/tournee"
+              element={
+                <Garde volet="livre">
+                  <LivreurMode />
                 </Garde>
               }
             />
