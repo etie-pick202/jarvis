@@ -535,6 +535,9 @@ export const orders = pgTable(
     cancelReason: text("cancel_reason"),
     assignedTo: uuid("assigned_to").references(() => users.id),
     problemNote: text("problem_note"),
+    /** Code que le client donne au livreur ; vide pour une commande antérieure. */
+    deliveryCode: text("delivery_code").notNull().default(""),
+    startedAt: timestamp("started_at", { withTimezone: true }),
     deliveredAt: timestamp("delivered_at", { withTimezone: true }),
     saleId: uuid("sale_id").references(() => sales.id),
     createdAt: createdAt(),

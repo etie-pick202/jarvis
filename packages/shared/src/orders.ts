@@ -79,6 +79,11 @@ export const trackedOrder = z.object({
   total: fcfa,
   lines: z.array(orderLine.pick({ label: true, quantity: true, total: true })),
   createdAt: isoDateTime,
+  paymentConfirmedAt: isoDateTime.nullable().optional(),
+  startedAt: isoDateTime.nullable().optional(),
+  deliveredAt: isoDateTime.nullable().optional(),
+  /** Code à donner au livreur à la remise. */
+  deliveryCode: z.string().optional(),
 });
 export type TrackedOrder = z.infer<typeof trackedOrder>;
 
@@ -110,6 +115,9 @@ export const order = z.object({
   problemNote: z.string().nullable().optional(),
   /** Vente créée à la remise. */
   saleId: id.nullable().optional(),
+  deliveryCode: z.string().optional(),
+  startedAt: isoDateTime.nullable().optional(),
+  deliveredAt: isoDateTime.nullable().optional(),
 });
 export type Order = z.infer<typeof order>;
 export const orders = z.array(order);
@@ -122,6 +130,8 @@ export const assignOrderInput = z.object({ driverId: id });
 
 /** Remise au client : encaissement confirmé et vides récupérés. */
 export const completeOrderInput = z.object({
+  /** Code donné par le client : obligatoire pour une livraison. */
+  code: z.string().trim().max(10).optional(),
   /** Moyen réellement encaissé ; absent = celui de la commande. */
   paymentMethod: paymentMethod.optional(),
   /** Marque du vide rapporté, par ligne de gaz (`line` = rang dans la commande) ; absent = même marque. */
