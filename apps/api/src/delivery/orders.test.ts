@@ -29,7 +29,7 @@ describe("commandes sans compte (API)", () => {
   const orderBody = (extra: Record<string, unknown> = {}) => ({
     clientRef: ref(),
     customerName: "Awa",
-    phone: `6900000${n}`,
+    phone: `69${String(n).padStart(7, "0")}`,
     mode: "delivery",
     neighbourhoodName: "Bonamoussadi",
     paymentMethod: "cash",

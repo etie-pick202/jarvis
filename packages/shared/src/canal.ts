@@ -2,10 +2,10 @@ import { z } from "zod";
 import { cashRegisterId, paymentMethod } from "./cash.js";
 import { id, isoDateTime, signedInt } from "./common.js";
 import { fcfa } from "./money.js";
+import { phoneNumber } from "./phone.js";
 
 /** Canal+ : formules, abonnés et échéances (cahier des charges, « Canal+ et services annexes »). */
 
-const phone = z.string().trim().min(6).max(30);
 const decoderNumber = z.string().trim().min(3).max(40);
 const atLeastOne = (o: Record<string, unknown>) => Object.values(o).some((v) => v !== undefined);
 const atLeastOneField = { message: "Au moins un champ à modifier" };
@@ -44,7 +44,7 @@ export const canalFormulas = z.array(canalFormula);
 
 export const createCanalSubscriberInput = z.object({
   name: z.string().trim().min(1).max(120),
-  phone,
+  phone: phoneNumber,
   decoderNumber,
   formulaId: id,
   /** Échéance en cours si l'abonné en a déjà une (saisie progressive, aucun import). */
@@ -55,7 +55,7 @@ export type CreateCanalSubscriberInput = z.infer<typeof createCanalSubscriberInp
 export const updateCanalSubscriberInput = z
   .object({
     name: z.string().trim().min(1).max(120).optional(),
-    phone: phone.optional(),
+    phone: phoneNumber.optional(),
     decoderNumber: decoderNumber.optional(),
     formulaId: id.optional(),
     expiresOn: z.iso.date().nullable().optional(),
