@@ -16,6 +16,8 @@ const Abonnes = lazy(() => import("./canal/Abonnes.js").then((m) => ({ default: 
 const Encaissements = lazy(() =>
   import("./canal/Encaissements.js").then((m) => ({ default: m.Encaissements })),
 );
+const Articles = lazy(() => import("./market/Articles.js").then((m) => ({ default: m.Articles })));
+const StockArticles = lazy(() => import("./market/Articles.js").then((m) => ({ default: m.StockArticles })));
 const Echeances = lazy(() => import("./canal/Echeances.js").then((m) => ({ default: m.Echeances })));
 const Cloture = lazy(() => import("./caisse/Cloture.js").then((m) => ({ default: m.Cloture })));
 const Depenses = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Depenses })));
@@ -249,6 +251,22 @@ export function App() {
               element={
                 <Garde volet="canal">
                   <Echeances rappels />
+                </Garde>
+              }
+            />
+            <Route
+              path="market/articles"
+              element={
+                <Garde volet="market">
+                  <Articles />
+                </Garde>
+              }
+            />
+            <Route
+              path="market/stock"
+              element={
+                <Garde volet="market">
+                  <StockArticles />
                 </Garde>
               }
             />
