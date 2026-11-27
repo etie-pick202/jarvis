@@ -1,5 +1,5 @@
 import type { BottleState } from "@jarvis/shared";
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { GazStock } from "../api/contracts.js";
 import { api } from "../api/index.js";
 import { useI18n } from "../i18n/index.js";
@@ -15,35 +15,59 @@ export function lireVariation(saisie: string): number | null {
 }
 
 export function CorrectionStock({
-  ligne,
+  lignes,
   onFait,
   onAbandonner,
-}: Readonly<{ ligne: GazStock; onFait: () => void; onAbandonner: () => void }>) {
+}: Readonly<{ lignes: readonly GazStock[]; onFait: () => void; onAbandonner: () => void }>) {
   const { t } = useI18n();
+  const id = useId();
+  const cleDe = (l: GazStock) => `${l.brandId}:${l.formatId}`;
+  const [choix, setChoix] = useState("");
   const [etat, setEtat] = useState<BottleState>("full");
   const [saisie, setSaisie] = useState("");
   const delta = lireVariation(saisie);
-  const actuel = etat === "full" ? ligne.pleines : ligne.vides;
-  const negatif = delta !== null && actuel + delta < 0;
+  const ligne = lignes.find((l) => cleDe(l) === choix);
+  const actuel = (etat === "full" ? ligne?.pleines : ligne?.vides) ?? 0;
+  const negatif = ligne !== undefined && delta !== null && actuel + delta < 0;
   const libelle = t(etat === "full" ? "gaz.pleines" : "gaz.vides");
-  const juste = delta !== null && !negatif;
 
   return (
     <Correction
-      titre={`${t("corr.stock")} : ${ligne.marque} ${ligne.formatLabel}`}
+      titre={t("corr.stock")}
       resume={
-        juste ? `${ligne.marque} ${ligne.formatLabel}, ${libelle} : ${actuel} → ${actuel + delta}.` : null
+        ligne && delta !== null && !negatif
+          ? `${ligne.marque} ${ligne.formatLabel}, ${libelle} : ${actuel} → ${actuel + delta}.`
+          : null
       }
-      corps={`${ligne.brandId}|${ligne.formatId}|${etat}|${delta}`}
+      corps={`${choix}|${etat}|${delta}`}
       envoyer={(justification, ref) =>
         api.corrigerStock(
-          { brandId: ligne.brandId, formatId: ligne.formatId, state: etat, delta: delta ?? 0, justification },
+          {
+            brandId: ligne?.brandId ?? "",
+            formatId: ligne?.formatId ?? "",
+            state: etat,
+            delta: delta ?? 0,
+            justification,
+          },
           ref,
         )
       }
       onFait={onFait}
       onAbandonner={onAbandonner}
     >
+      <div className="champ">
+        <label className="champ__label" htmlFor={id}>
+          {t("corr.marque")}
+        </label>
+        <select id={id} className="champ__saisie" value={choix} onChange={(e) => setChoix(e.target.value)}>
+          <option value="">{t("corr.choisir")}</option>
+          {lignes.map((l) => (
+            <option key={cleDe(l)} value={cleDe(l)}>
+              {`${l.marque} ${l.formatLabel}`}
+            </option>
+          ))}
+        </select>
+      </div>
       <Segmented<BottleState>
         legend={t("corr.etat")}
         value={etat}

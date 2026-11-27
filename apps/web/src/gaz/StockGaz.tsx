@@ -19,9 +19,8 @@ export function StockGaz() {
   const { data } = lecture;
   const { profilsActifs } = useSession();
   const peutCorriger = profilsActifs.includes("pdg") || profilsActifs.includes("gerant");
-  const [corrigee, setCorrigee] = useState<string | null>(null);
+  const [corrige, setCorrige] = useState(false);
   const [fait, setFait] = useState(false);
-  const choisie = data.find((s) => `${s.brandId}:${s.formatId}` === corrigee);
   const formats = new Set(data.map((s) => s.formatId));
   const pleines = data.reduce((n, s) => n + s.pleines, 0);
   const vides = data.reduce((n, s) => n + s.vides, 0);
@@ -50,18 +49,6 @@ export function StockGaz() {
                   ) : s.pleines <= s.seuil ? (
                     <Chip tone="alerte">{t("gaz.bas")}</Chip>
                   ) : null}
-                  {peutCorriger && (
-                    <Button
-                      variant="contour"
-                      aria-label={`${t("corr.corriger")} ${s.marque} ${s.formatLabel}`}
-                      onClick={() => {
-                        setCorrigee(`${s.brandId}:${s.formatId}`);
-                        setFait(false);
-                      }}
-                    >
-                      {t("corr.corriger")}
-                    </Button>
-                  )}
                 </td>
               </tr>
             ))}
@@ -75,17 +62,29 @@ export function StockGaz() {
           </Table>
         </Etat>
         {fait && <output className="bloc">{t("corr.faite")}</output>}
+        {peutCorriger && data.length > 0 && !corrige && (
+          <div className="vente__actions">
+            <Button
+              variant="contour"
+              onClick={() => {
+                setCorrige(true);
+                setFait(false);
+              }}
+            >
+              {t("corr.stock.bouton")}
+            </Button>
+          </div>
+        )}
       </section>
-      {choisie && (
+      {corrige && (
         <CorrectionStock
-          key={corrigee}
-          ligne={choisie}
+          lignes={data}
           onFait={() => {
-            setCorrigee(null);
+            setCorrige(false);
             setFait(true);
             lecture.recharger();
           }}
-          onAbandonner={() => setCorrigee(null)}
+          onAbandonner={() => setCorrige(false)}
         />
       )}
       {/* Sans stock lu, rien à confirmer : un seul message d'erreur sur la page. */}

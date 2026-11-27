@@ -6,8 +6,9 @@ test.use({ locale: "fr-FR" });
 test("CoCoGaz : correction d'un stock avec justification et confirmation", async ({ page }) => {
   await seConnecter(page, "gerant");
   await page.goto("/gaz/stock");
-  await page.getByRole("button", { name: /^Corriger OLA/u }).click();
-  const forme = page.getByRole("form", { name: /^Correction du stock/u });
+  await page.getByRole("button", { name: "Corriger le stock" }).click();
+  const forme = page.getByRole("form", { name: "Correction du stock" });
+  await forme.getByLabel("Marque et format").selectOption({ index: 1 });
   await forme.getByLabel(/^Variation/u).fill("-1");
   await forme.getByLabel(/^Justification/u).fill("Bouteille percée");
   await forme.getByRole("button", { name: "Vérifier la correction" }).click();
@@ -32,5 +33,5 @@ test("le caissier ne voit aucune correction", async ({ page }) => {
   await seConnecter(page, "caissier");
   await page.goto("/gaz/stock");
   await expect(page.getByRole("row", { name: /Total général/u })).toBeVisible();
-  await expect(page.getByRole("button", { name: /^Corriger/u })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Corriger le stock" })).toHaveCount(0);
 });

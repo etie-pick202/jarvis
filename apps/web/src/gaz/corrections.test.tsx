@@ -42,6 +42,13 @@ function serveur(reponses: (Response | "coupure")[]) {
   return envois;
 }
 
+/** Ouvre la correction du stock et choisit la première marque OLA. */
+async function ouvrirOla() {
+  await userEvent.click(await screen.findByRole("button", { name: "Corriger le stock" }));
+  const option = screen.getByRole("option", { name: /^OLA/u }) as HTMLOptionElement;
+  await userEvent.selectOptions(screen.getByLabelText("Marque et format"), option.value);
+}
+
 const verifierPuisConfirmer = async () => {
   await userEvent.click(bouton("Vérifier la correction"));
   await userEvent.click(bouton("Confirmer la correction"));
@@ -64,7 +71,7 @@ describe("corrections", () => {
   it("corrige un stock après confirmation, sans double envoi après une coupure", async () => {
     const envois = serveur(["coupure"]);
     ui(<StockGaz />);
-    await userEvent.click(await screen.findByRole("button", { name: /^Corriger OLA/u }));
+    await ouvrirOla();
     const variation = screen.getByLabelText(/^Variation/u);
     await userEvent.type(variation, "-999");
     expect(screen.getByRole("alert").textContent).toBe("Le stock ne peut pas devenir négatif.");
@@ -98,7 +105,7 @@ describe("corrections", () => {
       refus(409, "conflict", "Solde insuffisant (essai)"),
     ]);
     ui(<StockGaz />, "pdg");
-    await userEvent.click(await screen.findByRole("button", { name: /^Corriger OLA/u }));
+    await ouvrirOla();
     await userEvent.click(screen.getByRole("radio", { name: "Vides" }));
     await userEvent.type(screen.getByLabelText(/^Variation/u), "1");
     await userEvent.type(screen.getByLabelText(/^Justification/u), "recomptage");
@@ -117,7 +124,7 @@ describe("corrections", () => {
     await userEvent.click(bouton("Vérifier la correction"));
     await userEvent.click(bouton("Modifier la saisie"));
     await userEvent.click(bouton("Retour"));
-    expect(screen.queryByRole("form", { name: /^Correction du stock/u })).toBeNull();
+    expect(screen.queryByRole("form", { name: "Correction du stock" })).toBeNull();
   });
 
   it("corrige une dépense depuis son détail ; vente, inverse et écriture corrigée sont refusées", async () => {
@@ -154,6 +161,6 @@ describe("corrections", () => {
     await userEvent.click(bouton("Fermer"));
     ui(<StockGaz />, "caissier");
     await screen.findAllByRole("rowheader", { name: /OLA/u });
-    expect(screen.queryByRole("button", { name: /^Corriger/u })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Corriger le stock" })).toBeNull();
   });
 });
