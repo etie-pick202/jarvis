@@ -1,6 +1,6 @@
 import type { PublicCatalogue } from "@jarvis/shared";
 import { useEffect, useId, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { api } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import { useI18n } from "../i18n/index.js";
@@ -12,6 +12,8 @@ import { Segmented } from "../ui/Segmented.js";
 import { formatFcfa } from "../vente/regles.js";
 import { LogoCocosab } from "../visuels/LogoCocosab.js";
 import { MarqueGaz } from "../visuels/MarqueGaz.js";
+import { commandeRecue, dernierSuivi } from "./commande.js";
+import { Formulaire } from "./Formulaire.js";
 import {
   calculer,
   changer,
@@ -102,6 +104,8 @@ export function Boutique() {
   const [mode, setMode] = useState<Mode>("delivery");
   const [quartier, setQuartier] = useState("");
   const idQuartier = useId();
+  const naviguer = useNavigate();
+  const suivi = dernierSuivi();
   useEffect(() => garderPanier(panier), [panier]);
 
   const liste = produits(lecture.data);
@@ -122,6 +126,7 @@ export function Boutique() {
       </header>
       <main className="page">
         <h1>{t("boutique.titre")}</h1>
+        {suivi && <Link to={`/boutique/suivi/${suivi}`}>{t("commande.derniere")}</Link>}
         <Etat {...lecture} vide={liste.length === 0} messageVide={t("boutique.vide")}>
           <p>
             {[shop.openingHours, shop.address].filter(Boolean).join(" · ")}
@@ -213,14 +218,18 @@ export function Boutique() {
                     {`${t("boutique.minimum")} ${formatFcfa(shop.minimumOrder)}`}
                   </p>
                 ) : (
-                  <>
-                    <p>{[t("boutique.commander.aide"), shop.orderHours].filter(Boolean).join(" ")}</p>
-                    {shop.phone && (
-                      <a className="btn" href={`tel:${shop.phone}`}>
-                        {`${t("boutique.commander")} ${shop.phone}`}
-                      </a>
-                    )}
-                  </>
+                  <Formulaire
+                    total={total}
+                    mode={mode}
+                    quartierId={choisi?.id ?? ""}
+                    shop={shop}
+                    onRupture={lecture.recharger}
+                    onRecue={(jeton) => {
+                      commandeRecue(jeton);
+                      garderPanier({});
+                      void naviguer(`/boutique/suivi/${jeton}`);
+                    }}
+                  />
                 )}
               </>
             )}
