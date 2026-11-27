@@ -18,6 +18,13 @@ livraison selon le quartier, contact et raison sociale.
 - La vitrine publique ne montre ni coût d'achat, ni quantité en stock, ni valeur d'emballage : seulement le prix et la
   disponibilité.
 
+- Commande sans compte : rien n'est réservé tant que le gérant n'a pas validé ; le stock est revérifié à la
+  validation, puis réservé (le comptoir et la vitrine ne le proposent plus). L'annulation le libère.
+- Les prix sont ceux affichés à la commande.
+- Garde-fou sans compte : 3 commandes en attente au plus par numéro de téléphone.
+- Alerte du gérant : compteur des commandes en attente (`GET /orders/summary`).
+- Paiement mobile : le client donne la référence, le gérant la confirme à la main.
+
 ## Conséquences
 
 Tout se règle dans l'application, sans reprogrammation.

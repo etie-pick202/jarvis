@@ -4,6 +4,7 @@ import {
   boolean,
   customType,
   date,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -504,3 +505,55 @@ export const neighbourhoods = pgTable("neighbourhoods", {
   active: boolean("active").notNull().default(true),
   createdAt: createdAt(),
 });
+
+/** Commandes sans compte (suivi d'état, donc modifiables ; chaque transition est auditée). */
+export const orders = pgTable(
+  "orders",
+  {
+    id: id(),
+    number: text("number").notNull().unique(),
+    /** Identifiant tiré par l'appareil : une commande renvoyée n'est pas dupliquée. */
+    clientRef: uuid("client_ref").notNull().unique(),
+    trackingToken: text("tracking_token").notNull().unique(),
+    source: text("source").notNull(),
+    status: text("status").notNull().default("pending"),
+    mode: text("mode").notNull(),
+    customerName: text("customer_name").notNull(),
+    phone: text("phone").notNull(),
+    neighbourhoodName: text("neighbourhood_name"),
+    landmark: text("landmark"),
+    latitude: doublePrecision("latitude"),
+    longitude: doublePrecision("longitude"),
+    paymentMethod: text("payment_method").notNull(),
+    paymentReference: text("payment_reference"),
+    paymentConfirmedAt: timestamp("payment_confirmed_at", { withTimezone: true }),
+    paymentConfirmedBy: uuid("payment_confirmed_by").references(() => users.id),
+    deliveryFeePerBottle: integer("delivery_fee_per_bottle").notNull().default(0),
+    total: integer("total").notNull(),
+    cancelReason: text("cancel_reason"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("orders_status").on(t.status), index("orders_phone").on(t.phone)],
+);
+
+export const orderLines = pgTable(
+  "order_lines",
+  {
+    id: id(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id),
+    position: integer("position").notNull(),
+    kind: text("kind").notNull(),
+    brandId: uuid("brand_id").references(() => brands.id),
+    formatId: uuid("format_id").references(() => formats.id),
+    returnedBrandId: uuid("returned_brand_id").references(() => brands.id),
+    articleId: uuid("article_id").references(() => articles.id),
+    label: text("label").notNull(),
+    quantity: integer("quantity").notNull(),
+    unitPrice: integer("unit_price").notNull(),
+    deliveryFee: integer("delivery_fee").notNull().default(0),
+    total: integer("total").notNull(),
+  },
+  (t) => [index("order_lines_order").on(t.orderId)],
+);
