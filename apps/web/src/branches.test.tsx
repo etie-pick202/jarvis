@@ -40,8 +40,8 @@ describe("écrans provisoires et droits", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("une rubrique pas encore faite affiche l'écran provisoire de son volet", async () => {
-    appA("/market/mouvements", ["pdg"]);
-    expect(await screen.findByRole("heading", { level: 1, name: "CoCoMarket" })).toBeTruthy();
+    appA("/config/notifications", ["pdg"]);
+    expect(await screen.findByRole("heading", { level: 1, name: "CoCoConfig" })).toBeTruthy();
     expect(screen.getByText("Cet écran arrive bientôt.")).toBeTruthy();
   });
 

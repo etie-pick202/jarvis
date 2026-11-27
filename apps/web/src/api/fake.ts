@@ -612,6 +612,25 @@ function ecrireCompte(route: string, init?: RequestInit): Response {
   return json({ ...c, active: corps.active ?? c.active, roles: corps.roles ?? c.roles });
 }
 
+const mouvementsArticle = () => [
+  {
+    id: uuid(2001),
+    at: `${jour}T08:00:00.000Z`,
+    kind: "entry",
+    label: "Réception d'exemple",
+    delta: 10,
+    authorName: "Gérant démo",
+  },
+  {
+    id: uuid(2002),
+    at: `${jour}T11:00:00.000Z`,
+    kind: "sale",
+    label: "TK1993",
+    delta: -1,
+    authorName: "Caissier démo",
+  },
+];
+
 const CLE_FAUX = "jarvis.fake-user";
 
 /** L'utilisateur « connecté » survit au rechargement, comme le ferait un jeton de session. */
@@ -682,6 +701,8 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   if (ecriture && route.startsWith("/auth/users")) return ecrireCompte(route, init);
   if (ecriture) return json({ ok: true }, 201);
 
+  if (route.startsWith("/catalogue/articles/") && route.endsWith("/moves")) return json(mouvementsArticle());
+
   if (route === "/delivery/settings") return json(reglagesBoutique());
   if (route === "/delivery/neighbourhoods") {
     return json(vitrine().neighbourhoods.map((q) => ({ ...q, active: true })));
@@ -700,8 +721,27 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       );
     case "/catalogue/formats":
       return json([FORMAT]);
-    case `/catalogue/prices/${FORMAT.id}/current`:
-      return json(PRIX_COURANT);
+    case "/catalogue/prices/current":
+      return json(
+        MARQUES.map((m) => ({
+          formatId: FORMAT.id,
+          brandId: m.id,
+          amount: PRIX_COURANT.amount,
+          transportContribution: PRIX_COURANT.transportContribution,
+          purchaseCost: PRIX_COURANT.purchaseCost,
+          effectiveFrom: `${jour}T07:00:00.000Z`,
+        })),
+      );
+    case "/sales/exchanges": {
+      const echanges = VENTES.filter((v) =>
+        v.lines.some((l) => l.returnedBrandId && l.returnedBrandId !== l.brandId),
+      );
+      const attente = echanges.filter((v) =>
+        v.lines.some((l) => "packagingGapPending" in l && l.packagingGapPending),
+      );
+      const items = url.searchParams.get("pending") === "1" ? attente : echanges;
+      return json({ items, total: items.length, pendingCount: attente.length });
+    }
     case "/catalogue/articles":
       return json(ARTICLES);
     case "/stock":

@@ -60,6 +60,7 @@ export interface GazStock {
 
 export interface Echange {
   id: string;
+  venteId: string;
   date: string;
   client: string;
   remise: string;
