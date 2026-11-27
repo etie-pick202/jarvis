@@ -71,4 +71,14 @@ describe("exports", () => {
       true,
     );
   });
+
+  it("télécharge les écritures Sage sur la période", async () => {
+    ui();
+    fireEvent.change(screen.getByLabelText("Du"), { target: { value: "2026-11-01" } });
+    fireEvent.change(screen.getByLabelText("Au"), { target: { value: "2026-11-20" } });
+    await userEvent.click(screen.getByRole("button", { name: /\(sage\.csv\)$/u }));
+    await waitFor(() =>
+      expect(appels[0]).toBe("/api/v1/reports/export/sage.csv?from=2026-11-01&to=2026-11-20"),
+    );
+  });
 });

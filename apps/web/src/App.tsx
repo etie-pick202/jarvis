@@ -55,7 +55,7 @@ const Alertes = lazy(() => import("./pilot/Pilot.js").then((m) => ({ default: m.
 const Audit = lazy(() => import("./pilot/Pilot.js").then((m) => ({ default: m.Audit })));
 const TableauDeBord = lazy(() => import("./pilot/Pilot.js").then((m) => ({ default: m.TableauDeBord })));
 const Validations = lazy(() => import("./pilot/Pilot.js").then((m) => ({ default: m.Validations })));
-const Exports = lazy(() => import("./rapport/Rapports.js").then((m) => ({ default: m.Exports })));
+const Exports = lazy(() => import("./rapport/PageExports.js").then((m) => ({ default: m.PageExports })));
 const RapportTable = lazy(() => import("./rapport/Rapports.js").then((m) => ({ default: m.RapportTable })));
 const SituationGaz = lazy(() => import("./rapport/Rapports.js").then((m) => ({ default: m.SituationGaz })));
 

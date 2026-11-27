@@ -3,6 +3,7 @@
  * Sert aux tests et au développement sans backend ; activé par `VITE_API_MOCK=1`, absent de la production.
  */
 import type { Role } from "@jarvis/shared";
+import { DEFAULT_SAGE_ACCOUNTS } from "@jarvis/shared";
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 
@@ -700,6 +701,13 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
   if (ecriture && route === "/orders") return commandePublique("/shop/orders", init);
   if (ecriture && route.startsWith("/orders/")) return agirSurCommande(route, init);
   if (ecriture && route.startsWith("/auth/users")) return ecrireCompte(route, init);
+  if (ecriture && route === "/documents/reports/email") {
+    const { reports, format } = JSON.parse(String(init?.body ?? "{}")) as {
+      reports: string[];
+      format: string;
+    };
+    return json({ sent: reports.map((r) => `${r}.${format}`), recipients: ["direction@exemple.test"] });
+  }
   if (ecriture) return json({ ok: true }, 201);
 
   if (route.startsWith("/catalogue/articles/") && route.endsWith("/moves")) return json(mouvementsArticle());
@@ -824,6 +832,10 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
       return json(COMPTAGES);
     case "/cash/registers":
       return json(REGISTRES);
+    case "/documents/reports/email":
+      return json({ configured: true, recipients: ["direction@exemple.test"] });
+    case "/reports/sage-accounts":
+      return json(DEFAULT_SAGE_ACCOUNTS);
     case "/control/audit":
       return json(AUDIT);
     case "/control/notifications":

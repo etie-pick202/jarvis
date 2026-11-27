@@ -28,4 +28,10 @@ export const FICHIERS = [
     formats: ["pdf"] as readonly Format[],
     chemin: (_f: Format, _du: string, au: string) => `/documents/reports/x.pdf?date=${au}`,
   },
+  {
+    nom: "sage",
+    libelle: "exports.sage",
+    formats: ["csv"] as readonly Format[],
+    chemin: (_f: Format, du: string, au: string) => `/reports/export/sage.csv?from=${du}&to=${au}`,
+  },
 ] as const;
