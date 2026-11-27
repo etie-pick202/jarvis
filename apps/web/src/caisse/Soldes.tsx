@@ -1,13 +1,18 @@
+import { useState } from "react";
 import { useI18n } from "../i18n/index.js";
+import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Etat } from "../ui/Etat.js";
 import { formatFcfa } from "../vente/regles.js";
 import { totalEspeces, totalSoldes, useCaisses } from "./donnees.js";
+import { Journal } from "./Journal.js";
 
 /** Solde théorique de chaque caisse, mis à jour après chaque mouvement. */
 export function Soldes() {
   const { t } = useI18n();
   const { caisses, lecture } = useCaisses();
+  const [ouverte, setOuverte] = useState<string | null>(null);
+  const choisie = caisses.find((c) => c.id === ouverte);
   return (
     <div className="page">
       <section className="carte">
@@ -25,6 +30,13 @@ export function Soldes() {
                 ) : (
                   <Chip>{t("caisse.veille")}</Chip>
                 )}
+                <Button
+                  variant="contour"
+                  aria-label={`${t("corr.mouvements")} ${c.nom}`}
+                  onClick={() => setOuverte(c.id)}
+                >
+                  {t("corr.mouvements")}
+                </Button>
               </li>
             ))}
           </ul>
@@ -34,6 +46,7 @@ export function Soldes() {
           </p>
         </Etat>
       </section>
+      {choisie && <Journal key={choisie.id} caisse={choisie} onSolde={lecture.recharger} />}
     </div>
   );
 }
