@@ -337,6 +337,8 @@ export const api = {
     get("/canal/formulas", contrat.canalFormulas, signal),
   abonnesCanal: (signal?: AbortSignal): Promise<contrat.CanalSubscriber[]> =>
     get("/canal/subscribers", contrat.canalSubscribers, signal),
+  encaissementsCanal: (jour: string, signal?: AbortSignal): Promise<contrat.CanalPayment[]> =>
+    get(`/canal/payments?date=${jour}`, contrat.canalPayments, signal),
   echeancesCanal: (jours: number, signal?: AbortSignal): Promise<contrat.CanalSubscriber[]> =>
     get(`/canal/due?within=${jours}`, contrat.canalSubscribers, signal),
 
