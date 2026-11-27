@@ -132,7 +132,7 @@ function Grille({
           {SENS.map((s) => (
             <Field
               key={s}
-              label={`${t(`money.operateur.${o}`)} : ${t(`money.sens.${s}`)} (%)`}
+              label={[t(`money.operateur.${o}`), `${t(`money.sens.${s}`)} (%)`].join(" : ")}
               inputMode="decimal"
               readOnly={!peutModifier}
               value={saisies[o][s]}
@@ -189,7 +189,7 @@ export function Commissions() {
             }}
             onSaisie={() => setOk(false)}
           />
-          {ok && <p role="status">{t("money.taux.ok")}</p>}
+          {ok && <output className="bloc">{t("money.taux.ok")}</output>}
         </Etat>
       </section>
     </div>

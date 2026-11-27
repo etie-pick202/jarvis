@@ -64,10 +64,12 @@ function Saisie({ journal }: Readonly<{ journal: readonly MoneyOperation[] }>) {
       ...(client.trim() ? { customerName: client.trim() } : {}),
       reference: reference.trim(),
     };
+    const nomSens = t(`money.sens.${sens}`);
+    const nomOperateur = t(`money.operateur.${operateur}`);
     await ecrire({
       method: "POST",
       path: "/money/operations",
-      label: `${t(`money.sens.${sens}`)} ${t(`money.operateur.${operateur}`)} : ${formatFcfa(somme)} (${body.reference})`,
+      label: `${nomSens} ${nomOperateur} : ${formatFcfa(somme)} (${body.reference})`,
       body,
     });
     setMontant("");
@@ -133,7 +135,7 @@ function Saisie({ journal }: Readonly<{ journal: readonly MoneyOperation[] }>) {
       <Button type="submit" disabled={!valide || occupe}>
         {t("caisse.enregistrer")}
       </Button>
-      {ok && <p role="status">{t("money.ok")}</p>}
+      {ok && <output className="bloc">{t("money.ok")}</output>}
     </form>
   );
 }
@@ -177,7 +179,7 @@ function Journal() {
                   <br />
                   {o.customerName ?? o.phone}
                 </th>
-                <td>{`${t(`money.sens.${o.kind}`)} · ${t(`money.operateur.${o.operator}`)}`}</td>
+                <td>{[t(`money.sens.${o.kind}`), t(`money.operateur.${o.operator}`)].join(" · ")}</td>
                 <td>{`${o.reversalOf ? "−" : ""}${formatFcfa(o.amount)}`}</td>
                 <td>
                   {o.reversalOf ? <Chip tone="alerte">{t("canal.annulation")}</Chip> : null}
