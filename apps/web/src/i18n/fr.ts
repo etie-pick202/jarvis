@@ -573,6 +573,7 @@ export const fr = {
   "tarifs.prix.enregistrer": "Enregistrer le prix",
   "tarifs.prix.ok": "Prix enregistré.",
   "tarifs.aucun.prix": "Aucun prix saisi.",
+  "mode.vide.marque": "Marque du vide rapporté",
   "market.categorie": "Catégorie (facultatif)",
   "market.seuil": "Seuil de stock bas (0 : aucune alerte)",
   "market.depart": "Stock de départ",

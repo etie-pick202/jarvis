@@ -574,6 +574,7 @@ export const en: Record<MessageKey, string> = {
   "tarifs.prix.enregistrer": "Save the price",
   "tarifs.prix.ok": "Price saved.",
   "tarifs.aucun.prix": "No price set.",
+  "mode.vide.marque": "Brand of the returned empty",
   "market.categorie": "Category (optional)",
   "market.seuil": "Low stock threshold (0: no alert)",
   "market.depart": "Opening stock",
