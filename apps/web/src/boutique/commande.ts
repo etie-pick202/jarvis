@@ -1,4 +1,4 @@
-import type { CreateOrderInput, PaymentMethod } from "@jarvis/shared";
+import { type CreateOrderInput, type PaymentMethod, toE164 } from "@jarvis/shared";
 import { ApiError } from "../api/client.js";
 import type { Total } from "./panier.js";
 
@@ -18,7 +18,7 @@ export interface Coordonnees {
 /** Ce qui manque encore pour commander (clé de traduction), ou null. */
 export function manque(c: Coordonnees) {
   if (c.nom.trim() === "") return "commande.manque.nom" as const;
-  if (c.telephone.replace(/\D/gu, "").length < 6) return "commande.manque.telephone" as const;
+  if (toE164(c.telephone) === null) return "commande.manque.telephone" as const;
   if (c.mode === "delivery" && !c.quartierId && c.autreQuartier.trim() === "") {
     return "commande.manque.quartier" as const;
   }
@@ -41,7 +41,7 @@ export function corps(c: Coordonnees, total: Total, clientRef: string): CreateOr
   return {
     clientRef,
     customerName: c.nom.trim(),
-    phone: c.telephone.trim(),
+    phone: toE164(c.telephone) ?? c.telephone.trim(),
     mode: c.mode,
     ...(livraison && c.quartierId ? { neighbourhoodId: c.quartierId } : {}),
     ...(livraison && !c.quartierId ? { neighbourhoodName: c.autreQuartier.trim() } : {}),

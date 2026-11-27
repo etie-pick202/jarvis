@@ -352,7 +352,7 @@ export const en: Record<MessageKey, string> = {
   "commande.reference.envoyer": "Send the reference",
   "commande.reference.ok": "Reference sent, the shop will check it.",
   "commande.manque.nom": "Enter your name.",
-  "commande.manque.telephone": "Enter a phone number.",
+  "commande.manque.telephone": "Enter a complete number (9 digits, or +country code).",
   "commande.manque.quartier": "Enter your neighbourhood.",
   "commande.manque.reference": "The reference is too short.",
   "commande.echec.reseau":

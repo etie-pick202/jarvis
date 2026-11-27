@@ -351,7 +351,7 @@ export const fr = {
   "commande.reference.envoyer": "Envoyer la référence",
   "commande.reference.ok": "Référence envoyée, la boutique va la vérifier.",
   "commande.manque.nom": "Indiquez votre nom.",
-  "commande.manque.telephone": "Indiquez un numéro de téléphone.",
+  "commande.manque.telephone": "Indiquez un numéro complet (9 chiffres, ou +indicatif).",
   "commande.manque.quartier": "Indiquez votre quartier.",
   "commande.manque.reference": "La référence est trop courte.",
   "commande.echec.reseau":
