@@ -63,6 +63,7 @@ export function Formules({
     <form className="carte" onSubmit={garde(ajouter)} aria-label={t("canal.formules")}>
       <h2>{t("canal.formules")}</h2>
       <Table
+        cartes
         caption={t("canal.formules")}
         colonnes={[
           t("canal.formule"),

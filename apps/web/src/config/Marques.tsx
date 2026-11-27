@@ -1,15 +1,17 @@
 import type { Brand, Format } from "@jarvis/shared";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { api } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
 import { useSession } from "../auth/SessionProvider.js";
 import { useI18n } from "../i18n/index.js";
 import { ecrire } from "../offline/ecrire.js";
+import { allerA } from "../ui/amener.js";
 import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
 import { Table } from "../ui/Table.js";
+import { TitreFiche } from "../ui/TitreFiche.js";
 import { useEnvoi } from "../ui/useEnvoi.js";
 import { formatFcfa } from "../vente/regles.js";
 import { MarqueGaz } from "../visuels/MarqueGaz.js";
@@ -207,10 +209,20 @@ export function Marques() {
     else formats.modifier(inverser);
   }
 
+  const fiche = useRef<HTMLDivElement>(null);
+  const ficheFormat = useRef<HTMLDivElement>(null);
+  // La fiche est après la liste sur téléphone : « Modifier » y conduit.
+  useEffect(() => {
+    if (edition) allerA(fiche.current);
+  }, [edition]);
   return (
-    <div className="page">
+    <div className={pdg ? "page page--panneau" : "page"}>
       <section className="carte">
-        <h1>{t("rub.config.marques")}</h1>
+        <TitreFiche
+          titre={t("rub.config.marques")}
+          bouton={pdg ? t("tarifs.marque.nouvelle") : undefined}
+          fiche={fiche}
+        />
         {!pdg && <p>{t("tarifs.reserve")}</p>}
         <Etat
           {...marques}
@@ -218,7 +230,11 @@ export function Marques() {
           messageVide={t("tarifs.aucune.marque")}
           texteVide={t(pdg ? "vide.marques" : "vide.pdg")}
         >
-          <Table caption={t("rub.config.marques")} colonnes={[t("gaz.marque"), t("tarifs.emballage"), ""]}>
+          <Table
+            cartes
+            caption={t("rub.config.marques")}
+            colonnes={[t("gaz.marque"), t("tarifs.emballage"), ""]}
+          >
             {marques.data.map((m) => (
               <tr key={m.id}>
                 <th scope="row">
@@ -257,28 +273,39 @@ export function Marques() {
         </Etat>
       </section>
       {pdg && (
-        <FicheMarque
-          key={choisie?.id ?? "nouvelle"}
-          marque={choisie}
-          existantes={marques.data}
-          onFait={(n) => {
-            marques.modifier((l) =>
-              l.some((x) => x.id === n.id) ? l.map((x) => (x.id === n.id ? n : x)) : [...l, n],
-            );
-            setEdition(null);
-          }}
-          onAnnuler={() => setEdition(null)}
-        />
+        <div ref={fiche}>
+          <FicheMarque
+            key={choisie?.id ?? "nouvelle"}
+            marque={choisie}
+            existantes={marques.data}
+            onFait={(n) => {
+              marques.modifier((l) =>
+                l.some((x) => x.id === n.id) ? l.map((x) => (x.id === n.id ? n : x)) : [...l, n],
+              );
+              setEdition(null);
+            }}
+            onAnnuler={() => setEdition(null)}
+          />
+        </div>
       )}
       <section className="carte">
-        <h2>{t("tarifs.formats")}</h2>
+        <TitreFiche
+          niveau={2}
+          titre={t("tarifs.formats")}
+          bouton={pdg ? t("tarifs.format.nouveau") : undefined}
+          fiche={ficheFormat}
+        />
         <Etat
           {...formats}
           vide={formats.data.length === 0}
           messageVide={t("tarifs.aucun.format")}
           texteVide={t(pdg ? "vide.formats" : "vide.pdg")}
         >
-          <Table caption={t("tarifs.formats")} colonnes={[t("tarifs.format.nom"), t("tarifs.plafond"), ""]}>
+          <Table
+            cartes
+            caption={t("tarifs.formats")}
+            colonnes={[t("tarifs.format.nom"), t("tarifs.plafond"), ""]}
+          >
             {formats.data.map((f) => (
               <tr key={f.id}>
                 <th scope="row">
@@ -301,7 +328,11 @@ export function Marques() {
           </Table>
         </Etat>
       </section>
-      {pdg && <NouveauFormat existants={formats.data} onFait={(f) => formats.modifier((l) => [...l, f])} />}
+      {pdg && (
+        <div ref={ficheFormat}>
+          <NouveauFormat existants={formats.data} onFait={(f) => formats.modifier((l) => [...l, f])} />
+        </div>
+      )}
     </div>
   );
 }

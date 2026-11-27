@@ -54,7 +54,8 @@ export function SessionProvider({ children, initial }: { children: ReactNode; in
       })
       .catch((e: unknown) => {
         if (e instanceof ApiError && e.status === 401) {
-          sessionStorage.setItem(CLE_EXPIREE, "1");
+          // Une première visite reçoit aussi un refus : rien n'a expiré pour qui n'était pas connecté.
+          if (lire()) sessionStorage.setItem(CLE_EXPIREE, "1");
           setSession(null);
           oublierJeton();
           localStorage.removeItem(CLE);

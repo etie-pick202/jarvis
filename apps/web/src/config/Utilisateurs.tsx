@@ -1,5 +1,5 @@
 import type { Role, UserAccount } from "@jarvis/shared";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { ApiError } from "../api/client.js";
 import { api } from "../api/index.js";
 import { useCached } from "../api/useCached.js";
@@ -9,6 +9,7 @@ import { Button } from "../ui/Button.js";
 import { Chip } from "../ui/Chip.js";
 import { Etat } from "../ui/Etat.js";
 import { Field } from "../ui/Field.js";
+import { TitreFiche } from "../ui/TitreFiche.js";
 import { useEnvoi } from "../ui/useEnvoi.js";
 
 const ROLES: readonly Role[] = ["pdg", "gerant", "caissier", "livreur"];
@@ -244,6 +245,7 @@ export function Utilisateurs() {
   const { t } = useI18n();
   const { session, profilsActifs } = useSession();
   const lecture = useCached("config-comptes", api.comptes, []);
+  const fiche = useRef<HTMLDivElement>(null);
 
   if (!profilsActifs.includes("pdg")) {
     return (
@@ -257,21 +259,25 @@ export function Utilisateurs() {
   }
 
   return (
-    <div className="page">
-      <h1>{t("rub.config.utilisateurs")}</h1>
-      <Etat {...lecture} vide={lecture.data.length === 0} messageVide={t("config.aucun.compte")}>
-        <ul className="liste">
-          {lecture.data.map((c) => (
-            <Compte
-              key={c.id}
-              compte={c}
-              moi={c.id === session?.userId}
-              onChange={(n) => lecture.modifier((l) => l.map((x) => (x.id === n.id ? n : x)))}
-            />
-          ))}
-        </ul>
-      </Etat>
-      <Nouveau existants={lecture.data} onCree={lecture.recharger} />
+    <div className="page page--panneau">
+      <div className="page__liste">
+        <TitreFiche titre={t("rub.config.utilisateurs")} bouton={t("config.compte.nouveau")} fiche={fiche} />
+        <Etat {...lecture} vide={lecture.data.length === 0} messageVide={t("config.aucun.compte")}>
+          <ul className="liste">
+            {lecture.data.map((c) => (
+              <Compte
+                key={c.id}
+                compte={c}
+                moi={c.id === session?.userId}
+                onChange={(n) => lecture.modifier((l) => l.map((x) => (x.id === n.id ? n : x)))}
+              />
+            ))}
+          </ul>
+        </Etat>
+      </div>
+      <div ref={fiche}>
+        <Nouveau existants={lecture.data} onCree={lecture.recharger} />
+      </div>
     </div>
   );
 }

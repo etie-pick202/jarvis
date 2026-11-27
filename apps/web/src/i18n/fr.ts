@@ -699,6 +699,7 @@ export const fr = {
   "bord.perte": "À perte",
   "fichier.choisir": "Choisir un fichier",
   "fichier.aucun": "Aucun fichier choisi",
+  "boutique.voir.panier": "Voir le panier",
   "page.bientot": "Cet écran arrive bientôt.",
   "page.introuvable": "Page introuvable",
   "page.retour": "Retour à l'accueil",

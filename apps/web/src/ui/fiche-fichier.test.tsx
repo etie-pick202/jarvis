@@ -5,6 +5,7 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeApi, setFakeUser } from "../api/fake.js";
 import { SessionProvider } from "../auth/SessionProvider.js";
+import { Abonnes } from "../canal/Abonnes.js";
 import { Fournisseurs } from "../gaz/Fournisseurs.js";
 import { I18nProvider } from "../i18n/index.js";
 import { Articles } from "../market/Articles.js";
@@ -57,6 +58,13 @@ describe("choix d'un fichier et fiche à côté de la liste", () => {
     ui(<Fournisseurs />);
     await userEvent.click(screen.getByRole("button", { name: "Nouveau fournisseur" }));
     expect(document.activeElement).toBe(screen.getByLabelText("Nom"));
+  });
+
+  it("conduit à la fiche abonné depuis le titre", async () => {
+    ui(<Abonnes />);
+    await userEvent.click(screen.getByRole("button", { name: "Nouvel abonné" }));
+    const [nom] = screen.getAllByLabelText("Nom");
+    expect(document.activeElement).toBe(nom);
   });
 
   it("conduit à la fiche article depuis le titre et depuis « Modifier »", async () => {

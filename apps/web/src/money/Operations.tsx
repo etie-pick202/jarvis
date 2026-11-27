@@ -174,6 +174,7 @@ function Journal() {
         <h2>{t("money.journal")}</h2>
         <Etat {...lecture} vide={lecture.data.length === 0} messageVide={t("money.aucune")}>
           <Table
+            cartes
             caption={t("money.journal")}
             colonnes={[t("gaz.heure"), t("money.reference"), t("money.operation"), t("canal.montant"), ""]}
           >
