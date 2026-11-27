@@ -129,7 +129,12 @@ export function Formulaire({
       />
       {saisie.paiement !== "cash" && (
         <>
-          <p>{[t("commande.mobile.aide"), shop.phone].join(" ")}</p>
+          <p>
+            {[
+              t("commande.mobile.aide"),
+              (saisie.paiement === "momo" ? shop.momoNumber : shop.omNumber) || shop.phone,
+            ].join(" ")}
+          </p>
           <Field
             label={t("commande.reference")}
             maxLength={60}

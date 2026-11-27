@@ -585,6 +585,14 @@ function agirSurCommande(route: string, init?: RequestInit): Response {
   return json({ ...o, ...effets[action] });
 }
 
+const reglagesBoutique = () => ({
+  ...vitrine().shop,
+  omNumber: "+237690000100",
+  momoNumber: "+237670000100",
+  eveningCountTime: "18:30",
+  deliveryFeeCeiling: 700,
+});
+
 const CLE_FAUX = "jarvis.fake-user";
 
 /** L'utilisateur « connecté » survit au rechargement, comme le ferait un jeton de session. */
@@ -653,6 +661,11 @@ export async function fakeApi(path: string, init?: RequestInit): Promise<Respons
     return json({ id: uuid(1201), contentType: "application/pdf", size: 1 }, 201);
   if (ecriture && route.startsWith("/orders/")) return agirSurCommande(route, init);
   if (ecriture) return json({ ok: true }, 201);
+
+  if (route === "/delivery/settings") return json(reglagesBoutique());
+  if (route === "/delivery/neighbourhoods") {
+    return json(vitrine().neighbourhoods.map((q) => ({ ...q, active: true })));
+  }
 
   switch (route) {
     case "/catalogue/brands":
