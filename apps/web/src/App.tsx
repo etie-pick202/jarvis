@@ -13,6 +13,7 @@ import { Shell } from "./shell/Shell.js";
 
 // Écrans chargés à la demande : le premier affichage ne télécharge que la coque et la connexion.
 const Abonnes = lazy(() => import("./canal/Abonnes.js").then((m) => ({ default: m.Abonnes })));
+const Boutique = lazy(() => import("./boutique/Boutique.js").then((m) => ({ default: m.Boutique })));
 const Echeances = lazy(() => import("./canal/Echeances.js").then((m) => ({ default: m.Echeances })));
 const Cloture = lazy(() => import("./caisse/Cloture.js").then((m) => ({ default: m.Cloture })));
 const Depenses = lazy(() => import("./caisse/Mouvements.js").then((m) => ({ default: m.Depenses })));
@@ -58,6 +59,15 @@ export function App() {
     <ErrorBoundary>
       <Routes>
         <Route path="connexion" element={<LoginPage />} />
+        {/* Vitrine publique : sans compte. */}
+        <Route
+          path="boutique"
+          element={
+            <Suspense fallback={<Chargement />}>
+              <Boutique />
+            </Suspense>
+          }
+        />
         <Route element={<RequireAuth />}>
           <Route element={<Shell />}>
             <Route index element={<Accueil />} />

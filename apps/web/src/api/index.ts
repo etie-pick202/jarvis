@@ -163,6 +163,10 @@ export const api = {
     return [...gaz, ...libres];
   },
 
+  /** Vitrine publique (sans compte) : produits, disponibilité, quartiers livrés et coordonnées. */
+  vitrine: (signal?: AbortSignal): Promise<contrat.PublicCatalogue> =>
+    get("/shop/catalogue", contrat.publicCatalogue, signal),
+
   /** Recherche de client dès les premières lettres (le serveur normalise accents et casse). */
   clients: async (q: string, signal?: AbortSignal): Promise<Client[]> =>
     (await get(`/customers?q=${encodeURIComponent(q)}`, contrat.customerRows, signal)).map((c) => ({
